@@ -194,7 +194,7 @@ export class Classroom {
   private giftHintUsed = false; // mỗi câu chỉ nhận 1 lần quà to thêm giờ (chống combo quà cộng giờ vô hạn)
   private quietSaid = false;
   correct: Answerer[] = [];
-  private tried = new Set<string>(); // ai đã trả lời câu này (đúng hay sai)
+  private tried = new Set<string>(); // ai đã từng trả lời câu này (chỉ để thống kê; trả lời lại không giới hạn)
   private wrong = new Set<string>();
   private seq = 0;
   stats = { received: 0, attempts: 0 };
@@ -591,13 +591,16 @@ export class Classroom {
     if (this.phase === 'recess') return this.recessChat(s, e, now);
     if (this.phase !== 'question' && this.phase !== 'bonus') return [];
     this.stats.received++;
-    if (!this.isAttempt(this.q, e.comment) || this.tried.has(e.username)) return [];
+    if (!this.isAttempt(this.q, e.comment)) return [];
+    // đã đúng rồi thì bỏ qua: không chấm trùng, cũng không bị ghi sai về sau
+    if (this.correct.some((a) => a.username === e.username)) return [];
     this.tried.add(e.username);
     this.stats.attempts++;
     if (!this.matches(this.q, e.comment)) {
       this.wrong.add(e.username);
       return [];
     }
+    this.wrong.delete(e.username); // sai rồi sửa lại đúng: xoá vết sai để khỏi bị cà khịa, trạng thái hiện đúng
     this.correct.push({ username: e.username, nickname: e.nickname, avatar: e.avatar, createTime: e.createTime, seq: ++this.seq, points: 0 });
     // xếp theo giờ TikTok gắn, không theo lúc bot nhận (comment có thể tới lệch thứ tự)
     this.correct.sort((a, b) => a.createTime - b.createTime || a.seq - b.seq);

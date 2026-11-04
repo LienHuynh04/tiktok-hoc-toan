@@ -65,15 +65,17 @@ for (let i = 0; i < 200; i++) {
   chat(c, 9999, 'khó quá', t, t); // nói chuyện thường không bị tính sai
   chat(c, 9999, answer, t + 9000, t);
   assert.equal(c.correct.length, 1);
-  chat(c, 5000, wrongSameLen(answer), t, t); // sai trước thì không được trả lời lại
-  chat(c, 5000, answer, t, t);
-  assert.ok(!c.correct.some((a) => a.username === 'u5000'));
+  chat(c, 5000, wrongSameLen(answer), t, t); // sai trước vẫn được trả lời lại (không giới hạn, không trừ điểm)
+  chat(c, 5000, answer, t + 9600, t);
+  assert.ok(c.correct.some((a) => a.username === 'u5000'), 'sai rồi gõ lại đúng vẫn được chấm');
+  chat(c, 5000, wrongSameLen(answer), t, t); // đã đúng rồi thì gõ gì thêm cũng không đổi kết quả
+  assert.equal(c.correct.filter((a) => a.username === 'u5000').length, 1, 'không chấm trùng cho người đã đúng');
   chat(c, 5001, `${answer}0`, t, t); // số dài hơn đáp án: không tính là trả lời, vẫn được trả lời lại
   assert.ok(!c.correct.some((a) => a.username === 'u5001'));
   chat(c, 5001, answer, t + 9500, t); // createTime trễ nhất để không giành hạng nhất của phần flood bên dưới
   assert.ok(c.correct.some((a) => a.username === 'u5001'), 'gõ thừa số 0 không bị khoá lượt trả lời');
   for (let i = 0; i < 1000; i++) chat(c, i, i < 300 ? answer : 'xin chào cô', t + 5000 - i, t + 10);
-  assert.equal(c.correct.length, 302);
+  assert.equal(c.correct.length, 303);
   assert.equal(c.correct[0].username, 'u299', 'createTime sớm nhất đứng đầu');
   assert.deepEqual(c.correct.slice(0, 4).map((a) => a.points), [10, 7, 5, 3]);
   assert.equal(c.correct[10].points, 1);
