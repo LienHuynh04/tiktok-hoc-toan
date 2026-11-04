@@ -162,6 +162,11 @@ export class YogaRoom {
     return lines;
   }
 
+  /** Người mới bước vào phòng live: nhận thảm ngay, không đọc thành tiếng để khỏi ồn */
+  join(p: Person) {
+    if (!this.mats.has(p.username)) this.mats.set(p.username, p);
+  }
+
   follow(p: Person): Say[] {
     if (!this.mats.has(p.username)) this.mats.set(p.username, p);
     return [{ text: F(`Cảm ơn ${p.spoken} đã theo dõi kênh. Mời bạn vào thảm, cùng lớp hít thở thư giãn nhé.`), ttl: 30_000 }];

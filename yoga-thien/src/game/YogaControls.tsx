@@ -64,7 +64,7 @@ export function YogaControls({ view }: { view: YogaView | null; stageCount: numb
       <div className="mt-3 space-y-1.5 text-sm leading-relaxed text-slate-400">
         <p>
           <b className="text-slate-200">Người xem gõ tên tư thế</b> (không cần dấu) là cả lớp tập theo:{' '}
-          {POSES.map((p) => p.cmds[p.cmds.length - 1]).join(' · ')}. Ai bình luận cũng được nhận một tấm thảm trong lớp; không ai
+          {POSES.map((p) => p.cmds[p.cmds.length - 1]).join(' · ')}. Ai vào phòng live cũng tự nhận một tấm thảm (bình luận/follow cũng vậy) và hình trên thảm tập cùng tư thế với lớp; không ai
           gọi bài thì lớp tự chảy theo chuỗi nhẹ nhàng và kết ở Thư Giãn.
         </p>
         <p>

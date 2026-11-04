@@ -76,6 +76,11 @@ ok(room.view(end).poseKey === 'thugian', 'chủ phòng vào thẳng Thư Giãn')
 room.skip(end);
 ok(room.view(end).poseKey === 'sen', 'skip ở cuối FLOW quay về Hoa Sen');
 
+// người chỉ vào phòng (chưa bình luận) cũng có thảm
+const p3 = { username: 'u3', nickname: 'Cúc', spoken: 'Cúc', avatar: '' };
+room.join(p3);
+ok(room.view(end).matCount === 3, 'vào phòng là nhận thảm');
+
 if (fails) {
   console.error(`yoga.check: ${fails} lỗi`);
   process.exit(1);

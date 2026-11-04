@@ -85,6 +85,12 @@ export function useYoga() {
       const room = roomRef.current;
       if (room && talk.follows.first(e.username)) say(room.follow(person(e)));
     },
+    onMember: (e) => {
+      const room = roomRef.current;
+      if (!room) return;
+      room.join(person(e));
+      dirty.current = true;
+    },
     onLike: (e) => {
       const room = roomRef.current;
       if (!room) return;

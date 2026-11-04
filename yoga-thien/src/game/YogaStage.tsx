@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { YogaState } from './useYoga';
 import { YOGA_SHEET, posePos } from './poseArt';
+import { POSES } from './poses';
+
+const HUES = [0, 28, -22, 42, -38, 16, -48, 33, -12, 55];
+const chipName = (label: string) => label.replace(' II', '').replace(' (Nhân Sư)', '');
 import './yoga.css';
 
 function Plant({ flip = false }: { flip?: boolean }) {
@@ -85,9 +89,9 @@ export function YogaStage({ game }: { game: YogaState }) {
         ))}
 
       {/* tiêu đề */}
-      <header className="relative z-10 pt-[104px] text-center">
+      <header className="relative z-10 pt-[98px] text-center">
         <div className="text-[24px] font-medium tracking-wide text-blue-900/70">{channelName}</div>
-        <h1 className="text-[46px] font-extrabold tracking-wide text-blue-950">🧘 PHÒNG YOGA THIỀN</h1>
+        <h1 className="text-[43px] font-extrabold tracking-wide text-blue-950">🧘 PHÒNG YOGA THIỀN</h1>
         <div className="mt-1 text-[23px] text-blue-900/80">
           {view.musicOn ? '🎵 Nhạc thiền đang mở' : '🔇 Nhạc thiền đang tắt'} · 🧎 {view.matCount} bạn đang tập cùng lớp
         </div>
@@ -99,8 +103,28 @@ export function YogaStage({ game }: { game: YogaState }) {
         </div>
       )}
 
+      {/* BẢNG NOTE: người xem nhìn là biết gõ gì */}
+      <section className="relative z-10 mx-6 mt-2 rounded-2xl bg-white/85 px-4 py-2.5 text-center shadow backdrop-blur">
+        <div className="text-[23px] font-extrabold tracking-wide text-blue-950">📝 MUỐN TẬP TƯ THẾ NÀO — GÕ TÊN TƯ THẾ NÀY NHÉ</div>
+        <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5">
+          {POSES.map((p) => (
+            <span
+              key={p.key}
+              className={`rounded-full px-3 py-1 text-[20px] font-bold ${
+                view.poseKey === p.key ? 'bg-amber-400 text-amber-950' : 'bg-blue-600 text-white'
+              }`}
+            >
+              {chipName(p.label).toUpperCase()}
+            </span>
+          ))}
+        </div>
+        <div className="mt-1.5 text-[19px] text-slate-600">
+          Gõ có dấu hay không dấu đều được · Vào phòng là có thảm tập cùng lớp · Đủ 100 ❤️ thì mưa hoa sen
+        </div>
+      </section>
+
       {/* huấn luyện viên */}
-      <main className="relative z-10 mx-auto mt-1 w-[94%] max-w-[880px]">
+      <main className="relative z-10 mx-auto mt-1 w-[94%] max-w-[790px]">
         <div
           className="yoga-breath aspect-[660/520] w-full drop-shadow-[0_16px_18px_rgba(30,58,138,0.30)]"
           role="img"
@@ -150,13 +174,13 @@ export function YogaStage({ game }: { game: YogaState }) {
 
       {/* thảm của lớp */}
       <section className="relative z-10 mt-auto px-5 pb-3 pt-3">
-        <div className="mb-2 text-center text-[21px] font-bold tracking-wide text-blue-950/80">THẢM CỦA LỚP — gõ tên tư thế là tập theo bạn</div>
+        <div className="mb-2 text-center text-[21px] font-bold tracking-wide text-blue-950/80">CẢ LỚP TẬP CÙNG NHAU — ai vào phòng cũng có một thảm</div>
         <div className="grid grid-cols-5 gap-2">
           {Array.from({ length: 10 }, (_, i) => {
             const m = view.mats[i];
             if (!m) {
               return (
-                <div key={i} className="flex h-[86px] items-center justify-center rounded-xl border-2 border-dashed border-white/60 text-[15px] text-white/80">
+                <div key={i} className="flex items-center justify-center rounded-xl border-2 border-dashed border-white/60 text-[15px] text-white/80">
                   thảm trống
                 </div>
               );
@@ -164,16 +188,29 @@ export function YogaStage({ game }: { game: YogaState }) {
             return (
               <div
                 key={m.username}
-                className={`rounded-xl p-1.5 text-center ${m.active ? 'bg-amber-50 ring-4 ring-amber-300' : 'bg-white/75 ring-1 ring-blue-200'}`}
+                className={`rounded-xl p-1.5 ${m.active ? 'bg-amber-50 ring-4 ring-amber-300' : 'bg-white/75 ring-1 ring-blue-200'}`}
               >
-                {m.avatar ? (
-                  <img src={m.avatar} alt="" className="mx-auto h-11 w-11 rounded-full object-cover" />
-                ) : (
-                  <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-blue-200 text-[20px] font-bold text-blue-900">
-                    {m.nickname.slice(0, 1)}
-                  </div>
-                )}
-                <div className="mt-0.5 truncate text-[15px] font-medium text-slate-700">{m.nickname}</div>
+                <div
+                  className="aspect-[660/520] w-full"
+                  role="img"
+                  aria-label={`${m.nickname} đang tập ${view.label}`}
+                  style={{
+                    backgroundImage: `url(${YOGA_SHEET})`,
+                    backgroundSize: '300% 300%',
+                    backgroundPosition: posePos(view.cell),
+                    filter: `hue-rotate(${HUES[i % HUES.length]}deg)`,
+                  }}
+                />
+                <div className="mt-0.5 flex items-center justify-center gap-1">
+                  {m.avatar ? (
+                    <img src={m.avatar} alt="" className="h-6 w-6 flex-none rounded-full object-cover" />
+                  ) : (
+                    <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-blue-200 text-[12px] font-bold text-blue-900">
+                      {m.nickname.slice(0, 1)}
+                    </span>
+                  )}
+                  <span className="truncate text-[15px] font-medium text-slate-700">{m.nickname}</span>
+                </div>
               </div>
             );
           })}
