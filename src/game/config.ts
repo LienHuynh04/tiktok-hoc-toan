@@ -14,22 +14,22 @@ export const GAME = {
   // Tiết CHỦ ĐẠO CÂU KHÓ (chủ kênh chốt 2026-11-04: bản cũ quá dễ): chỉ lớp 7-12 + 4 câu
   // hình học khó (token 'geo', hình lớp 6+ và có hình vẽ). Lớp 1-6 chỉ còn gặp khi cả lớp
   // bình chọn khối Lớp 4-6 ở giờ ra chơi.
-  // Tiết học chỉ gồm câu RẤT KHÓ (tăng độ khó 2026-11-04): lớp 9-12 + hình học lớp 8 trở lên.
-  // Khối lớp 7-9 chỉ xuất hiện khi cả lớp bình chọn ở giờ ra chơi.
+  // Tiết học CHỈ gồm toán cấp 3 (chủ kênh chốt 2026-11-04): lớp 10-12 + hình học khó.
+  // Hình học giữ từ lớp 9 (lượng giác) vì hình học lớp 10 chỉ có vectơ, để 10 thuần sẽ lặp.
   roundPlan: [
-    'math9', 'math10', 'geo', 'math11', 'math12',
-    'math10', 'math11', 'geo', 'math12', 'math9',
-    'math11', 'math12', 'geo', 'math10', 'math12',
-    'math11', 'math12', 'geo', 'math12', 'math12',
+    'math10', 'math11', 'geo', 'math12', 'math10',
+    'math12', 'math11', 'geo', 'math10', 'math12',
+    'math11', 'math12', 'geo', 'math12', 'math10',
+    'math12', 'math11', 'geo', 'math12', 'math12',
   ] as const,
   // Các khối lớp cả lớp được bình chọn cho tiết sau (sau giờ ra chơi). Khối thắng chiếm
   // voteTopicQuestions câu trong tiết sau, rải cách 1 câu (xem pickRound trong quiz.ts).
   // 'Hình học' là chủ đề đặc biệt: bốc câu hình học mọi lớp (geo: true).
   mathTopics: [
-    { label: 'Lớp 10-12', levels: [10, 11, 12] },
-    { label: 'Lớp 11-12', levels: [11, 12] },
+    { label: 'Lớp 12', levels: [12] },
+    { label: 'Lớp 11', levels: [11] },
+    { label: 'Lớp 10', levels: [10] },
     { label: 'Hình học', levels: [], geo: true },
-    { label: 'Lớp 7-9', levels: [7, 8, 9] },
   ] as { label: string; levels: number[]; geo?: boolean }[],
   introSec: 8, // cô giới thiệu đầu tiết
   questionSec: 15, // thời gian trả lời (tăng độ khó 2026-11-04: giảm từ 20 xuống 15 giây)

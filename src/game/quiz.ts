@@ -416,7 +416,7 @@ export class Classroom {
       // câu toán tự sinh. Dạng toán cả lớp đã chọn (this.topic là nhãn trong GAME.mathTopics):
       // cách 1 câu lấy 1 câu thuộc dạng đó, tối đa GAME.voteTopicQuestions câu mỗi tiết.
       if (d === 'geo') {
-        q = makeGeometry(this.rand, 8); // câu hình học trong tiết chính: chỉ lấy hình RẤT khó (lớp 8 trở lên: Pi-ta-go, lượng giác, vectơ), có hình vẽ
+        q = makeGeometry(this.rand, 9); // câu hình học trong tiết chính: lớp 9 trở lên (lượng giác + vectơ lớp 10), có hình vẽ
       } else if (d.startsWith('math')) {
         const topicDef = GAME.mathTopics.find((x) => x.label === this.topic);
         let level = Number(d.slice(4));
@@ -822,8 +822,8 @@ export class Classroom {
       // gọi 1 bạn đang ngồi lớp, vừa hoạt động trong 3 phút
       const active = this.seats().filter((s) => now - s.lastActive < 180_000 && s.spoken !== 'bạn');
       callTarget = active[Math.floor(this.rand() * active.length)] ?? null;
-      // Lớp Toán: kiểm tra miệng bằng 1 câu toán tự sinh, lấy lớp 9-12 cho thật khó (tăng độ khó 2026-11-04)
-      callQ = callTarget ? makeMath((9 + Math.floor(this.rand() * 4)) as MathLevel, this.rand) : null;
+      // Lớp Toán: kiểm tra miệng bằng 1 câu toán tự sinh, chỉ lấy lớp 10-12 (toán cấp 3)
+      callQ = callTarget ? makeMath((10 + Math.floor(this.rand() * 3)) as MathLevel, this.rand) : null;
       if (!callTarget || !callQ) game = 'roll';
     }
     this.lastRecess = game;
