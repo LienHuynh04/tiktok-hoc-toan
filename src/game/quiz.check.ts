@@ -93,10 +93,9 @@ for (let i = 0; i < 200; i++) {
   assert.equal(c.phase, 'results');
   c.tick((t += GAME.resultsSec * 1000));
   assert.equal(c.phase, 'recess');
-  for (let k = 0; k < 10 && c.phase !== 'vote'; k++) c.tick((t += 40_000));
-  assert.equal(c.phase, 'vote', 'hết giờ ra chơi là bình chọn dạng toán tiết sau');
-  c.tick((t = c.phaseEndsAt));
-  assert.equal(c.phase, 'intro');
+  for (let k = 0; k < 10 && c.phase !== 'intro'; k++) c.tick((t += 40_000));
+  assert.equal(c.phase, 'intro', 'hết giờ ra chơi là vào thẳng tiết mới (không còn bình chọn)');
+  assert.equal(topicName(c.topic), 'Lớp 12', 'cô tự chọn dạng khó nhất cho tiết sau: Lớp 12');
   assert.equal(c.students.get('u299')!.score, 0);
   assert.ok(c.students.get('u299')!.session >= 10);
 }
@@ -251,7 +250,7 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   c.tick((t += GAME.recessResultSec * 1000));
   assert.equal(c.recess!.stage, 'board');
   c.tick((t += GAME.recessBoardSec * 1000));
-  assert.equal(c.phase, 'vote', 'sau bảng lớp trưởng là bình chọn dạng toán');
+  assert.equal(c.phase, 'intro', 'sau bảng lớp trưởng là vào thẳng tiết mới, cô tự chọn dạng khó nhất');
 }
 {
   // kiểm tra miệng bằng câu toán: chỉ bạn được gọi mới được trả lời, đúng +5, chốt ngay
@@ -494,27 +493,22 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.equal(c.view(t).seats.find((s) => s.username === 'u3')!.days, GAME.attendMilestones[0]);
 }
 
-// ---------- cả lớp chọn dạng toán tiết sau ----------
+// ---------- cô tự chọn dạng khó nhất cho tiết sau (không bình chọn nữa) ----------
 {
   const c = new Classroom([], t);
   c.newRound(t);
-  for (let k = 0; k < 300 && c.phase !== 'vote'; k++) c.tick((t = c.phaseEndsAt));
-  assert.equal(c.phase, 'vote');
-  const [a, b] = c.view(t).vote!.topics;
-  assert.notEqual(a, b);
-  assert.ok(GAME.mathTopics.some((x) => x.label === a) && GAME.mathTopics.some((x) => x.label === b), 'chủ đề bình chọn phải là dạng toán');
-  chat(c, 1, '2', t, t);
-  chat(c, 2, '2', t, t);
-  chat(c, 2, '1', t, t);
-  chat(c, 3, '1', t, t);
-  assert.deepEqual(c.view(t).vote!.counts, [1, 2]);
-  c.tick((t = c.phaseEndsAt));
+  for (let k = 0; k < 300 && !(c.phase === 'intro' && c.round >= 2); k++) c.tick((t = c.phaseEndsAt));
   assert.equal(c.phase, 'intro');
-  assert.equal(topicName(c.topic), b);
+  assert.equal(c.round, 2);
+  assert.equal(topicName(c.topic), 'Lớp 12', 'cô tự chọn dạng khó nhất: Lớp 12');
   const def = GAME.mathTopics.find((x) => x.label === c.topic)!;
   const qs = (c as unknown as { roundQs: Question[] }).roundQs;
   const inTopic = qs.filter((q) => def.levels.includes(q.math?.level ?? 0)).length;
-  assert.ok(inTopic >= GAME.voteTopicQuestions, `dạng thắng phải chiếm ít nhất ${GAME.voteTopicQuestions} câu, thực tế ${inTopic}`);
+  assert.ok(inTopic >= GAME.voteTopicQuestions, `dạng cô chọn phải chiếm ít nhất ${GAME.voteTopicQuestions} câu, thực tế ${inTopic}`);
+  // gõ 1 / 2 không còn là phiếu bầu: chủ đề không đổi
+  chat(c, 1, '2', t, t);
+  chat(c, 2, '1', t, t);
+  assert.equal(topicName(c.topic), 'Lớp 12', 'không còn bình chọn: gõ 1/2 không đổi được dạng toán');
 }
 
 // ---------- báo cáo ----------

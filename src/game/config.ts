@@ -22,7 +22,7 @@ export const GAME = {
     'math11', 'math12', 'geo', 'math12', 'math10',
     'math12', 'math11', 'geo', 'math12', 'math12',
   ] as const,
-  // Các khối lớp cả lớp được bình chọn cho tiết sau (sau giờ ra chơi). Khối thắng chiếm
+  // Các khối lớp cho tiết sau (sau giờ ra chơi): game TỰ CHỌN khối khó nhất (lớp cao nhất), không bình chọn. Khối được chọn chiếm
   // voteTopicQuestions câu trong tiết sau, rải cách 1 câu (xem pickRound trong quiz.ts).
   // 'Hình học' là chủ đề đặc biệt: bốc câu hình học mọi lớp (geo: true).
   mathTopics: [
@@ -85,7 +85,7 @@ export const GAME = {
   heartBoost: 5, // mỗi tim thật tính thành 5 tim (300 tim chỉ cần 60 tim thật) cho cả lớp dễ thắng; cũng áp cho vỗ tay
 
   // ---------- Sau giờ ra chơi: cả lớp chọn chủ đề tiết sau ----------
-  voteSec: 15, // gõ 1 hoặc 2
+  voteSec: 15, // (không còn dùng: đã bỏ bình chọn, cô tự chọn dạng khó nhất)
   voteTopicQuestions: 5, // dạng toán thắng chiếm chừng này câu của tiết sau
 
   // ---------- Chuyên cần, sinh nhật ----------

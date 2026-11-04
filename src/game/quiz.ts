@@ -7,7 +7,7 @@ import { makeMath, makeGeometry, type MathLevel } from './math';
  * Lõi game Lớp Toán: không đụng React, không đụng giọng đọc, chạy theo đồng hồ truyền vào.
  * Trang stage gọi chat/gift/like/tick rồi đọc các câu trả về; test ở quiz.check.ts.
  *
- * Một vòng: intro → 20 câu TOÁN tự sinh (question → [bonus] → reveal) → results → recess (giờ ra chơi) → vote dạng toán → intro ...
+ * Một vòng: intro → 20 câu TOÁN tự sinh (question → [bonus] → reveal) → results → recess (giờ ra chơi) → cô tự chọn dạng khó nhất → intro ...
  */
 
 export type Phase = 'intro' | 'question' | 'bonus' | 'reveal' | 'praise' | 'results' | 'recess' | 'vote';
@@ -228,6 +228,8 @@ export class Classroom {
   reportLog: ReportRow[] = [];
   /** bình chọn chủ đề tiết sau (pha 'vote') và chủ đề cả lớp đã chọn cho tiết này */
   vote: { topics: [string, string]; votes: Map<string, 1 | 2> } | null = null;
+  /** cô tự chọn chủ đề tiết sau (không bình chọn nữa): newRound không được xoá topic này */
+  private keepTopic = false;
   topic = '';
   private lastTopics: string[] = [];
   /** chúc mừng sinh nhật: ai đã được chúc (mỗi người 1 lần mỗi buổi) và biểu ngữ đang hiện */
@@ -413,7 +415,7 @@ export class Classroom {
         if (!(SLOTS as readonly string[]).includes(d)) plain++;
         continue;
       }
-      // câu toán tự sinh. Dạng toán cả lớp đã chọn (this.topic là nhãn trong GAME.mathTopics):
+      // câu toán tự sinh. Dạng toán cô tự chọn cho tiết này (this.topic là nhãn trong GAME.mathTopics):
       // cách 1 câu lấy 1 câu thuộc dạng đó, tối đa GAME.voteTopicQuestions câu mỗi tiết.
       if (d === 'geo') {
         q = makeGeometry(this.rand, 9); // câu hình học trong tiết chính: lớp 9 trở lên (lượng giác + vectơ lớp 10), có hình vẽ
@@ -597,7 +599,6 @@ export class Classroom {
     if (this.poll && now - this.poll.at < GAME.loveWindowMs && this.poll.opts.some((o) => o.key === key) && !this.poll.votes.has(s.username)) {
       this.poll.votes.set(s.username, key);
     }
-    if (this.phase === 'vote') return this.voteChat(s, e);
     if (this.phase === 'recess') return this.recessChat(s, e, now);
     if (this.phase !== 'question' && this.phase !== 'bonus') return [];
     this.stats.received++;
@@ -938,8 +939,9 @@ export class Classroom {
   }
 
   newRound(now: number): Say[] {
-    const voted = this.phase === 'vote' ? this.closeVote() : [];
-    if (this.phase !== 'vote') this.topic = '';
+    const voted: Say[] = [];
+    if (!this.keepTopic) this.topic = '';
+    this.keepTopic = false;
     this.round++;
     this.monitor = ''; // tiết mới: cả lớp tranh lớp trưởng lại từ đầu
     this.qNo = 0;
@@ -1081,38 +1083,14 @@ export class Classroom {
   }
 
   // ---------- bình chọn chủ đề tiết sau ----------
+  /** Hết giờ ra chơi: cô TỰ CHỌN dạng khó nhất cho tiết sau (chủ kênh bỏ hẳn bình chọn, 2026-11-04) */
   private startVote(now: number): Say[] {
-    this.recess = null;
-    // 2 dạng toán cho tiết sau, khác các dạng vừa chọn gần đây
-    const cats = GAME.mathTopics.map((x) => x.label);
-    const fresh = cats.filter((c) => !this.lastTopics.includes(c));
-    const pool = fresh.length >= 2 ? fresh : cats;
-    if (pool.length < 2) return this.newRound(now);
-    const a = pool[Math.floor(this.rand() * pool.length)];
-    const rest = pool.filter((c) => c !== a);
-    const b = rest[Math.floor(this.rand() * rest.length)];
-    this.vote = { topics: [a, b], votes: new Map() };
-    this.setPhase('vote', now, GAME.voteSec);
-    return this.mainOf([this.t(this.line('voteIntro', topicName(a), topicName(b)))]);
-  }
-
-  private voteChat(s: Student, e: ChatIn): Say[] {
-    const w = plain(e.comment);
-    if (this.vote && (w === '1' || w === '2') && !this.vote.votes.has(s.username)) this.vote.votes.set(s.username, w === '1' ? 1 : 2);
-    return [];
-  }
-
-  /** Đếm phiếu: chủ đề thắng thành chủ đề tiết sau (hoà thì bốc thăm, không ai chọn thì học bình thường) */
-  private closeVote(): Say[] {
-    const v = this.vote;
-    this.vote = null;
-    this.topic = '';
-    if (!v || v.votes.size === 0) return [this.line0('voteNobody')];
-    const one = [...v.votes.values()].filter((x) => x === 1).length;
-    const two = v.votes.size - one;
-    this.topic = one > two ? v.topics[0] : two > one ? v.topics[1] : v.topics[Math.floor(this.rand() * 2)];
-    this.lastTopics = [...this.lastTopics, this.topic].slice(-4);
-    return [this.t(this.line('voteResult', topicName(this.topic)))];
+    const hardest = GAME.mathTopics.filter((x) => !x.geo).sort((a, b) => Math.max(...b.levels) - Math.max(...a.levels))[0];
+    this.topic = hardest?.label ?? '';
+    if (this.topic) this.lastTopics = [...this.lastTopics, this.topic].slice(-4);
+    this.keepTopic = true;
+    const sayTopic = this.topic ? [{ ...this.t(this.line('autoTopic', topicName(this.topic))), main: true }] : [];
+    return [...sayTopic, ...this.newRound(now)];
   }
 
   /** Ảnh chụp trạng thái để vẽ (gọn, gửi được qua mạng cho trang điều khiển xem trước) */

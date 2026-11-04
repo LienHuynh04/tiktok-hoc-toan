@@ -227,6 +227,12 @@ export const LINES = {
     (t) => `Dạng ${t} thắng rồi! Cô ra nhiều câu ${t} cho các bạn nhỏ nè.`,
     (t) => `Theo ý cả lớp, tiết này có nhiều câu ${t}. Chuẩn bị nhẩm nha!`,
   ] as L1,
+  // ---------- Cô tự chọn dạng khó nhất cho tiết sau (không bình chọn nữa) ----------
+  autoTopic: [
+    (t) => `Tiết sau không cần chọn nữa, cô tự chốt dạng khó nhất cho cả lớp: ${t}. Chuẩn bị tinh thần nha!`,
+    (t) => `Cô chọn luôn dạng khó nhất: ${t}. Tiết sau mình tính nhiều câu ${t}, bạn nào cũng phải tập trung đó.`,
+    (t) => `Dạng khó nhất là ${t}, cô chọn luôn cho tiết sau. Cả lớp cố lên nha!`,
+  ] as L1,
   voteNobody: [
     'Chưa ai chọn hết, vậy cô tự chọn câu hỏi nha.',
     'Không ai bình chọn hả? Thôi cô trộn đủ dạng toán luôn.',
