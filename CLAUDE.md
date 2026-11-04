@@ -11,8 +11,8 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài ra phép tính trên bảng �
 ## Luật chơi
 
 - Comment bất kỳ là vào lớp (có tên trên đầu học sinh). Gõ `vào lớp` thì cô chào.
-- Mỗi tiết 20 câu, TẤT CẢ là toán tự sinh (`GAME.roundPlan` toàn `math1`…`math6` trong `src/game/config.ts`): cấp 1 cộng trừ 1 chữ số, cấp 2 cộng trừ 2 chữ số / nhân nhỏ, cấp 3 nhân chia, cấp 4 hai bước, cấp 5 tìm số còn thiếu, cấp 6 toán đố / dãy số / chu vi. Mỗi câu 20 giây. Hết giờ chưa ai đúng: thêm 10 giây (pha bonus), KHÔNG mở số.
-- Cô đọc: "Câu 3. Câu toán nhẩm. 36 cộng 47 bằng mấy?" (toán đố cấp 6: cô đọc cả bài toán bằng lời, bảng hiện đề + phép tính tóm tắt).
+- Mỗi tiết 20 câu, TẤT CẢ là toán tự sinh (`GAME.roundPlan` là `math<N>` = câu lớp N trong `src/game/config.ts`): bộ sinh ở math.ts phủ Lớp 1 đến Lớp 12 (mỗi lớp 3-5 dạng) cộng nhóm Hình học riêng (makeGeometry); bình chọn giờ ra chơi chọn khối lớp 1-3 / 4-6 / 7-9 / 10-12 hoặc Hình học. Mỗi câu 20 giây. Hết giờ chưa ai đúng: thêm 10 giây (pha bonus), KHÔNG mở số.
+- Cô đọc: "Câu 3. Câu toán nhẩm. 36 cộng 47 bằng mấy?" (toán đố / hình học: cô đọc cả bài toán bằng lời, bảng hiện đề + phép tính tóm tắt).
 - Sau mỗi tiết là giờ ra chơi 1 phút, bốc 1 trong 5 trò (không lặp trò vừa chơi): oẳn tù tì (+2), kiểm tra miệng bằng CÂU TOÁN gọi 1 bạn đang ngồi (+5), chọn phe (vui, không điểm), điểm danh "có mặt" (10 bạn đầu +3), thả tim 300 trong 30 giây (+1 cả lớp). Xong trò thì hiện "Học sinh giỏi hôm nay".
 - Sau giờ ra chơi: cả lớp bình chọn DẠNG TOÁN tiết sau (gõ 1 hoặc 2, 15 giây). Dạng thắng (`GAME.mathTopics`) chiếm 5 câu của tiết sau, rải cách 1 câu trong `pickRound`.
 - Xếp hạng 3 tầng: điểm tiết (xếp ghế, xoá mỗi tiết) · điểm buổi (👑 lớp trưởng, ⭐ lớp phó) · bảng vàng tuần (lưu file `data/so-lop.json`, tự xoá khi sang tuần mới).
@@ -32,7 +32,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài ra phép tính trên bảng �
 ## File
 
 - `src/game/quiz.ts`: lõi game (pha, chấm điểm, chỗ ngồi). Test: `npx tsx src/game/quiz.check.ts`.
-- `src/game/math.ts`: bộ sinh câu toán 6 cấp. Kiểm chứng ĐỘC LẬP: `npx tsx src/game/math.check.ts` (tính lại đáp án từ biểu thức trên bảng; cấp 5 thay đáp án vào dấu ?; cấp 6 dãy số kiểm tra bước nhảy). Sửa math.ts là PHẢI chạy lại cả hai file check + `npm run lint` + `npm run build`.
+- `src/game/math.ts`: bộ sinh câu toán Lớp 1-12 + Hình học. Bất biến: `math.show` luôn là biểu thức tính ra đáp án, hoặc phương trình / dãy số chứa `?` thay đáp án vào thì đúng — để `npx tsx src/game/math.check.ts` kiểm chứng ĐỘC LẬP bằng máy tính riêng (7.800 câu mẫu). Sửa math.ts là PHẢI chạy lại cả hai file check + `npm run lint` + `npm run build`.
 - `src/game/loi-thoai.ts`: toàn bộ lời cô (bốc kiểu xáo bài nên ít lặp). Nhóm riêng của toán: `mathIntro`, `mathBonus`, `mathReveal`, `mathNobody`, `mathWrong`, `mathGiftHint`. Luật cứng từ bản chữ: mỗi nhóm ít nhất 2 câu, không trùng câu, KHÔNG dùng gạch ngang dài (—, –) trong lời thoại (quiz.check bắt lỗi).
 - `src/game/config.ts`: số liệu + `roundPlan` + `mathTopics`.
 - `src/game/sfx.ts`: hiệu ứng âm thanh tự tạo. Bỏ file mp3 cùng tên vào `public/assets/sfx/` là dùng file thay.

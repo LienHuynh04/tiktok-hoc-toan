@@ -1,7 +1,7 @@
 import { GAME } from './config';
 import { LINES, PICK_TOPICS, POLLS, REWARDS, type Poll } from './loi-thoai';
 import { SLOTS, type Question, type Slot } from './questions';
-import { makeMath, type MathLevel } from './math';
+import { makeMath, makeGeometry, type MathLevel } from './math';
 
 /**
  * Lõi game Lớp Toán: không đụng React, không đụng giọng đọc, chạy theo đồng hồ truyền vào.
@@ -418,11 +418,17 @@ export class Classroom {
       if (d.startsWith('math')) {
         const topicDef = GAME.mathTopics.find((x) => x.label === this.topic);
         let level = Number(d.slice(4));
-        if (topicDef && fav < GAME.voteTopicQuestions && i % 2 === 0) {
-          level = topicDef.levels[Math.floor(this.rand() * topicDef.levels.length)];
+        if (topicDef?.geo && fav < GAME.voteTopicQuestions && i % 2 === 0) {
+          // cả lớp chọn Hình học: bốc câu hình học bất kỳ lớp nào
+          q = makeGeometry(this.rand);
           fav++;
+        } else {
+          if (topicDef && !topicDef.geo && fav < GAME.voteTopicQuestions && i % 2 === 0) {
+            level = topicDef.levels[Math.floor(this.rand() * topicDef.levels.length)];
+            fav++;
+          }
+          q = makeMath(level as MathLevel, this.rand);
         }
-        q = makeMath(level as MathLevel, this.rand);
       }
       else if ((SLOTS as readonly string[]).includes(d)) q = this.pickOne(d as Slot, out.filter((x) => !x.math), now);
       else {

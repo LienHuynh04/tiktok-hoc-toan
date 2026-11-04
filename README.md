@@ -5,7 +5,7 @@ Game tương tác cho TikTok LIVE, chuyển thể từ [Lớp Học Chữ](https
 ## Khác gì Lớp Học Chữ
 
 - **100% câu hỏi là toán**, do game **tự sinh** lúc vào tiết nên không bao giờ hết câu, không cần file câu hỏi chữ (`src/game/cau-hoi/` đã bỏ). Sửa độ khó / thêm dạng toán: sửa `src/game/math.ts`.
-- 6 cấp độ: **1** cộng trừ 1 chữ số · **2** cộng trừ 2 chữ số, nhân nhỏ · **3** nhân chia · **4** phép tính hai bước · **5** tìm số còn thiếu (`? + 7 = 15`) · **6** toán đố bằng lời, dãy số, chu vi hình.
+- Câu hỏi theo chương trình **Lớp 1 → Lớp 12** (mỗi lớp 3-5 dạng: cộng trừ, nhân chia, phân số, phần trăm, luỹ thừa, căn, phương trình, cấp số, tổ hợp, đạo hàm, tích phân, số phức...) cộng thêm bộ **Hình học** riêng (chu vi, diện tích, thể tích, Pi-ta-go, vectơ). Đáp án luôn là số nguyên không âm.
 - Mỗi tiết 20 câu khó dần, câu 20 là câu hỏi vàng nhân đôi điểm.
 - Hết giờ chưa ai đúng: cô cho **thêm 10 giây** (không mở số như bản chữ, mở là lộ đáp án). Quà từ 30 xu lúc chưa ai đúng cũng cho thêm 10 giây, mỗi câu tối đa 1 lần.
 - Sau giờ ra chơi, cả lớp **bình chọn dạng toán** của tiết sau (Cộng trừ / Nhân chia / Tính hai bước / Tìm số thiếu / Toán đố). Dạng thắng chiếm 5 câu trong tiết sau.
@@ -61,10 +61,10 @@ Dùng OBS cũng được: thêm nguồn **Browser**, cùng đường dẫn và k
 
 ## Thêm hoặc sửa dạng toán
 
-Toàn bộ bộ sinh câu nằm ở `src/game/math.ts`, chia theo cấp 1–6. Mỗi câu sinh ra gồm:
+Toàn bộ bộ sinh câu nằm ở `src/game/math.ts`, chia theo lớp 1–12 cộng nhóm hình học. Mỗi câu sinh ra gồm:
 
 - `show`: phần hiện to trên bảng (vd `36 + 47 = ?`, `? + 7 = 15`, `2, 5, 8, ?`).
-- `clue`: lời cô đọc (toán đố cấp 6 là cả bài toán bằng chữ).
+- `clue`: lời cô đọc (toán đố là cả bài toán bằng chữ).
 - `say` / `reveal`: cách cô công bố đáp án (mặc định "<phép tính> bằng <đáp án>").
 - Đáp án luôn là **số nguyên dương**, người xem gõ số.
 

@@ -8,25 +8,25 @@ export const GAME = {
 
   // ---------- Một tiết học ----------
   questionsPerRound: 20,
-  // LỚP TOÁN: cả 20 câu đều là toán tự sinh (math.ts), độ khó tăng dần trong tiết:
-  // math1 cộng trừ 1 chữ số · math2 cộng trừ 2 chữ số / nhân nhỏ · math3 nhân chia
-  // math4 hai bước · math5 tìm số còn thiếu · math6 toán đố / dãy số / chu vi.
+  // LỚP TOÁN: cả 20 câu đều là toán tự sinh (math.ts), theo chương trình LỚP 1 ĐẾN LỚP 12:
+  // token math<N> = câu thuộc lớp N; tiết đi từ lớp nhỏ lên lớp lớn rồi ôn trộn các lớp cuối.
   // Câu 20 là câu hỏi vàng nhân đôi điểm.
   roundPlan: [
-    'math1', 'math1', 'math2', 'math3', 'math2',
-    'math5', 'math3', 'math4', 'math2', 'math6',
-    'math3', 'math5', 'math4', 'math2', 'math6',
-    'math5', 'math4', 'math3', 'math6', 'math6',
+    'math1', 'math2', 'math3', 'math4', 'math5',
+    'math6', 'math7', 'math8', 'math9', 'math10',
+    'math11', 'math12', 'math5', 'math7', 'math9',
+    'math10', 'math11', 'math12', 'math11', 'math12',
   ] as const,
-  // Các dạng toán cả lớp được bình chọn cho tiết sau (sau giờ ra chơi). Dạng thắng chiếm
+  // Các khối lớp cả lớp được bình chọn cho tiết sau (sau giờ ra chơi). Khối thắng chiếm
   // voteTopicQuestions câu trong tiết sau, rải cách 1 câu (xem pickRound trong quiz.ts).
+  // 'Hình học' là chủ đề đặc biệt: bốc câu hình học mọi lớp (geo: true).
   mathTopics: [
-    { label: 'Cộng trừ', levels: [1, 2] },
-    { label: 'Nhân chia', levels: [3] },
-    { label: 'Tính hai bước', levels: [4] },
-    { label: 'Tìm số thiếu', levels: [5] },
-    { label: 'Toán đố', levels: [6] },
-  ] as { label: string; levels: number[] }[],
+    { label: 'Lớp 1-3', levels: [1, 2, 3] },
+    { label: 'Lớp 4-6', levels: [4, 5, 6] },
+    { label: 'Lớp 7-9', levels: [7, 8, 9] },
+    { label: 'Lớp 10-12', levels: [10, 11, 12] },
+    { label: 'Hình học', levels: [], geo: true },
+  ] as { label: string; levels: number[]; geo?: boolean }[],
   introSec: 8, // cô giới thiệu đầu tiết
   questionSec: 20, // thời gian trả lời (chủ kênh chốt 20 giây, 2026-11-04)
   endAfterFirstSec: 0, // 0 = luôn đủ giờ cho cả lớp. Đặt vd 10: có người đúng thì 10 giây sau chốt luôn (hợp lúc phòng vắng)
