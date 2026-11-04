@@ -29,6 +29,7 @@ for (const [k, topic] of Object.entries(TOPICS)) {
   for (const s of topic.close) assert.ok(!/[—–]/.test(s), `${k}: câu chốt không gạch ngang dài`);
 }
 assert.ok(!/[—–]/.test(DISCLAIMER));
+assert.equal(GAME.pickSec, 5, 'mỗi người chỉ có 5 giây chọn lá');
 
 // ---------- mở buổi, vào hàng chờ, được gọi tên ----------
 {
@@ -112,65 +113,6 @@ assert.ok(!/[—–]/.test(DISCLAIMER));
   assert.ok(c.chatterWindow(t), 'đang chờ chọn lá: được nói câu thêm');
   chat(c, 9, '1', t);
   assert.ok(!c.chatterWindow(t), 'đang đọc bài: không chen câu thêm');
-}
-
-// ---------- chế độ game Lá Bài May Mắn: cả phòng cùng chọn, lật bài, cộng điểm ----------
-{
-  for (const c of CARDS) assert.ok(c.luck >= 10 && c.luck <= 100, `${c.id}: điểm may mắn 10..100`);
-
-  const g = new TarotRoom(t, rand);
-  g.newSession(t);
-  const open = g.setMode('lucky', t);
-  assert.ok(open.length >= 3, 'mở game có câu mở chế độ + cách chơi + mở vòng');
-  assert.equal(g.view(t).mode, 'lucky');
-  assert.equal(g.lucky.phase, 'pick', 'vào game là bắt đầu vòng chọn lá ngay');
-  assert.equal(g.lucky.round, 1);
-
-  // cả phòng chọn: u1 và u2 chọn lá 1, u3 chọn lá 2, u1 đổi ý sang lá 3
-  chat(g, 1, '1', t);
-  chat(g, 2, '1', t);
-  chat(g, 3, '2', t);
-  chat(g, 1, '3', t);
-  let lv = g.view(t).lucky!;
-  assert.deepEqual(lv.counts, [1, 1, 1], 'đổi ý thì số đếm theo lá chọn cuối cùng');
-  assert.equal(lv.players, 3);
-  // đang chơi game: gõ TAROT không vào hàng chờ
-  chat(g, 4, 'TAROT tình yêu', t);
-  assert.equal(g.view(t).queue.length, 0, 'chế độ game không nhận hàng chờ');
-
-  // hết giờ chọn thì lật bài, điểm cộng khớp điểm của lá từng người đã chọn
-  const tRev = t + GAME.luckyPickSec * 1000 + 1;
-  const lines = g.tick(tRev);
-  assert.ok(texts(lines).some((x) => x.includes('Lá số 1')), 'có câu đọc lá số 1');
-  lv = g.view(tRev).lucky!;
-  assert.equal(lv.phase, 'reveal');
-  assert.ok(lv.cards.every((c) => c.faceUp && c.points > 0), 'cả 3 lá đều lật và có điểm');
-  const expect = new Map([
-    ['Bạn 1', lv.cards[2].points],
-    ['Bạn 2', lv.cards[0].points],
-    ['Bạn 3', lv.cards[1].points],
-  ]);
-  assert.equal(lv.top.length, 3);
-  for (const row of lv.top) assert.equal(row.total, expect.get(row.nickname), `điểm của ${row.nickname} khớp lá đã chọn`);
-  assert.equal(lv.totalPlayers, 3);
-
-  // hết pha lật thì nghỉ, hết nghỉ thì vòng 2 bắt đầu với lượt chọn trống
-  const tWait = tRev + GAME.luckyRevealSec * 1000 + 1;
-  g.tick(tWait);
-  assert.equal(g.lucky.phase, 'wait');
-  const tR2 = tWait + GAME.luckyWaitSec * 1000 + 1;
-  g.tick(tR2);
-  assert.equal(g.lucky.phase, 'pick');
-  assert.equal(g.lucky.round, 2);
-  assert.equal(g.view(tR2).lucky!.players, 0, 'vòng mới xoá lượt chọn cũ, điểm cũ giữ nguyên');
-  assert.equal(g.view(tR2).lucky!.top.length, 3);
-
-  // quay lại xem riêng: hàng chờ chạy lại bình thường
-  g.setMode('reading', tR2);
-  assert.equal(g.view(tR2).mode, 'reading');
-  assert.equal(g.view(tR2).lucky, null);
-  chat(g, 7, 'TAROT', tR2);
-  assert.equal(g.view(tR2).current?.nickname, 'Bạn 7');
 }
 
 console.log('tarot.check: tất cả đều đúng');

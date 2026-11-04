@@ -96,8 +96,6 @@ export function useTarot() {
         say(room.newSession(Date.now()));
       }
       if (c.action === 'custom' && c.text === 'skip') say(room.skip(Date.now()));
-      if (c.action === 'custom' && c.text === 'mode-lucky') say(room.setMode('lucky', Date.now()));
-      if (c.action === 'custom' && c.text === 'mode-reading') say(room.setMode('reading', Date.now()));
     },
   });
 

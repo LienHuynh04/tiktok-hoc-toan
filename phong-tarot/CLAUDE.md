@@ -14,7 +14,7 @@
 
 ## Kiến trúc nhanh
 
-- Engine thuần thời gian: `TarotRoom` (src/game/tarot.ts), pha idle → offer (20s chọn lá) → reveal (đọc bài).
+- Engine thuần thời gian: `TarotRoom` (src/game/tarot.ts), pha idle → offer (5s chọn lá) → reveal (đọc bài).
   Đồng hồ pha bị giữ (hold) khi giọng đang đọc câu chính, giống Lớp Toán.
 - Hàng chờ tối đa 8 (GAME.queueMax), mỗi người 1 chỗ; chỉ người đang được xem mới chọn được lá bằng 1/2/3.
   Hết giờ chọn: tự chọn lá giữa (picked=1, auto=true). Bỏ lượt: control custom 'skip'.
