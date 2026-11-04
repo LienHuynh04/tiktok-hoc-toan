@@ -11,4 +11,8 @@ export const GAME = {
   giftThanksCooldownMs: 30_000, // cùng 1 người tặng liên tục: cảm ơn 1 lần mỗi 30 giây
   bigGiftCoins: 50, // quà từ mức này luôn được cảm ơn ngay
   disclaimerEvery: 5, // cứ 5 lượt đọc thì nhắc lại 1 lần: chỉ mang tính giải trí
+  // Chế độ game Lá Bài May Mắn (cả phòng cùng chơi)
+  luckyPickSec: 15, // thời gian cả phòng chọn lá mỗi vòng
+  luckyRevealSec: 12, // thời gian lật cả 3 lá + công bố điểm mỗi vòng
+  luckyWaitSec: 6, // nghỉ giữa hai vòng (hiện bảng xếp hạng)
 };

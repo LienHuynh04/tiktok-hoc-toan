@@ -21,8 +21,22 @@ export function TarotControls({ view, stageCount = 0 }: { view: StageView | null
       {view && (
         <div className="rounded-lg bg-slate-800 p-3 text-sm leading-6">
           <div>
-            Pha: <b>{view.phase === 'idle' ? 'Đang chờ' : view.phase === 'offer' ? 'Đang chờ chọn lá' : 'Đang đọc bài'}</b> · Đã xem: <b>{view.readings}</b> lượt · Hàng chờ: <b>{view.queue.length}</b> bạn
+            Chế độ: <b className="text-amber-300">{view.mode === 'lucky' ? '🍀 Game Lá Bài May Mắn' : '🔮 Xem riêng theo hàng chờ'}</b>
           </div>
+          {view.mode === 'lucky' && view.lucky ? (
+            <div>
+              Vòng: <b>{view.lucky.round}</b> · Pha: <b>{view.lucky.phase === 'pick' ? `Đang chọn lá (còn ${view.lucky.secLeft} giây)` : view.lucky.phase === 'reveal' ? 'Đang lật bài' : 'Đang nghỉ giữa vòng'}</b> · Đã chọn vòng này: <b>{view.lucky.players}</b> bạn
+              {view.lucky.top[0] && (
+                <>
+                  {' '}· Dẫn đầu: <b className="text-amber-300">{view.lucky.top[0].nickname}</b> ({view.lucky.top[0].total} điểm)
+                </>
+              )}
+            </div>
+          ) : (
+            <div>
+              Pha: <b>{view.phase === 'idle' ? 'Đang chờ' : view.phase === 'offer' ? 'Đang chờ chọn lá' : 'Đang đọc bài'}</b> · Đã xem: <b>{view.readings}</b> lượt · Hàng chờ: <b>{view.queue.length}</b> bạn
+            </div>
+          )}
           {cur ? (
             <div>
               Đang xem cho: <b className="text-amber-300">{cur.nickname}</b> · {cur.topic}
@@ -38,8 +52,23 @@ export function TarotControls({ view, stageCount = 0 }: { view: StageView | null
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        <Btn onClick={() => sendControl('custom', 'skip')} disabled={!cur}>
-          ⏭ Bỏ lượt này
+        <Btn onClick={() => sendControl('custom', 'mode-reading')} disabled={view?.mode !== 'lucky'}>
+          🔮 Chế độ xem riêng
+        </Btn>
+        <Btn onClick={() => sendControl('custom', 'mode-lucky')} disabled={view?.mode === 'lucky'}>
+          🍀 Game Lá Bài May Mắn
+        </Btn>
+        <Btn onClick={() => sendControl('custom', 'skip')} disabled={!cur && view?.mode !== 'lucky'}>
+          ⏭ {view?.mode === 'lucky' ? 'Qua pha ngay' : 'Bỏ lượt này'}
+        </Btn>
+        <Btn
+          onClick={() => {
+            for (let i = 0; i < 6; i++) setTimeout(() => emitTest('chat', { ...fake(n + i), comment: String(1 + ((n + i) % 3)) }), i * 500);
+            setN(n + 6);
+          }}
+          disabled={view?.mode !== 'lucky' || view?.lucky?.phase !== 'pick'}
+        >
+          🎲 6 bạn chọn lá (game)
         </Btn>
         <Btn onClick={() => emitTest('chat', { ...next(), comment: 'TAROT tình yêu' })}>💌 1 bạn xin xem tình yêu</Btn>
         <Btn onClick={() => emitTest('chat', { ...next(), comment: 'tarot công việc' })}>💼 1 bạn xin xem công việc</Btn>

@@ -9,6 +9,14 @@ Game tương tác cho TikTok LIVE dựng từ khung của Lớp Toán: người 
 3. Lá được chọn lật mở, giọng đọc đọc: tên lá, lời giải theo chiều xuôi/ngược và câu chốt theo chủ đề. Xem bài tại phòng chỉ mang tính giải trí.
 4. Tim/quà chỉ tạo hiệu ứng và lời cảm ơn, không đổi thứ tự hàng chờ.
 
+## Chế độ game: Lá Bài May Mắn (cả phòng cùng chơi)
+
+Chủ phòng bấm nút **🍀 Game Lá Bài May Mắn** ở trang điều khiển để chuyển chế độ (bấm **🔮 Chế độ xem riêng** để quay lại, hàng chờ và điểm số đều giữ nguyên):
+
+1. Mỗi vòng hiện 3 lá úp, **mọi người xem** gõ `1`, `2` hoặc `3` trong 15 giây để chọn lá của mình (đổi ý gõ lại số khác). Trên mỗi lá hiện số người đã chọn.
+2. Hết giờ lật cả 3 lá cùng lúc: lá xuôi được trọn điểm may mắn của lá đó (Mặt Trời, Bánh Xe Số Phận, Thế Giới = 100 điểm; Ác Quỷ, Toà Tháp thấp nhất), lá ngược được một nửa điểm.
+3. Điểm cộng dồn cả buổi, sân khấu hiện **Top May Mắn**; vòng nối vòng liên tục (~35 giây/vòng), không ai phải chờ tới lượt.
+
 ## Chạy trên Mac
 
 ```bash
@@ -23,7 +31,8 @@ Lần đầu tự cài thư viện (cần Node.js). Trang điều khiển: http:
 
 - `server.ts`: máy chủ chung (kết nối TikTok, giọng đọc Edge TTS + Google dự phòng, SSE). Ít khi phải sửa.
 - `src/game/cards.ts`: 22 lá Ẩn Chính (tên, biểu tượng, màu, lời giải xuôi/ngược tự viết) + câu chốt theo 4 chủ đề.
-- `src/game/tarot.ts`: lõi phòng (hàng chờ, rút 3 lá, chọn lá, đọc bài, tự chọn khi hết giờ, bỏ lượt).
+- `src/game/tarot.ts`: lõi phòng (hàng chờ, rút 3 lá, chọn lá, đọc bài, tự chọn khi hết giờ, bỏ lượt, chuyển chế độ).
+- `src/game/lucky.ts`: lõi game Lá Bài May Mắn (vòng chọn lá cả phòng, lật bài, chấm điểm theo `luck` trong cards.ts, bảng xếp hạng).
 - `src/game/TarotStage.tsx`: sân khấu, lá bài vẽ hoàn toàn bằng CSS (không cần file ảnh).
 - `src/game/TarotControls.tsx`: nút điều khiển + giả lập ở trang điều khiển.
 - `src/live/`: hạ tầng live dùng chung (giọng đọc, sự kiện SSE, chống từ cấm).

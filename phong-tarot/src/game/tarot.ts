@@ -6,6 +6,7 @@
 import { CARDS, TOPICS, detectTopic, DISCLAIMER, type TarotCard, type TopicKey } from './cards';
 import { GAME } from './config';
 import { plain } from '../live/chatter';
+import { LuckyGame, type LuckyView } from './lucky';
 
 export interface Person {
   username: string;
@@ -40,7 +41,11 @@ interface Current {
   auto: boolean;
 }
 
+export type RoomMode = 'reading' | 'lucky';
+
 export interface TarotView {
+  mode: RoomMode;
+  lucky: LuckyView | null; // trạng thái chế độ game Lá Bài May Mắn (chỉ có khi mode = 'lucky')
   phase: Phase;
   queue: { nickname: string; avatar: string; topic: string }[];
   current: {
@@ -97,6 +102,9 @@ const LINES = {
   skip: [
     F('Mình chuyển sang bạn tiếp theo trong hàng chờ nhé.'),
   ],
+  backToReading: [
+    F('Mình chuyển lại chế độ xem bài riêng nhé. Ai muốn xem thì gõ TAROT kèm chủ đề để vào hàng chờ như cũ. Điểm may mắn của cả phòng mình vẫn giữ nguyên, lúc nào chơi tiếp thì tính tiếp.'),
+  ],
   thank: [
     (n: string, g: string) => F(`Cảm ơn bạn ${n} đã tặng ${g} cho phòng. Mình ghi nhận tấm lòng của bạn nhé.`),
     (n: string, g: string) => F(`Bạn ${n} vừa tặng ${g}. Cảm ơn bạn nhiều, chúc bạn một buổi tối thật vui.`),
@@ -118,6 +126,8 @@ export class TarotRoom {
   current: Current | null = null;
   readings = 0;
   displayLines: string[] = [];
+  mode: RoomMode = 'reading';
+  lucky: LuckyGame;
   private lastIdleAt = 0;
   private lastLineIdx = new Map<string, number>();
 
@@ -126,6 +136,21 @@ export class TarotRoom {
     private rand: () => number = Math.random,
   ) {
     this.lastIdleAt = now0;
+    this.lucky = new LuckyGame(now0, rand);
+  }
+
+  /** Chủ kênh chuyển chế độ: 'reading' xem riêng theo hàng chờ, 'lucky' game cả phòng cùng chơi */
+  setMode(mode: RoomMode, now: number): Say[] {
+    if (mode === this.mode) return [];
+    this.mode = mode;
+    if (mode === 'lucky') {
+      // dừng lượt xem đang dở (hàng chờ giữ nguyên cho lúc quay lại)
+      this.current = null;
+      this.displayLines = [];
+      this.phase = 'idle';
+      return this.lucky.start(now);
+    }
+    return [{ text: this.pick('backToReading', LINES.backToReading), main: true }];
   }
 
   /** Bốc 1 câu trong nhóm, tránh lặp lại câu vừa bốc */
@@ -151,6 +176,8 @@ export class TarotRoom {
     this.readings = 0;
     this.displayLines = [];
     this.lastIdleAt = now;
+    this.lucky.reset();
+    if (this.mode === 'lucky') return this.lucky.start(now);
     return [
       { text: this.pick('welcome', LINES.welcome), main: true },
       { text: this.pick('howto', LINES.howto), main: true },
@@ -159,6 +186,12 @@ export class TarotRoom {
 
   chat(e: ChatIn, now: number): Say[] {
     const p = plain(e.comment);
+    // chế độ game: mọi người gõ 1/2/3 để chọn lá của mình, không dùng hàng chờ
+    if (this.mode === 'lucky') {
+      const digit = p.trim();
+      if (digit === '1' || digit === '2' || digit === '3') this.lucky.choose(e, Number(digit) - 1);
+      return [];
+    }
     // chọn lá: chỉ người đang được xem mới chọn được, gõ đúng 1 số 1/2/3
     if (this.phase === 'offer' && this.current && e.username === this.current.reader.username) {
       const digit = p.trim();
@@ -225,6 +258,7 @@ export class TarotRoom {
   }
 
   tick(now: number): Say[] {
+    if (this.mode === 'lucky') return this.lucky.tick(now);
     if (this.phase === 'offer' && now >= this.phaseEndsAt) return this.doPick(1, true, now); // hết giờ: tự chọn lá giữa
     if (this.phase === 'reveal' && now >= this.phaseEndsAt) {
       this.current = null;
@@ -244,8 +278,9 @@ export class TarotRoom {
     return [];
   }
 
-  /** Chủ kênh bấm Bỏ lượt: bỏ qua người đang xem, sang người tiếp */
+  /** Chủ kênh bấm Bỏ lượt: bỏ qua người đang xem, sang người tiếp (chế độ game: qua pha ngay) */
   skip(now: number): Say[] {
+    if (this.mode === 'lucky') return this.lucky.skipPhase(now);
     if (!this.current && !this.queue.length) return [];
     this.current = null;
     this.displayLines = [];
@@ -265,11 +300,16 @@ export class TarotRoom {
 
   /** Đang đọc câu chính thì đồng hồ của pha hiện tại đứng lại (giữ nguyên như Lớp Toán) */
   hold(ms: number) {
+    if (this.mode === 'lucky') {
+      this.lucky.hold(ms);
+      return;
+    }
     if (this.phase === 'offer' || this.phase === 'reveal') this.phaseEndsAt += ms;
   }
 
   /** Câu nói thêm chỉ đọc lúc đang chờ chọn lá (còn hơn 5 giây) hoặc phòng đang trống */
   chatterWindow(now: number): boolean {
+    if (this.mode === 'lucky') return this.lucky.chatterWindow(now);
     if (this.phase === 'idle') return true;
     if (this.phase === 'offer') return this.phaseEndsAt - now > 5000;
     return false;
@@ -278,6 +318,8 @@ export class TarotRoom {
   view(now: number): TarotView {
     const cur = this.current;
     return {
+      mode: this.mode,
+      lucky: this.mode === 'lucky' ? this.lucky.view(now) : null,
       phase: this.phase,
       queue: this.queue.map((q) => ({ nickname: q.nickname, avatar: q.avatar, topic: TOPICS[q.topic].label })),
       current: cur
