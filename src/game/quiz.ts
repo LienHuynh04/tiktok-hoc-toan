@@ -196,6 +196,7 @@ export class Classroom {
   correct: Answerer[] = [];
   private tried = new Set<string>(); // ai đã từng trả lời câu này (chỉ để thống kê; trả lời lại không giới hạn)
   private wrong = new Set<string>();
+  private wrongCount = new Map<string, number>(); // số lần sai của từng bạn trong câu này (sai 2 lần: cô gọi lên bục)
   private seq = 0;
   stats = { received: 0, attempts: 0 };
   flowers = 0;
@@ -544,6 +545,7 @@ export class Classroom {
     this.correct = [];
     this.tried = new Set();
     this.wrong = new Set();
+    this.wrongCount = new Map();
     this.stats = { received: 0, attempts: 0 };
     this.setPhase('question', now, GAME.questionSec);
     const out: Say[] = [...back];
@@ -598,9 +600,20 @@ export class Classroom {
     this.stats.attempts++;
     if (!this.matches(this.q, e.comment)) {
       this.wrong.add(e.username);
+      const nWrong = (this.wrongCount.get(e.username) ?? 0) + 1;
+      this.wrongCount.set(e.username, nWrong);
+      // sai lần 2 trong cùng 1 câu: cô gọi lên bục đứng cạnh bảng (tối đa 2 bạn cùng lúc), nhưng vẫn được gõ tiếp đáp án
+      if (nWrong === 2 && s.standUntil <= now) {
+        const standing = [...this.students.values()].filter((x) => x.standUntil > now).length;
+        if (standing < 2) {
+          s.standUntil = now + GAME.standSec * 1000;
+          return [{ ...this.t(this.line('roastStand', e.spoken)), ttl: 6000 }];
+        }
+      }
       return [];
     }
     this.wrong.delete(e.username); // sai rồi sửa lại đúng: xoá vết sai để khỏi bị cà khịa, trạng thái hiện đúng
+    if (s.standUntil > now) s.standUntil = 0; // đang đứng bục mà sửa lại đúng thì được về chỗ
     this.correct.push({ username: e.username, nickname: e.nickname, avatar: e.avatar, createTime: e.createTime, seq: ++this.seq, points: 0 });
     // xếp theo giờ TikTok gắn, không theo lúc bot nhận (comment có thể tới lệch thứ tự)
     this.correct.sort((a, b) => a.createTime - b.createTime || a.seq - b.seq);

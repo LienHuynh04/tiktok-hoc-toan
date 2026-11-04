@@ -122,6 +122,25 @@ for (let i = 0; i < 200; i++) {
   assert.ok(!c.chatterWindow(t), 'đang hiện đáp án: không chào');
 }
 
+// ---------- sai 2 lần trong 1 câu: cô gọi lên bục đứng, vẫn gõ tiếp được, sửa đúng thì về chỗ ----------
+{
+  const c = new Classroom([], t);
+  c.newRound(t);
+  c.tick((t += GAME.introSec * 1000));
+  assert.equal(c.phase, 'question');
+  const answer = c.q!.answer;
+  const wrong = wrongSameLen(answer);
+  chat(c, 7001, wrong, t, t); // sai lần 1: chưa lên bục
+  assert.equal(c.students.get('u7001')!.standUntil, 0, 'sai 1 lần chưa lên bục');
+  const said = chat(c, 7001, wrong, t, t); // sai lần 2: cô gọi lên bục
+  assert.ok(c.students.get('u7001')!.standUntil > t, 'sai 2 lần thì bị gọi lên bục đứng cạnh bảng');
+  assert.ok(said.some((l) => l.text.includes('Bạn 7001') && /bục|góc lớp/.test(l.text)), 'cô đọc câu gọi lên bục');
+  chat(c, 7001, wrong, t, t); // sai lần 3: vẫn gõ tiếp được, không bị khoá
+  chat(c, 7001, answer, t, t);
+  assert.ok(c.correct.some((a) => a.username === 'u7001'), 'đang đứng bục vẫn trả lời đúng được');
+  assert.equal(c.students.get('u7001')!.standUntil, 0, 'trả lời đúng thì được về chỗ');
+}
+
 // ---------- không ai đúng: thêm giờ (bonus), KHÔNG mở số; quà to cũng chỉ thêm giờ, mỗi câu 1 lần ----------
 {
   const c = new Classroom([], t);
