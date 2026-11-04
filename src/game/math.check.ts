@@ -140,6 +140,20 @@ for (let i = 0; i < SAMPLES; i++) {
   }
 }
 
+// hình học RẤT khó trong tiết chính (minGrade 8): chỉ còn tam giác vuông (Pi-ta-go/lượng giác) và vectơ
+{
+  const kinds = new Set<string>();
+  for (let i = 0; i < 300; i++) {
+    const q = makeGeometry(Math.random, 8);
+    kinds.add(q.math?.fig?.kind ?? '');
+    const e = verifyFig(q);
+    if (e) fails.push(`hình học rất khó: ${e}`);
+  }
+  for (const kind of kinds) {
+    if (!['rtriangle', 'vector'].includes(kind)) fails.push(`makeGeometry(minGrade 8) vẫn ra hình chưa đủ khó: ${kind}`);
+  }
+}
+
 if (!seenCats.has('Hình học')) fails.push('chưa thấy câu nào thuộc category Hình học');
 
 if (fails.length) {

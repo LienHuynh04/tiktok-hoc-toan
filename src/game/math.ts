@@ -144,11 +144,24 @@ GENS.push(
   { grade: 9, fn: (h) => { const a = h.int(2, 6), b = h.int(1, 12), x0 = h.int(2, 9); const n = a * x0 + b; return { show: `${a} × ${x0} + ${b}`, say: `${a} nhân ${x0} cộng ${b}`, clue: `Cho hàm số f x bằng ${a} x cộng ${b}. Giá trị f của ${x0} bằng bao nhiêu?`, reveal: `Thay x bằng ${x0} được ${a} nhân ${x0} cộng ${b} bằng ${n}`, n, cat: 'Hàm số', kind: 'Câu hàm số.' }; } },
 );
 
+
+// ---------- LỚP 9: dạng KHÓ bổ sung (tăng độ khó 2026-11-04) ----------
+GENS.push(
+  { grade: 9, fn: (h) => { const r1 = h.int(2, 6), r2 = r1 + h.int(1, 4); const S = r1 + r2, P = r1 * r2; if (h.coin()) return { show: `${r1} + ${r2}`, say: `tổng hai nghiệm của phương trình`, clue: `Phương trình x bình phương trừ ${S} x cộng ${P} bằng 0 có hai nghiệm phân biệt. Tổng hai nghiệm bằng bao nhiêu?`, reveal: `Theo định lý Vi-ét, tổng hai nghiệm bằng ${S}`, n: S, cat: 'Phương trình', kind: 'Câu phương trình.' }; return { show: `${r1} × ${r2}`, say: `tích hai nghiệm của phương trình`, clue: `Phương trình x bình phương trừ ${S} x cộng ${P} bằng 0 có hai nghiệm phân biệt. Tích hai nghiệm bằng bao nhiêu?`, reveal: `Theo định lý Vi-ét, tích hai nghiệm bằng ${P}`, n: P, cat: 'Phương trình', kind: 'Câu phương trình.' }; } },
+);
+
 // ---------- LỚP 10 ----------
 GENS.push(
   { grade: 10, fn: (h) => { const a = h.pick([1, 2]); const b = h.int(3, 9); let c = h.int(1, 6); if (b * b - 4 * a * c <= 0) c = 1; const n = b * b - 4 * a * c; return { show: `${b}^2 − 4 × ${a} × ${c}`, say: `${b} bình phương trừ bốn nhân ${a} nhân ${c}`, clue: `Phương trình bậc hai có a bằng ${a}, b bằng ${b}, c bằng ${c}. Biệt thức đen ta bằng bao nhiêu?`, reveal: `Đen ta bằng ${b} bình phương trừ ${4 * a * c} bằng ${n}`, n, cat: 'Phương trình', kind: 'Câu phương trình.' }; } },
   { grade: 10, fn: (h) => { const k = h.int(2, 9); return { show: `${2 * k} : 2`, say: `${2 * k} chia 2`, clue: `Parabol y bằng x bình phương trừ ${2 * k} x cộng 5 có đỉnh. Hoành độ của đỉnh là số mấy?`, reveal: `Hoành độ đỉnh bằng ${2 * k} chia 2 bằng ${k}`, n: k, cat: 'Hàm số', kind: 'Câu hàm số.' }; } },
   { grade: 10, fn: (h) => { const A = h.int(10, 25), B = h.int(8, 20), AB = h.int(3, Math.min(A, B) - 1); const n = A + B - AB; return { show: `${A} + ${B} − ${AB}`, say: `${A} cộng ${B} trừ ${AB}`, clue: `Một lớp có ${A} bạn thích toán, ${B} bạn thích văn, trong đó ${AB} bạn thích cả hai môn. Có bao nhiêu bạn thích ít nhất một trong hai môn?`, reveal: `Cộng hai nhóm rồi trừ phần trùng, ${A} cộng ${B} trừ ${AB} bằng ${n}`, n, ...DO }; } },
+);
+
+
+// ---------- LỚP 10: dạng KHÓ bổ sung (tăng độ khó 2026-11-04) ----------
+GENS.push(
+  { grade: 10, fn: (h) => { const a = h.int(1, 9), b = h.int(2, 9); return { show: `${a} + ${b}`, say: `nghiệm lớn của phương trình trị tuyệt đối`, clue: `Phương trình trị tuyệt đối của x trừ ${a} bằng ${b} có nghiệm lớn hơn bằng bao nhiêu?`, reveal: `Nghiệm lớn hơn bằng ${a} cộng ${b} bằng ${a + b}`, n: a + b, cat: 'Phương trình', kind: 'Câu phương trình.' }; } },
+  { grade: 10, fn: (h) => { const [dx, dy, d] = h.pick([[3, 4, 5], [6, 8, 10], [5, 12, 13], [8, 15, 17]] as const); return { show: `√(${dx}^2 + ${dy}^2)`, say: `căn của ${dx} bình phương cộng ${dy} bình phương`, clue: `Khoảng cách từ gốc tọa độ O đến điểm A có tọa độ ${dx} phẩy ${dy} bằng bao nhiêu?`, reveal: `Khoảng cách bằng căn của ${dx * dx} cộng ${dy * dy} bằng ${d}`, n: d, cat: 'Tọa độ', kind: 'Câu tọa độ.' }; } },
 );
 
 // ---------- LỚP 11 ----------
@@ -160,12 +173,27 @@ GENS.push(
   { grade: 11, fn: (h) => { const ni = h.int(4, 9), u1 = h.int(1, 10); let d = h.int(1, 5); let un = u1 + (ni - 1) * d; while ((ni * (u1 + un)) % 2 !== 0) { d += 1; un = u1 + (ni - 1) * d; } const n = (ni * (u1 + un)) / 2; return { show: `${ni} × (${u1} + ${un}) : 2`, say: `${ni} nhân tổng ${u1} cộng ${un}, tất cả chia 2`, clue: `Một cấp số cộng có số hạng đầu ${u1}, công sai ${d}. Tổng của ${ni} số hạng đầu tiên là bao nhiêu?`, reveal: `Số hạng thứ ${ni} là ${un}, tổng bằng ${ni} nhân ${u1 + un} chia 2 bằng ${n}`, n, cat: 'Dãy số', kind: 'Câu dãy số.' }; } },
 );
 
+
+// ---------- LỚP 11: dạng KHÓ bổ sung (tăng độ khó 2026-11-04) ----------
+GENS.push(
+  { grade: 11, fn: (h) => { const [nn, k] = h.pick([[6, 2], [7, 2], [7, 3], [8, 2], [8, 3]] as const); const parts = Array.from({ length: k }, (_, i) => nn - i); let n = 1; for (const p of parts) n *= p; return { show: parts.join(' × '), say: `chỉnh hợp chập ${k} của ${nn}`, clue: `Chỉnh hợp chập ${k} của ${nn} phần tử bằng bao nhiêu?`, reveal: `Chỉnh hợp bằng tích ${parts.join(' nhân ')} bằng ${n}`, n, cat: 'Tổ hợp', kind: 'Câu tổ hợp.' }; } },
+  { grade: 11, fn: (h) => { const u1 = h.int(1, 3), m = h.int(4, 5); const terms = Array.from({ length: m }, (_, i) => u1 * 2 ** i); const n = terms.reduce((x, y) => x + y, 0); return { show: terms.join(' + '), say: `tổng ${m} số hạng đầu của cấp số nhân`, clue: `Một cấp số nhân có số hạng đầu là ${u1}, công bội 2. Tổng của ${m} số hạng đầu tiên là bao nhiêu?`, reveal: `Cộng dồn ${terms.join(' cộng ')} bằng ${n}`, n, cat: 'Dãy số', kind: 'Câu dãy số.' }; } },
+);
+
 // ---------- LỚP 12 ----------
 GENS.push(
   { grade: 12, fn: (h) => { const a = h.int(1, 5), x0 = h.int(2, 4); const n = 3 * x0 * x0 + a; return { show: `3 × ${x0}^2 + ${a}`, say: `ba nhân ${x0} bình phương cộng ${a}`, clue: `Đạo hàm của hàm số f x bằng x mũ ba cộng ${a} x, tính tại điểm x bằng ${x0}, cho kết quả là bao nhiêu?`, reveal: `Đạo hàm là ba x bình cộng ${a}, thay x bằng ${x0} được ${n}`, n, cat: 'Đạo hàm', kind: 'Câu đạo hàm.' }; } },
   { grade: 12, fn: (h) => { const base = h.pick([2, 3, 5, 10]); const e = base === 2 ? h.int(2, 6) : base === 3 ? h.int(2, 4) : h.int(2, 3); const val = base ** e; return { show: `${base}^? = ${val}`, say: `${base} mũ x bằng ${val}`, clue: `Tìm x, biết ${base} mũ x bằng ${val}. x bằng mấy?`, reveal: `${base} mũ ${e} bằng ${val} nên x bằng ${e}`, n: e, cat: 'Phương trình', kind: 'Câu phương trình.' }; } },
   { grade: 12, fn: (h) => { const a = h.pick([3, 6]); const n = (a ** 3) / 3; return { show: `${a}^3 : 3`, say: `${a} mũ ba chia 3`, clue: `Tích phân từ 0 đến ${a} của x bình phương bằng bao nhiêu?`, reveal: `Tích phân bằng ${a} mũ ba chia 3 bằng ${n}`, n, cat: 'Tích phân', kind: 'Câu tích phân.' }; } },
   { grade: 12, fn: (h) => { const [a, b, c] = h.pick([[3, 4, 5], [6, 8, 10], [5, 12, 13]] as const); return { show: `√(${a}^2 + ${b}^2)`, say: `căn của ${a} bình phương cộng ${b} bình phương`, clue: `Số phức z bằng ${a} cộng ${b} i. Mô đun của số phức z là bao nhiêu?`, reveal: `Mô đun bằng căn của ${a * a} cộng ${b * b} bằng ${c}`, n: c, cat: 'Số phức', kind: 'Câu số phức.' }; } },
+);
+
+
+// ---------- LỚP 12: dạng KHÓ bổ sung (tăng độ khó 2026-11-04) ----------
+GENS.push(
+  { grade: 12, fn: (h) => { const x0 = h.int(1, 2); const a = x0 === 1 ? 1 : h.int(1, 4); const n = 4 * x0 ** 3 - 2 * a * x0; return { show: `4 × ${x0}^3 − ${2 * a} × ${x0}`, say: `bốn nhân ${x0} mũ ba trừ ${2 * a} nhân ${x0}`, clue: `Đạo hàm của hàm số f x bằng x mũ bốn trừ ${a} x bình phương, tính tại điểm x bằng ${x0}, bằng bao nhiêu?`, reveal: `Đạo hàm là bốn x mũ ba trừ ${2 * a} x, thay x bằng ${x0} được ${n}`, n, cat: 'Đạo hàm', kind: 'Câu đạo hàm.' }; } },
+  { grade: 12, fn: (h) => { const k = h.int(2, 6), c = h.int(1, 9); const n = k * k + c; return { show: `${k}^2 + ${c}`, say: `${k} bình phương cộng ${c}`, clue: `Hàm số y bằng trừ x bình phương cộng ${2 * k} x cộng ${c} đạt giá trị lớn nhất bằng bao nhiêu?`, reveal: `Đỉnh parabol ở x bằng ${k}, giá trị lớn nhất bằng ${n}`, n, cat: 'Hàm số', kind: 'Câu hàm số.' }; } },
+  { grade: 12, fn: (h) => { const a = h.pick([2, 4, 6]); const n = (a * a) / 2 + a; return { show: `${a}^2 : 2 + ${a}`, say: `${a} bình phương chia hai cộng ${a}`, clue: `Tích phân từ 0 đến ${a} của x cộng 1 bằng bao nhiêu?`, reveal: `Tích phân bằng ${a} bình phương chia hai cộng ${a} bằng ${n}`, n, cat: 'Tích phân', kind: 'Câu tích phân.' }; } },
 );
 
 // ---------- Xuất bản ----------
