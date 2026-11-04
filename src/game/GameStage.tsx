@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { GameState, StageView } from './useGame';
+import type { FigSpec } from './questions';
 import { GAME } from './config';
 import { Hair } from './Hair';
 import './stage.css';
@@ -177,6 +178,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
             >
               {v.math}
             </motion.div>
+            {v.mathFig && <Figure fig={v.mathFig} />}
             </>
           ) : (
             <>
@@ -196,6 +198,106 @@ function Board({ v, now }: { v: StageView; now: number }) {
       {v.phase === 'vote' && v.vote && <Vote v={v} left={left} />}
       {v.phase === 'results' && <Results v={v} />}
       {v.phase === 'recess' && v.recess && <Recess v={v} left={left} />}
+    </div>
+  );
+}
+
+/** Hình vẽ SVG cho câu hình học: vẽ theo thông số fig (nhãn '?' là cạnh phải tìm) */
+function Figure({ fig }: { fig: FigSpec }) {
+  const line = { stroke: '#ffe680', strokeWidth: 4, fill: 'rgba(255,232,128,0.07)', strokeLinejoin: 'round' as const };
+  const dash = { stroke: '#f4f1e6', strokeWidth: 3, strokeDasharray: '8 7', fill: 'none' };
+  const T = ({ x, y, children, anchor = 'middle', rotate }: { x: number; y: number; children: string; anchor?: string; rotate?: number }) => (
+    <text x={x} y={y} textAnchor={anchor as 'middle'} fontSize={25} fontWeight={700} fill="#fff3b0" transform={rotate ? `rotate(${rotate} ${x} ${y})` : undefined}>
+      {children}
+    </text>
+  );
+  let body: React.ReactNode = null;
+  if (fig.kind === 'square') {
+    body = (
+      <>
+        <rect x={115} y={38} width={150} height={150} {...line} />
+        {fig.la && <T x={190} y={222}>{fig.la}</T>}
+      </>
+    );
+  } else if (fig.kind === 'rect') {
+    body = (
+      <>
+        <rect x={65} y={58} width={250} height={120} {...line} />
+        {fig.la && <T x={190} y={212}>{fig.la}</T>}
+        {fig.lb && <T x={343} y={126}>{fig.lb}</T>}
+      </>
+    );
+  } else if (fig.kind === 'triangle') {
+    body = (
+      <>
+        <polygon points="70,205 310,205 170,55" {...line} />
+        <line x1={170} y1={55} x2={170} y2={205} {...dash} />
+        {fig.la && <T x={190} y={234}>{fig.la}</T>}
+        {fig.lb && <T x={182} y={138}>{fig.lb}</T>}
+      </>
+    );
+  } else if (fig.kind === 'circle') {
+    body = (
+      <>
+        <circle cx={190} cy={118} r={76} {...line} />
+        <line x1={190} y1={118} x2={266} y2={118} {...line} strokeWidth={3} />
+        <circle cx={190} cy={118} r={5} fill="#ffe680" />
+        {fig.la && <T x={228} y={106}>{fig.la}</T>}
+      </>
+    );
+  } else if (fig.kind === 'box' || fig.kind === 'cube') {
+    body = (
+      <>
+        <rect x={95} y={95} width={160} height={95} {...line} />
+        <rect x={140} y={60} width={160} height={95} {...line} fill="none" />
+        <line x1={95} y1={95} x2={140} y2={60} {...line} fill="none" />
+        <line x1={255} y1={95} x2={300} y2={60} {...line} fill="none" />
+        <line x1={95} y1={190} x2={140} y2={155} {...line} fill="none" />
+        <line x1={255} y1={190} x2={300} y2={155} {...line} fill="none" />
+        {fig.la && <T x={175} y={220}>{fig.la}</T>}
+        {fig.lc && <T x={84} y={148} anchor="end">{fig.lc}</T>}
+        {fig.lb && <T x={292} y={46}>{fig.lb}</T>}
+      </>
+    );
+  } else if (fig.kind === 'rtriangle') {
+    body = (
+      <>
+        <polygon points="80,205 310,205 80,55" {...line} />
+        <polyline points="80,183 102,183 102,205" {...dash} />
+        {fig.la && <T x={195} y={234}>{fig.la}</T>}
+        {fig.lb && <T x={62} y={138} anchor="end">{fig.lb}</T>}
+        {fig.lc && <T x={222} y={112} rotate={-33}>{fig.lc}</T>}
+        {fig.angle && (
+          <>
+            <path d="M 268 205 A 42 42 0 0 0 280 169" {...dash} />
+            <T x={248} y={192}>{`${fig.angle}°`}</T>
+          </>
+        )}
+      </>
+    );
+  } else if (fig.kind === 'vector') {
+    const u = 150 / Math.max(fig.a, fig.b ?? 1);
+    const ex = 60 + fig.a * u;
+    const ey = 205 - (fig.b ?? 0) * u;
+    body = (
+      <>
+        <line x1={60} y1={205} x2={336} y2={205} {...line} strokeWidth={3} />
+        <line x1={60} y1={205} x2={60} y2={22} {...line} strokeWidth={3} />
+        <line x1={ex} y1={ey} x2={ex} y2={205} {...dash} />
+        <line x1={ex} y1={ey} x2={60} y2={ey} {...dash} />
+        <line x1={60} y1={205} x2={ex} y2={ey} stroke="#9df29d" strokeWidth={5} />
+        <polygon points={`${ex},${ey} ${ex - 14},${ey + 2} ${ex - 4},${ey + 13}`} fill="#9df29d" />
+        <T x={ex + 14} y={ey - 6} anchor="start">{`u (${fig.la}; ${fig.lb})`}</T>
+      </>
+    );
+  }
+  const caption = fig.what.startsWith('cạnh') || fig.what.startsWith('độ dài') ? `Tìm ${fig.what}` : `Tính ${fig.what}`;
+  return (
+    <div className="mt-1 shrink-0 text-center">
+      <svg viewBox="0 0 380 250" className="mx-auto h-[248px] w-[378px]">
+        {body}
+      </svg>
+      <div className="-mt-2 text-[26px] font-semibold text-[#ffe680]/90">{caption}</div>
     </div>
   );
 }

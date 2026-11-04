@@ -93,10 +93,52 @@ function checkOne(q: ReturnType<typeof makeMath>, origin: string) {
   if (err) fails.push(`${origin}: ${err} [câu: ${q.clue}]`);
 }
 
+/** Câu hình học: tính lại đáp án từ THÔNG SỐ HÌNH VẼ (fig) — đường kiểm chứng thứ hai, độc lập với biểu thức */
+function verifyFig(q: ReturnType<typeof makeGeometry>): string | null {
+  const fig = q.math?.fig;
+  if (!fig) return `câu hình học thiếu hình vẽ (fig): ${q.clue}`;
+  const ans = Number(q.answer);
+  const eq = (v: number) => Math.abs(v - ans) < 1e-6;
+  switch (fig.kind) {
+    case 'square': return eq(fig.what === 'chu vi' ? 4 * fig.a : fig.a * fig.a) ? null : `hình vuông sai: ${q.clue} (a=${fig.a}, ${fig.what}, đáp án ${ans})`;
+    case 'rect': return eq(fig.what === 'chu vi' ? 2 * (fig.a + (fig.b ?? 0)) : fig.a * (fig.b ?? 0)) ? null : `hình chữ nhật sai: ${q.clue}`;
+    case 'triangle': return eq((fig.a * (fig.b ?? 0)) / 2) ? null : `tam giác sai: ${q.clue}`;
+    case 'circle': return eq(Math.round(3.14 * fig.a * fig.a)) ? null : `hình tròn sai: ${q.clue}`;
+    case 'box': return eq(fig.a * (fig.b ?? 0) * (fig.c ?? 0)) ? null : `hình hộp sai: ${q.clue}`;
+    case 'cube': return eq(fig.a ** 3) ? null : `lập phương sai: ${q.clue}`;
+    case 'rtriangle': {
+      if (fig.angle) return fig.b === ans && fig.c === ans * 2 ? null : `góc ${fig.angle} độ sai: ${q.clue}`;
+      if (fig.lc === '?') return eq(Math.sqrt(fig.a ** 2 + (fig.b ?? 0) ** 2)) ? null : `Pi-ta-go tìm huyền sai: ${q.clue}`;
+      if (fig.lb === '?') return eq(Math.sqrt((fig.c ?? 0) ** 2 - fig.a ** 2)) ? null : `Pi-ta-go tìm cạnh sai: ${q.clue}`;
+      return `tam giác vuông thiếu cạnh cần tìm: ${q.clue}`;
+    }
+    case 'vector': return eq(Math.sqrt(fig.a ** 2 + (fig.b ?? 0) ** 2)) ? null : `vectơ sai: ${q.clue}`;
+    default: return `loại hình lạ: ${fig.kind}`;
+  }
+}
+
 for (const grade of MATH_GRADES) {
   for (let i = 0; i < SAMPLES; i++) checkOne(makeMath(grade), `lớp ${grade}`);
 }
-for (let i = 0; i < SAMPLES; i++) checkOne(makeGeometry(), 'hình học');
+for (let i = 0; i < SAMPLES; i++) {
+  const q = makeGeometry();
+  checkOne(q, 'hình học');
+  const e = verifyFig(q);
+  if (e) fails.push(`hình học: ${e}`);
+}
+// hình học trong tiết chính (minGrade 6): chỉ còn hình khó, không lẫn hình lớp 3-5
+{
+  const kinds = new Set<string>();
+  for (let i = 0; i < 300; i++) {
+    const q = makeGeometry(Math.random, 6);
+    kinds.add(q.math?.fig?.kind ?? '');
+    const e = verifyFig(q);
+    if (e) fails.push(`hình học khó: ${e}`);
+  }
+  for (const easy of ['square', 'rect', 'triangle', 'box']) {
+    if (kinds.has(easy)) fails.push(`makeGeometry(minGrade 6) vẫn ra hình dễ: ${easy}`);
+  }
+}
 
 if (!seenCats.has('Hình học')) fails.push('chưa thấy câu nào thuộc category Hình học');
 

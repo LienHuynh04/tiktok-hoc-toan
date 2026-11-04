@@ -402,12 +402,12 @@ export class Classroom {
     let fav = 0; // số câu đã lấy theo chủ đề cả lớp chọn
     for (const [i, d] of GAME.roundPlan.entries()) {
       if (i < from) {
-        if (!d.startsWith('math') && !(SLOTS as readonly string[]).includes(d)) plain++;
+        if (!d.startsWith('math') && d !== 'geo' && !(SLOTS as readonly string[]).includes(d)) plain++;
         continue;
       }
       let q: Question | null;
       // lớp vắng: ôn bài bằng câu cũ (câu toán vẫn tự sinh); chưa có câu cũ thì lấy câu mới như thường
-      const old = this.review && !d.startsWith('math') ? this.pickReview(d as Question['difficulty'] | Slot, out) : null;
+      const old = this.review && !d.startsWith('math') && d !== 'geo' ? this.pickReview(d as Question['difficulty'] | Slot, out) : null;
       if (old) {
         out.push(old);
         if (!(SLOTS as readonly string[]).includes(d)) plain++;
@@ -415,7 +415,9 @@ export class Classroom {
       }
       // câu toán tự sinh. Dạng toán cả lớp đã chọn (this.topic là nhãn trong GAME.mathTopics):
       // cách 1 câu lấy 1 câu thuộc dạng đó, tối đa GAME.voteTopicQuestions câu mỗi tiết.
-      if (d.startsWith('math')) {
+      if (d === 'geo') {
+        q = makeGeometry(this.rand, 6); // câu hình học trong tiết chính: chỉ lấy hình khó (lớp 6 trở lên), có hình vẽ
+      } else if (d.startsWith('math')) {
         const topicDef = GAME.mathTopics.find((x) => x.label === this.topic);
         let level = Number(d.slice(4));
         if (topicDef?.geo && fav < GAME.voteTopicQuestions && i % 2 === 0) {
@@ -820,8 +822,8 @@ export class Classroom {
       // gọi 1 bạn đang ngồi lớp, vừa hoạt động trong 3 phút
       const active = this.seats().filter((s) => now - s.lastActive < 180_000 && s.spoken !== 'bạn');
       callTarget = active[Math.floor(this.rand() * active.length)] ?? null;
-      // Lớp Toán: kiểm tra miệng bằng 1 câu toán cấp 1-2 tự sinh
-      callQ = callTarget ? makeMath((1 + Math.floor(this.rand() * 2)) as MathLevel, this.rand) : null;
+      // Lớp Toán: kiểm tra miệng bằng 1 câu toán tự sinh, nay lấy lớp 6-9 cho khó (bản cũ lớp 1-2 quá dễ)
+      callQ = callTarget ? makeMath((6 + Math.floor(this.rand() * 4)) as MathLevel, this.rand) : null;
       if (!callTarget || !callQ) game = 'roll';
     }
     this.lastRecess = game;
@@ -1149,6 +1151,7 @@ export class Classroom {
       kind: this.q?.kind ?? '',
       slot: this.q?.slot ?? '', // 'meo' câu đố mẹo, 'su' câu lịch sử: bảng hiện nhãn riêng
       math: this.q?.math?.show ?? '', // câu toán: phép tính hiện thay cho chữ xáo
+      mathFig: this.q?.math?.fig ?? null, // câu hình học: thông số để sân khấu tự vẽ hình
       category: this.q?.category ?? '',
       answer: this.phase === 'recess' ? (r?.callQ?.answer ?? '') : (this.q?.answer ?? ''),
       tiles: this.tiles,

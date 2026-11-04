@@ -1,4 +1,4 @@
-import type { Question } from './questions';
+import type { Question, FigSpec } from './questions';
 
 // =====================================================
 //  LỚP TOÁN: câu hỏi TỰ SINH lúc vào tiết, theo CHƯƠNG TRÌNH TỪ LỚP 1 ĐẾN LỚP 12.
@@ -16,6 +16,7 @@ import type { Question } from './questions';
 export type MathLevel = number;
 
 interface Raw {
+  fig?: FigSpec;
   show: string;
   say: string;
   clue: string;
@@ -106,18 +107,18 @@ const GENS: GenDef[] = [
 
 // ---------- HÌNH HỌC (trải lớp 3-10, bốc riêng bằng makeGeometry) ----------
 GENS.push(
-  { grade: 3, geo: true, fn: (h) => { const a = h.int(3, 15); return { show: `${a} × 4`, say: `${a} nhân 4`, clue: `Một hình vuông có cạnh ${a} xăng ti mét. Chu vi hình vuông đó là bao nhiêu xăng ti mét?`, n: a * 4, ...HINH }; } },
-  { grade: 4, geo: true, fn: (h) => { const a = h.int(4, 15), b = h.int(3, 12); return { show: `(${a} + ${b}) × 2`, say: `${a} cộng ${b}, tất cả nhân 2`, clue: `Một hình chữ nhật dài ${a} xăng ti mét, rộng ${b} xăng ti mét. Chu vi của nó là bao nhiêu xăng ti mét?`, n: (a + b) * 2, ...HINH }; } },
-  { grade: 4, geo: true, fn: (h) => { const a = h.int(3, 16), b = h.int(3, 12); return { show: `${a} × ${b}`, say: `${a} nhân ${b}`, clue: `Một hình chữ nhật dài ${a} xăng ti mét, rộng ${b} xăng ti mét. Diện tích của nó là bao nhiêu xăng ti mét vuông?`, n: a * b, ...HINH }; } },
-  { grade: 5, geo: true, fn: (h) => { const a = h.int(3, 15); return { show: `${a} × ${a}`, say: `${a} nhân ${a}`, clue: `Một hình vuông có cạnh ${a} xăng ti mét. Diện tích hình vuông đó là bao nhiêu xăng ti mét vuông?`, n: a * a, ...HINH }; } },
-  { grade: 5, geo: true, fn: (h) => { const base = h.int(4, 20); let hh = h.int(3, 16); if ((base * hh) % 2) hh += 1; return { show: `${base} × ${hh} : 2`, say: `${base} nhân ${hh} chia 2`, clue: `Một hình tam giác có đáy ${base} xăng ti mét, chiều cao ${hh} xăng ti mét. Diện tích tam giác là bao nhiêu xăng ti mét vuông?`, n: (base * hh) / 2, ...HINH }; } },
-  { grade: 5, geo: true, fn: (h) => { const a = h.int(2, 9), b = h.int(2, 8), c = h.int(2, 7); return { show: `${a} × ${b} × ${c}`, say: `${a} nhân ${b} nhân ${c}`, clue: `Một hình hộp chữ nhật dài ${a} đề xi mét, rộng ${b} đề xi mét, cao ${c} đề xi mét. Thể tích của nó là bao nhiêu đề xi mét khối?`, n: a * b * c, ...HINH }; } },
-  { grade: 6, geo: true, fn: (h) => { const a = h.int(3, 10); return { show: `${a} × ${a} × ${a}`, say: `${a} nhân ${a} nhân ${a}`, clue: `Một hình lập phương có cạnh ${a} xăng ti mét. Thể tích hình lập phương là bao nhiêu xăng ti mét khối?`, n: a * a * a, ...HINH }; } },
-  { grade: 6, geo: true, fn: (h) => { const r = h.pick([10, 20]); const n = Math.round(3.14 * r * r); return { show: `3,14 × ${r} × ${r}`, say: `ba phẩy mười bốn nhân ${r} nhân ${r}`, clue: `Một hình tròn có bán kính ${r} xăng ti mét. Lấy pi bằng 3,14, diện tích hình tròn là bao nhiêu xăng ti mét vuông?`, reveal: `Ba phẩy mười bốn nhân ${r} nhân ${r} bằng ${n}`, n, ...HINH }; } },
-  { grade: 8, geo: true, fn: (h) => { const [a, b, c] = h.pick([[3, 4, 5], [6, 8, 10], [5, 12, 13], [9, 12, 15], [8, 15, 17]] as const); return { show: `√(${a}^2 + ${b}^2)`, say: `căn của ${a} bình phương cộng ${b} bình phương`, clue: `Một tam giác vuông có hai cạnh góc vuông là ${a} và ${b} xăng ti mét. Cạnh huyền dài bao nhiêu xăng ti mét?`, reveal: `Theo Pi ta go, cạnh huyền bằng căn của ${a * a} cộng ${b * b} bằng ${c}`, n: c, ...HINH }; } },
-  { grade: 8, geo: true, fn: (h) => { const [a, , c] = h.pick([[3, 4, 5], [6, 8, 10], [5, 12, 13], [9, 12, 15], [8, 15, 17]] as const); const b = Math.round(Math.sqrt(c * c - a * a)); return { show: `√(${c}^2 − ${a}^2)`, say: `căn của ${c} bình phương trừ ${a} bình phương`, clue: `Một tam giác vuông có cạnh huyền ${c} xăng ti mét, một cạnh góc vuông ${a} xăng ti mét. Cạnh góc vuông còn lại dài bao nhiêu xăng ti mét?`, reveal: `Theo Pi ta go, cạnh còn lại bằng căn của ${c * c} trừ ${a * a} bằng ${b}`, n: b, ...HINH }; } },
-  { grade: 9, geo: true, fn: (h) => { const hyp = h.pick([10, 12, 16, 20, 24]); const n = hyp / 2; return { show: `${hyp} : 2`, say: `${hyp} chia 2`, clue: `Một tam giác vuông có cạnh huyền ${hyp} xăng ti mét. Cạnh góc vuông đối diện với góc 30 độ dài bao nhiêu xăng ti mét?`, reveal: `Cạnh đối diện góc 30 độ bằng nửa cạnh huyền, ${hyp} chia 2 bằng ${n}`, n, ...HINH }; } },
-  { grade: 10, geo: true, fn: (h) => { const [a, b, c] = h.pick([[3, 4, 5], [6, 8, 10], [5, 12, 13]] as const); return { show: `√(${a}^2 + ${b}^2)`, say: `căn của ${a} bình phương cộng ${b} bình phương`, clue: `Vectơ u có toạ độ là ${a} và ${b}. Độ dài của vectơ u là bao nhiêu?`, reveal: `Độ dài vectơ bằng căn của ${a * a} cộng ${b * b} bằng ${c}`, n: c, ...HINH }; } },
+  { grade: 3, geo: true, fn: (h) => { const a = h.int(3, 15); return { show: `${a} × 4`, say: `${a} nhân 4`, clue: `Một hình vuông có cạnh ${a} xăng ti mét. Chu vi hình vuông đó là bao nhiêu xăng ti mét?`, n: a * 4, fig: { kind: 'square', a, la: `${a} cm`, what: 'chu vi' }, ...HINH }; } },
+  { grade: 4, geo: true, fn: (h) => { const a = h.int(4, 15), b = h.int(3, 12); return { show: `(${a} + ${b}) × 2`, say: `${a} cộng ${b}, tất cả nhân 2`, clue: `Một hình chữ nhật dài ${a} xăng ti mét, rộng ${b} xăng ti mét. Chu vi của nó là bao nhiêu xăng ti mét?`, n: (a + b) * 2, fig: { kind: 'rect', a, b, la: `${a} cm`, lb: `${b} cm`, what: 'chu vi' }, ...HINH }; } },
+  { grade: 4, geo: true, fn: (h) => { const a = h.int(3, 16), b = h.int(3, 12); return { show: `${a} × ${b}`, say: `${a} nhân ${b}`, clue: `Một hình chữ nhật dài ${a} xăng ti mét, rộng ${b} xăng ti mét. Diện tích của nó là bao nhiêu xăng ti mét vuông?`, n: a * b, fig: { kind: 'rect', a, b, la: `${a} cm`, lb: `${b} cm`, what: 'diện tích' }, ...HINH }; } },
+  { grade: 5, geo: true, fn: (h) => { const a = h.int(3, 15); return { show: `${a} × ${a}`, say: `${a} nhân ${a}`, clue: `Một hình vuông có cạnh ${a} xăng ti mét. Diện tích hình vuông đó là bao nhiêu xăng ti mét vuông?`, n: a * a, fig: { kind: 'square', a, la: `${a} cm`, what: 'diện tích' }, ...HINH }; } },
+  { grade: 5, geo: true, fn: (h) => { const base = h.int(4, 20); let hh = h.int(3, 16); if ((base * hh) % 2) hh += 1; return { show: `${base} × ${hh} : 2`, say: `${base} nhân ${hh} chia 2`, clue: `Một hình tam giác có đáy ${base} xăng ti mét, chiều cao ${hh} xăng ti mét. Diện tích tam giác là bao nhiêu xăng ti mét vuông?`, n: (base * hh) / 2, fig: { kind: 'triangle', a: base, b: hh, la: `${base} cm`, lb: `${hh} cm`, what: 'diện tích' }, ...HINH }; } },
+  { grade: 5, geo: true, fn: (h) => { const a = h.int(2, 9), b = h.int(2, 8), c = h.int(2, 7); return { show: `${a} × ${b} × ${c}`, say: `${a} nhân ${b} nhân ${c}`, clue: `Một hình hộp chữ nhật dài ${a} đề xi mét, rộng ${b} đề xi mét, cao ${c} đề xi mét. Thể tích của nó là bao nhiêu đề xi mét khối?`, n: a * b * c, fig: { kind: 'box', a, b, c, la: `${a} dm`, lb: `${b} dm`, lc: `${c} dm`, what: 'thể tích' }, ...HINH }; } },
+  { grade: 6, geo: true, fn: (h) => { const a = h.int(3, 10); return { show: `${a} × ${a} × ${a}`, say: `${a} nhân ${a} nhân ${a}`, clue: `Một hình lập phương có cạnh ${a} xăng ti mét. Thể tích hình lập phương là bao nhiêu xăng ti mét khối?`, n: a * a * a, fig: { kind: 'cube', a, la: `${a} cm`, what: 'thể tích' }, ...HINH }; } },
+  { grade: 6, geo: true, fn: (h) => { const r = h.pick([10, 20]); const n = Math.round(3.14 * r * r); return { show: `3,14 × ${r} × ${r}`, say: `ba phẩy mười bốn nhân ${r} nhân ${r}`, clue: `Một hình tròn có bán kính ${r} xăng ti mét. Lấy pi bằng 3,14, diện tích hình tròn là bao nhiêu xăng ti mét vuông?`, reveal: `Ba phẩy mười bốn nhân ${r} nhân ${r} bằng ${n}`, n, fig: { kind: 'circle', a: r, la: `R = ${r} cm`, what: 'diện tích' }, ...HINH }; } },
+  { grade: 8, geo: true, fn: (h) => { const [a, b, c] = h.pick([[3, 4, 5], [6, 8, 10], [5, 12, 13], [9, 12, 15], [8, 15, 17]] as const); return { show: `√(${a}^2 + ${b}^2)`, say: `căn của ${a} bình phương cộng ${b} bình phương`, clue: `Một tam giác vuông có hai cạnh góc vuông là ${a} và ${b} xăng ti mét. Cạnh huyền dài bao nhiêu xăng ti mét?`, reveal: `Theo Pi ta go, cạnh huyền bằng căn của ${a * a} cộng ${b * b} bằng ${c}`, n: c, fig: { kind: 'rtriangle', a, b, c, la: `${a} cm`, lb: `${b} cm`, lc: '?', what: 'cạnh huyền' }, ...HINH }; } },
+  { grade: 8, geo: true, fn: (h) => { const [a, , c] = h.pick([[3, 4, 5], [6, 8, 10], [5, 12, 13], [9, 12, 15], [8, 15, 17]] as const); const b = Math.round(Math.sqrt(c * c - a * a)); return { show: `√(${c}^2 − ${a}^2)`, say: `căn của ${c} bình phương trừ ${a} bình phương`, clue: `Một tam giác vuông có cạnh huyền ${c} xăng ti mét, một cạnh góc vuông ${a} xăng ti mét. Cạnh góc vuông còn lại dài bao nhiêu xăng ti mét?`, reveal: `Theo Pi ta go, cạnh còn lại bằng căn của ${c * c} trừ ${a * a} bằng ${b}`, n: b, fig: { kind: 'rtriangle', a, b, c, la: `${a} cm`, lb: '?', lc: `${c} cm`, what: 'cạnh góc vuông còn lại' }, ...HINH }; } },
+  { grade: 9, geo: true, fn: (h) => { const hyp = h.pick([10, 12, 16, 20, 24]); const n = hyp / 2; return { show: `${hyp} : 2`, say: `${hyp} chia 2`, clue: `Một tam giác vuông có cạnh huyền ${hyp} xăng ti mét. Cạnh góc vuông đối diện với góc 30 độ dài bao nhiêu xăng ti mét?`, reveal: `Cạnh đối diện góc 30 độ bằng nửa cạnh huyền, ${hyp} chia 2 bằng ${n}`, n, fig: { kind: 'rtriangle', a: 0, b: n, c: hyp, lb: '?', lc: `${hyp} cm`, angle: 30, what: 'cạnh đối diện góc 30°' }, ...HINH }; } },
+  { grade: 10, geo: true, fn: (h) => { const [a, b, c] = h.pick([[3, 4, 5], [6, 8, 10], [5, 12, 13]] as const); return { show: `√(${a}^2 + ${b}^2)`, say: `căn của ${a} bình phương cộng ${b} bình phương`, clue: `Vectơ u có toạ độ là ${a} và ${b}. Độ dài của vectơ u là bao nhiêu?`, reveal: `Độ dài vectơ bằng căn của ${a * a} cộng ${b * b} bằng ${c}`, n: c, fig: { kind: 'vector', a, b, c, la: `${a}`, lb: `${b}`, what: 'độ dài vectơ' }, ...HINH }; } },
 );
 
 // ---------- LỚP 7 ----------
@@ -180,7 +181,7 @@ function wrap(def: GenDef, raw: Raw): Question {
     category: raw.cat,
     kind: raw.kind,
     difficulty: DIFF(grade),
-    math: { show, say: raw.say, level: grade, reveal: raw.reveal },
+    math: { show, say: raw.say, level: grade, reveal: raw.reveal, fig: raw.fig },
   };
 }
 
@@ -199,9 +200,9 @@ export function makeMath(grade: number, rand = Math.random): Question {
   return wrap(def, def.fn(helpers(rand)));
 }
 
-/** Bốc 1 câu hình học bất kỳ (các lớp 3-10) */
-export function makeGeometry(rand = Math.random): Question {
-  const pool = GENS.filter((g) => g.geo);
+/** Bốc 1 câu hình học (các lớp 3-10); minGrade lọc bỏ hình dễ khi cần câu khó */
+export function makeGeometry(rand = Math.random, minGrade = 1): Question {
+  const pool = GENS.filter((g) => g.geo && g.grade >= minGrade);
   const def = pool[Math.floor(rand() * pool.length)];
   return wrap(def, def.fn(helpers(rand)));
 }

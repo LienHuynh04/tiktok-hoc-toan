@@ -11,21 +11,23 @@ export const GAME = {
   // LỚP TOÁN: cả 20 câu đều là toán tự sinh (math.ts), theo chương trình LỚP 1 ĐẾN LỚP 12:
   // token math<N> = câu thuộc lớp N; tiết đi từ lớp nhỏ lên lớp lớn rồi ôn trộn các lớp cuối.
   // Câu 20 là câu hỏi vàng nhân đôi điểm.
+  // Tiết CHỦ ĐẠO CÂU KHÓ (chủ kênh chốt 2026-11-04: bản cũ quá dễ): chỉ lớp 7-12 + 4 câu
+  // hình học khó (token 'geo', hình lớp 6+ và có hình vẽ). Lớp 1-6 chỉ còn gặp khi cả lớp
+  // bình chọn khối Lớp 4-6 ở giờ ra chơi.
   roundPlan: [
-    'math1', 'math2', 'math3', 'math4', 'math5',
-    'math6', 'math7', 'math8', 'math9', 'math10',
-    'math11', 'math12', 'math5', 'math7', 'math9',
-    'math10', 'math11', 'math12', 'math11', 'math12',
+    'math7', 'math8', 'geo', 'math9', 'math10',
+    'math11', 'math12', 'geo', 'math9', 'math10',
+    'math11', 'math12', 'math8', 'geo', 'math10',
+    'math11', 'math12', 'math11', 'geo', 'math12',
   ] as const,
   // Các khối lớp cả lớp được bình chọn cho tiết sau (sau giờ ra chơi). Khối thắng chiếm
   // voteTopicQuestions câu trong tiết sau, rải cách 1 câu (xem pickRound trong quiz.ts).
   // 'Hình học' là chủ đề đặc biệt: bốc câu hình học mọi lớp (geo: true).
   mathTopics: [
-    { label: 'Lớp 1-3', levels: [1, 2, 3] },
-    { label: 'Lớp 4-6', levels: [4, 5, 6] },
-    { label: 'Lớp 7-9', levels: [7, 8, 9] },
     { label: 'Lớp 10-12', levels: [10, 11, 12] },
+    { label: 'Lớp 7-9', levels: [7, 8, 9] },
     { label: 'Hình học', levels: [], geo: true },
+    { label: 'Lớp 4-6', levels: [4, 5, 6] },
   ] as { label: string; levels: number[]; geo?: boolean }[],
   introSec: 8, // cô giới thiệu đầu tiết
   questionSec: 20, // thời gian trả lời (chủ kênh chốt 20 giây, 2026-11-04)

@@ -11,10 +11,24 @@ export interface Question {
   kind: string; // câu cô nói trước gợi ý, vd "Đây là một món ăn." (dòng "> ..." đầu file)
   difficulty: 'easy' | 'medium' | 'hard';
   /** câu toán (math.ts): phép tính hiện trên bảng, cách cô đọc, cấp độ; reveal = câu cô công bố đáp án nếu khác mẫu "<say> bằng <đáp án>" */
-  math?: { show: string; say: string; level?: number; reveal?: string };
+  math?: { show: string; say: string; level?: number; reveal?: string; fig?: FigSpec };
   /** câu có chỗ riêng trong tiết, theo đuôi tên file: "-meo" câu đố mẹo, "-su" câu lịch sử.
    *  Chỉ hỏi ở đúng vị trí đó trong GAME.roundPlan, không lẫn vào câu chữ thường */
   slot?: Slot;
+}
+
+/** Hình vẽ cho câu hình học: sân khấu tự vẽ bằng SVG theo thông số này.
+ *  a/b/c là số đo thật (dùng để kiểm chứng đáp án), la/lb/lc là nhãn hiện trên hình ('?' = cạnh phải tìm) */
+export interface FigSpec {
+  kind: 'square' | 'rect' | 'triangle' | 'circle' | 'box' | 'cube' | 'rtriangle' | 'vector';
+  a: number;
+  b?: number;
+  c?: number;
+  la?: string;
+  lb?: string;
+  lc?: string;
+  what: string; // chu vi / diện tích / thể tích / cạnh huyền...
+  angle?: number; // tam giác vuông: góc nhọn đã biết (độ)
 }
 
 const LEVEL = { '1': 'easy', '2': 'medium', '3': 'hard' } as const;

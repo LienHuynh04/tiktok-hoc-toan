@@ -11,7 +11,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài ra phép tính trên bảng �
 ## Luật chơi
 
 - Comment bất kỳ là vào lớp (có tên trên đầu học sinh). Gõ `vào lớp` thì cô chào.
-- Mỗi tiết 20 câu, TẤT CẢ là toán tự sinh (`GAME.roundPlan` là `math<N>` = câu lớp N trong `src/game/config.ts`): bộ sinh ở math.ts phủ Lớp 1 đến Lớp 12 (mỗi lớp 3-5 dạng) cộng nhóm Hình học riêng (makeGeometry); bình chọn giờ ra chơi chọn khối lớp 1-3 / 4-6 / 7-9 / 10-12 hoặc Hình học. Mỗi câu 20 giây. Hết giờ chưa ai đúng: thêm 10 giây (pha bonus), KHÔNG mở số.
+- Mỗi tiết 20 câu, TẤT CẢ là toán tự sinh (`GAME.roundPlan` trong `src/game/config.ts`): token `math<N>` = câu lớp N, token `geo` = câu hình học. Bộ sinh ở math.ts phủ Lớp 1 đến Lớp 12 (mỗi lớp 3-5 dạng) nhưng TIẾT CHÍNH CHỈ CHƠI CÂU KHÓ lớp 7-12 + 4 câu hình học khó (makeGeometry minGrade 6) vì chủ kênh chê bản cũ quá dễ (2026-11-04); lớp 1-6 chỉ xuất hiện khi cả lớp bình chọn khối Lớp 4-6. Câu hình học có `math.fig` (FigSpec) để sân khấu tự vẽ hình SVG kèm số đo. Bình chọn: Lớp 10-12 / Lớp 7-9 / Hình học / Lớp 4-6. Mỗi câu 20 giây. Hết giờ chưa ai đúng: thêm 10 giây (pha bonus), KHÔNG mở số.
 - Cô đọc: "Câu 3. Câu toán nhẩm. 36 cộng 47 bằng mấy?" (toán đố / hình học: cô đọc cả bài toán bằng lời, bảng hiện đề + phép tính tóm tắt).
 - Sau mỗi tiết là giờ ra chơi 1 phút, bốc 1 trong 5 trò (không lặp trò vừa chơi): oẳn tù tì (+2), kiểm tra miệng bằng CÂU TOÁN gọi 1 bạn đang ngồi (+5), chọn phe (vui, không điểm), điểm danh "có mặt" (10 bạn đầu +3), thả tim 300 trong 30 giây (+1 cả lớp). Xong trò thì hiện "Học sinh giỏi hôm nay".
 - Sau giờ ra chơi: cả lớp bình chọn DẠNG TOÁN tiết sau (gõ 1 hoặc 2, 15 giây). Dạng thắng (`GAME.mathTopics`) chiếm 5 câu của tiết sau, rải cách 1 câu trong `pickRound`.

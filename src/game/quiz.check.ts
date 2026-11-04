@@ -191,7 +191,9 @@ for (let i = 0; i < 200; i++) {
   assert.ok(c.students.get('u1')!.desk.length >= 3, 'quà điểm danh đặt lên bàn');
   assert.ok(c.students.get('u1')!.desk.length <= GAME.deskGifts);
   assert.deepEqual(plan, [...GAME.roundPlan]);
-  assert.ok(GAME.roundPlan.every((d) => d.startsWith('math')), 'roundPlan của Lớp Toán: 100% câu toán');
+  assert.ok(GAME.roundPlan.every((d) => d.startsWith('math') || d === 'geo'), 'roundPlan của Lớp Toán: 100% câu toán (gồm câu hình học)');
+  assert.ok(GAME.roundPlan.filter((d) => d.startsWith('math')).every((d) => Number(d.slice(4)) >= 7), 'tiết chính chỉ chơi câu khó lớp 7-12');
+  assert.ok(GAME.roundPlan.filter((d) => d === 'geo').length >= 3, 'mỗi tiết có ít nhất 3 câu hình học vẽ hình');
   // 19 câu x 10 + câu vàng 20 + 6 lần chuỗi (câu 3, 6, ..., 18) x 5
   assert.equal(c.students.get('u1')!.score, 19 * 10 + 20 + 6 * GAME.streakBonus);
   assert.equal(c.phase, 'results');
