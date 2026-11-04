@@ -40,6 +40,7 @@ room.chat({ ...p1, comment: 'tập cái cây đi' }, t0 + 1000);
 v = room.view(t0 + 1000);
 ok(v.poseKey === 'cay' && v.byName === 'An' && v.totalPoses === 1, 'yêu cầu đầu vào thẳng Cái Cây');
 ok(v.mats.length === 1, 'người gọi được nhận thảm');
+ok(v.guide.length > 10 && v.mats[0].count === 1, 'view có lời hướng dẫn + số lần gọi trên thảm');
 
 // yêu cầu thứ hai vào hàng chờ
 room.chat({ ...p2, comment: 'chiến binh' }, t0 + 2000);

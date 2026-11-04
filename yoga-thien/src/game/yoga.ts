@@ -24,6 +24,7 @@ export interface YogaView {
   label: string;
   sanskrit: string;
   benefit: string;
+  guide: string;
   cell: number;
   byName: string | null;
   byUser: string | null;
@@ -31,7 +32,7 @@ export interface YogaView {
   remainSec: number;
   totalSec: number;
   queue: { label: string; byName: string }[];
-  mats: { nickname: string; avatar: string; username: string; active: boolean }[];
+  mats: { nickname: string; avatar: string; username: string; active: boolean; count: number }[];
   matCount: number;
   top: { nickname: string; count: number }[];
   totalPoses: number;
@@ -224,6 +225,7 @@ export class YogaRoom {
       label: pose.label,
       sanskrit: pose.sanskrit,
       benefit: pose.benefit,
+      guide: pose.guide,
       cell: pose.cell,
       byName: this.by?.nickname ?? null,
       byUser: this.by?.username ?? null,
@@ -236,6 +238,7 @@ export class YogaRoom {
         avatar: m.avatar,
         username: m.username,
         active: this.by?.username === m.username,
+        count: this.counts.get(m.username)?.count ?? 0,
       })),
       matCount: this.mats.size,
       top: [...this.counts.values()].sort((a, b) => b.count - a.count).slice(0, 5),

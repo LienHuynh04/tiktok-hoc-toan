@@ -48,3 +48,8 @@
 .yoga-fade-up {
   animation: yogaFadeUp 0.7s ease both;
 }
+
+/* Chữ phấn trên bảng, theo phong cách bảng đen Lớp Toán */
+.yoga-chalk {
+  font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive;
+}

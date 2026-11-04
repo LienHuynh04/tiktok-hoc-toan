@@ -18,4 +18,5 @@
   đầu tiên trong LIVE Studio (Interact) — đừng hứa hẹn cách lách.
 - Giọng đọc: nữ (tiền tố F:) qua /api/tts như các game khác; chỉ phát ở trang stage.
 - Quà/tim chỉ phản ứng (cảm ơn + mưa hoa sen ở 100 tim), không kêu gọi, không đổi lịch tập.
+- Sân khấu: bố cục theo đúng trang Lớp Toán (chủ kênh chốt 2026-11-04) — biển gỗ tên phòng trên cùng, tờ note ghim 📌 ghi 9 lệnh ở góc trái, bảng lớn khung gỗ chữ phấn ở giữa (tên tư thế + Sanskrit + guide + benefit + vòng thở + hàng chờ), cô giáo đứng cạnh bảng bên trái, học viên 2 hàng thảm phía dưới (hàng trước lớn hơn), biển gỗ chân trang (tim/tổng tư thế/bạn đồng hành). Đừng quay lại bố cục flex cũ.
 - Kiểm chứng: `npm run check` (yoga.check.ts) + lint + build + smoke server cổng 3011.
