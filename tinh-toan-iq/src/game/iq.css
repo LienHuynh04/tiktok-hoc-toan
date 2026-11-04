@@ -1,0 +1,23 @@
+/* Sân khấu Tính Toán IQ Cao: hiệu ứng riêng */
+@keyframes iq-pop {
+  0% { opacity: 0; transform: scale(0.6) translateY(14px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.iq-pop { animation: iq-pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4) both; }
+@keyframes iq-glow {
+  0%, 100% { box-shadow: 0 0 34px 4px rgba(52, 211, 153, 0.35); }
+  50% { box-shadow: 0 0 58px 12px rgba(52, 211, 153, 0.6); }
+}
+.iq-glow { animation: iq-glow 1.8s ease-in-out infinite; }
+@keyframes iq-urgent {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.iq-urgent { animation: iq-urgent 0.8s ease-in-out infinite; }
+@keyframes iq-toast {
+  0% { opacity: 0; transform: translateY(-16px); }
+  8% { opacity: 1; transform: translateY(0); }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.iq-toast { animation: iq-toast 6s ease forwards; }
