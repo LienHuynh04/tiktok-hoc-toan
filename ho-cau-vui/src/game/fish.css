@@ -1,0 +1,61 @@
+/* Sân khấu Hồ Cá Vui: cá bơi trong hồ, cần thủ nhấp nhô, banner giật cá */
+@keyframes fishSwim {
+  0% {
+    transform: translateX(-52px) scaleX(1);
+  }
+  49% {
+    transform: translateX(52px) scaleX(1);
+  }
+  50% {
+    transform: translateX(52px) scaleX(-1);
+  }
+  100% {
+    transform: translateX(-52px) scaleX(-1);
+  }
+}
+.fish-swim {
+  animation-name: fishSwim;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  display: inline-block;
+}
+
+@keyframes anglerBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+.angler-bob {
+  animation: anglerBob 3.2s ease-in-out infinite;
+}
+
+@keyframes catchPop {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-18px);
+  }
+}
+.catch-pop {
+  animation: catchPop 0.6s ease-in-out 3;
+}
+
+@keyframes bannerUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 18px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+.banner-up {
+  animation: bannerUp 0.45s ease both;
+}
