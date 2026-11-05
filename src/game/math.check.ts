@@ -3,7 +3,7 @@
 // 1 biểu thức tính ra đáp án, hoặc 1 phương trình / dãy số chứa "?" — máy tính riêng
 // ở đây tự tính lại biểu thức / thay đáp án vào phương trình để đối chiếu.
 // Chạy: npx tsx src/game/math.check.ts
-import { makeMath, makeGeometry, MATH_GRADES, GEO_COUNT } from './math';
+import { makeMath, makeGeometry, makeHardMath, rollQuestionBand, MATH_GRADES, GEO_COUNT } from './math';
 
 // ---------- máy tính biểu thức độc lập (đệ quy): số thập phân , . + − × : / ^ ( ) √ ∛ | | ! ----------
 function evaluate(srcIn: string): number {
@@ -161,5 +161,43 @@ if (fails.length) {
   for (const f of fails.slice(0, 20)) console.error(' -', f);
   process.exit(1);
 }
+// ---------- tỉ lệ câu chủ kênh chốt 2026-11-05: 20% khó / 50% lớp 1-9 / 30% lớp 10-12 thường ----------
+{
+  let seed = 987654321;
+  const rnd = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x80000000;
+  };
+  const N = 20000;
+  let hard = 0;
+  let low = 0;
+  let high = 0;
+  for (let i = 0; i < N; i++) {
+    const b = rollQuestionBand(rnd, 0.2, 0.5);
+    if ('hard' in b) hard++;
+    else if (b.grade <= 9) low++;
+    else high++;
+  }
+  const pct = (x: number) => Math.round((x / N) * 1000) / 10;
+  if (Math.abs(pct(hard) - 20) >= 2) throw new Error(`tỉ lệ câu khó ~20%, thực tế ${pct(hard)}%`);
+  if (Math.abs(pct(low) - 50) >= 2) throw new Error(`tỉ lệ lớp 1-9 ~50%, thực tế ${pct(low)}%`);
+  if (Math.abs(pct(high) - 30) >= 2) throw new Error(`tỉ lệ lớp 10-12 thường ~30%, thực tế ${pct(high)}%`);
+  // pool thường (excludeHard) không bao giờ ra Đạo hàm/Tích phân — hai họ này chỉ có ở pool khó
+  for (let i = 0; i < 400; i++) {
+    const q = makeMath(12, rnd, { excludeHard: true });
+    if (q.category === 'Đạo hàm' || q.category === 'Tích phân') throw new Error('pool thường lọt câu khó');
+    checkOne(q, 'lớp 12 thường');
+  }
+  // pool khó ra nhiều họ khác nhau, đáp án vẫn kiểm chứng độc lập được
+  const hardCats = new Set<string>();
+  for (let i = 0; i < 300; i++) {
+    const q = makeHardMath(rnd);
+    hardCats.add(q.category);
+    checkOne(q, 'câu khó');
+  }
+  if (hardCats.size < 5) throw new Error(`pool khó phải đa dạng, mới gặp ${hardCats.size} họ`);
+  console.log(`Tỉ lệ câu: khó ${pct(hard)}% · lớp 1-9 ${pct(low)}% · lớp 10-12 thường ${pct(high)}% · họ câu khó đã gặp: ${[...hardCats].join(' · ')}`);
+}
+
 console.log(`MATH CHECK PASS — ${checked} câu (12 lớp × ${SAMPLES} + hình học ${SAMPLES}), mọi đáp án đều tính lại độc lập từ phần hiện trên bảng.`);
 console.log(`Category đã gặp: ${[...seenCats].sort().join(' · ')}`);

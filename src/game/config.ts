@@ -17,11 +17,16 @@ export const GAME = {
   // Tiết học CHỈ gồm toán cấp 3 (chủ kênh chốt 2026-11-04): lớp 10-12 + hình học khó.
   // Hình học giữ từ lớp 9 (lượng giác) vì hình học lớp 10 chỉ có vectơ, để 10 thuần sẽ lặp.
   roundPlan: [
-    'math10', 'math11', 'geo', 'math12', 'math10',
-    'math12', 'math11', 'geo', 'math10', 'math12',
-    'math11', 'math12', 'geo', 'math12', 'math10',
-    'math12', 'math11', 'geo', 'math12', 'math12',
+    'math', 'math', 'geo', 'math', 'math',
+    'math', 'math', 'geo', 'math', 'math',
+    'math', 'math', 'geo', 'math', 'math',
+    'math', 'math', 'geo', 'math', 'math',
   ] as const,
+  // Tỉ lệ câu của tiết (chủ kênh chốt 2026-11-05): 20% câu KHÓ thật sự (dạng nâng cao gắn nhãn hard trong math.ts),
+  // còn lại 50% tổng số câu thuộc lớp 1-9 và 30% thuộc lớp 10-12 thường. Lớp của từng câu bốc ngẫu nhiên lúc vào tiết
+  // bằng rollQuestionBand (math.ts); kiểm tra miệng ra chơi dùng cùng tỉ lệ này.
+  hardQuestionChance: 0.2,
+  lowBandShare: 0.5,
   // Các khối lớp cho tiết sau (sau giờ ra chơi): game TỰ CHỌN khối khó nhất (lớp cao nhất), không bình chọn. Khối được chọn chiếm
   // voteTopicQuestions câu trong tiết sau, rải cách 1 câu (xem pickRound trong quiz.ts).
   // 'Hình học' là chủ đề đặc biệt: bốc câu hình học mọi lớp (geo: true).

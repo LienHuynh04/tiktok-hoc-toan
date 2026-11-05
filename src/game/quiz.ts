@@ -1,7 +1,7 @@
 import { GAME } from './config';
 import { LINES, PICK_TOPICS, POLLS, REWARDS, type Poll } from './loi-thoai';
 import { SLOTS, type Question, type Slot } from './questions';
-import { makeMath, makeGeometry, type MathLevel } from './math';
+import { makeMath, makeGeometry, makeHardMath, rollQuestionBand, type MathLevel } from './math';
 
 /**
  * Lõi game Lớp Toán: không đụng React, không đụng giọng đọc, chạy theo đồng hồ truyền vào.
@@ -421,17 +421,19 @@ export class Classroom {
         q = makeGeometry(this.rand, 9); // câu hình học trong tiết chính: lớp 9 trở lên (lượng giác + vectơ lớp 10), có hình vẽ
       } else if (d.startsWith('math')) {
         const topicDef = GAME.mathTopics.find((x) => x.label === this.topic);
-        let level = Number(d.slice(4));
         if (topicDef?.geo && fav < GAME.voteTopicQuestions && i % 2 === 0) {
           // cả lớp chọn Hình học: bốc câu hình học bất kỳ lớp nào
           q = makeGeometry(this.rand);
           fav++;
+        } else if (topicDef && !topicDef.geo && fav < GAME.voteTopicQuestions && i % 2 === 0) {
+          // câu thuộc dạng cô tự chọn cho tiết này (rải cách 1 câu): giữ nguyên lớp của dạng, nhưng không lấy dạng khó
+          const level = topicDef.levels[Math.floor(this.rand() * topicDef.levels.length)];
+          fav++;
+          q = makeMath(level as MathLevel, this.rand, { excludeHard: true });
         } else {
-          if (topicDef && !topicDef.geo && fav < GAME.voteTopicQuestions && i % 2 === 0) {
-            level = topicDef.levels[Math.floor(this.rand() * topicDef.levels.length)];
-            fav++;
-          }
-          q = makeMath(level as MathLevel, this.rand);
+          // tỉ lệ chủ kênh chốt: 20% câu khó, còn lại 50% lớp 1-9 / 30% lớp 10-12 thường (tính trên tổng số câu)
+          const band = rollQuestionBand(this.rand, GAME.hardQuestionChance, GAME.lowBandShare);
+          q = 'hard' in band ? makeHardMath(this.rand) : makeMath(band.grade as MathLevel, this.rand, { excludeHard: true });
         }
       }
       else if ((SLOTS as readonly string[]).includes(d)) q = this.pickOne(d as Slot, out.filter((x) => !x.math), now);
@@ -823,8 +825,9 @@ export class Classroom {
       // gọi 1 bạn đang ngồi lớp, vừa hoạt động trong 3 phút
       const active = this.seats().filter((s) => now - s.lastActive < 180_000 && s.spoken !== 'bạn');
       callTarget = active[Math.floor(this.rand() * active.length)] ?? null;
-      // Lớp Toán: kiểm tra miệng bằng 1 câu toán tự sinh, chỉ lấy lớp 10-12 (toán cấp 3)
-      callQ = callTarget ? makeMath((10 + Math.floor(this.rand() * 3)) as MathLevel, this.rand) : null;
+      // Lớp Toán: kiểm tra miệng bằng 1 câu toán tự sinh, cùng tỉ lệ của tiết: 20% khó, 50% lớp 1-9, 30% lớp 10-12
+      const band = rollQuestionBand(this.rand, GAME.hardQuestionChance, GAME.lowBandShare);
+      callQ = callTarget ? ('hard' in band ? makeHardMath(this.rand) : makeMath(band.grade as MathLevel, this.rand, { excludeHard: true })) : null;
       if (!callTarget || !callQ) game = 'roll';
     }
     this.lastRecess = game;

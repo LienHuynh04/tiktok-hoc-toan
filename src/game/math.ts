@@ -33,6 +33,7 @@ interface H {
 interface GenDef {
   grade: number;
   geo?: boolean;
+  hard?: boolean; // dạng nâng cao thật sự (Vi-ét, đạo hàm, tích phân...): chỉ ra theo tỉ lệ câu khó
   fn: (h: H) => Raw;
 }
 
@@ -147,7 +148,7 @@ GENS.push(
 
 // ---------- LỚP 9: dạng KHÓ bổ sung (tăng độ khó 2026-11-04) ----------
 GENS.push(
-  { grade: 9, fn: (h) => { const r1 = h.int(2, 6), r2 = r1 + h.int(1, 4); const S = r1 + r2, P = r1 * r2; if (h.coin()) return { show: `${r1} + ${r2}`, say: `tổng hai nghiệm của phương trình`, clue: `Phương trình x bình phương trừ ${S} x cộng ${P} bằng 0 có hai nghiệm phân biệt. Tổng hai nghiệm bằng bao nhiêu?`, reveal: `Theo định lý Vi-ét, tổng hai nghiệm bằng ${S}`, n: S, cat: 'Phương trình', kind: 'Câu phương trình.' }; return { show: `${r1} × ${r2}`, say: `tích hai nghiệm của phương trình`, clue: `Phương trình x bình phương trừ ${S} x cộng ${P} bằng 0 có hai nghiệm phân biệt. Tích hai nghiệm bằng bao nhiêu?`, reveal: `Theo định lý Vi-ét, tích hai nghiệm bằng ${P}`, n: P, cat: 'Phương trình', kind: 'Câu phương trình.' }; } },
+  { grade: 9, hard: true, fn: (h) => { const r1 = h.int(2, 6), r2 = r1 + h.int(1, 4); const S = r1 + r2, P = r1 * r2; if (h.coin()) return { show: `${r1} + ${r2}`, say: `tổng hai nghiệm của phương trình`, clue: `Phương trình x bình phương trừ ${S} x cộng ${P} bằng 0 có hai nghiệm phân biệt. Tổng hai nghiệm bằng bao nhiêu?`, reveal: `Theo định lý Vi-ét, tổng hai nghiệm bằng ${S}`, n: S, cat: 'Phương trình', kind: 'Câu phương trình.' }; return { show: `${r1} × ${r2}`, say: `tích hai nghiệm của phương trình`, clue: `Phương trình x bình phương trừ ${S} x cộng ${P} bằng 0 có hai nghiệm phân biệt. Tích hai nghiệm bằng bao nhiêu?`, reveal: `Theo định lý Vi-ét, tích hai nghiệm bằng ${P}`, n: P, cat: 'Phương trình', kind: 'Câu phương trình.' }; } },
 );
 
 // ---------- LỚP 10 ----------
@@ -160,8 +161,8 @@ GENS.push(
 
 // ---------- LỚP 10: dạng KHÓ bổ sung (tăng độ khó 2026-11-04) ----------
 GENS.push(
-  { grade: 10, fn: (h) => { const a = h.int(1, 9), b = h.int(2, 9); return { show: `${a} + ${b}`, say: `nghiệm lớn của phương trình trị tuyệt đối`, clue: `Phương trình trị tuyệt đối của x trừ ${a} bằng ${b} có nghiệm lớn hơn bằng bao nhiêu?`, reveal: `Nghiệm lớn hơn bằng ${a} cộng ${b} bằng ${a + b}`, n: a + b, cat: 'Phương trình', kind: 'Câu phương trình.' }; } },
-  { grade: 10, fn: (h) => { const [dx, dy, d] = h.pick([[3, 4, 5], [6, 8, 10], [5, 12, 13], [8, 15, 17]] as const); return { show: `√(${dx}^2 + ${dy}^2)`, say: `căn của ${dx} bình phương cộng ${dy} bình phương`, clue: `Khoảng cách từ gốc tọa độ O đến điểm A có tọa độ ${dx} phẩy ${dy} bằng bao nhiêu?`, reveal: `Khoảng cách bằng căn của ${dx * dx} cộng ${dy * dy} bằng ${d}`, n: d, cat: 'Tọa độ', kind: 'Câu tọa độ.' }; } },
+  { grade: 10, hard: true, fn: (h) => { const a = h.int(1, 9), b = h.int(2, 9); return { show: `${a} + ${b}`, say: `nghiệm lớn của phương trình trị tuyệt đối`, clue: `Phương trình trị tuyệt đối của x trừ ${a} bằng ${b} có nghiệm lớn hơn bằng bao nhiêu?`, reveal: `Nghiệm lớn hơn bằng ${a} cộng ${b} bằng ${a + b}`, n: a + b, cat: 'Phương trình', kind: 'Câu phương trình.' }; } },
+  { grade: 10, hard: true, fn: (h) => { const [dx, dy, d] = h.pick([[3, 4, 5], [6, 8, 10], [5, 12, 13], [8, 15, 17]] as const); return { show: `√(${dx}^2 + ${dy}^2)`, say: `căn của ${dx} bình phương cộng ${dy} bình phương`, clue: `Khoảng cách từ gốc tọa độ O đến điểm A có tọa độ ${dx} phẩy ${dy} bằng bao nhiêu?`, reveal: `Khoảng cách bằng căn của ${dx * dx} cộng ${dy * dy} bằng ${d}`, n: d, cat: 'Tọa độ', kind: 'Câu tọa độ.' }; } },
 );
 
 // ---------- LỚP 11 ----------
@@ -176,24 +177,24 @@ GENS.push(
 
 // ---------- LỚP 11: dạng KHÓ bổ sung (tăng độ khó 2026-11-04) ----------
 GENS.push(
-  { grade: 11, fn: (h) => { const [nn, k] = h.pick([[6, 2], [7, 2], [7, 3], [8, 2], [8, 3]] as const); const parts = Array.from({ length: k }, (_, i) => nn - i); let n = 1; for (const p of parts) n *= p; return { show: parts.join(' × '), say: `chỉnh hợp chập ${k} của ${nn}`, clue: `Chỉnh hợp chập ${k} của ${nn} phần tử bằng bao nhiêu?`, reveal: `Chỉnh hợp bằng tích ${parts.join(' nhân ')} bằng ${n}`, n, cat: 'Tổ hợp', kind: 'Câu tổ hợp.' }; } },
-  { grade: 11, fn: (h) => { const u1 = h.int(1, 3), m = h.int(4, 5); const terms = Array.from({ length: m }, (_, i) => u1 * 2 ** i); const n = terms.reduce((x, y) => x + y, 0); return { show: terms.join(' + '), say: `tổng ${m} số hạng đầu của cấp số nhân`, clue: `Một cấp số nhân có số hạng đầu là ${u1}, công bội 2. Tổng của ${m} số hạng đầu tiên là bao nhiêu?`, reveal: `Cộng dồn ${terms.join(' cộng ')} bằng ${n}`, n, cat: 'Dãy số', kind: 'Câu dãy số.' }; } },
+  { grade: 11, hard: true, fn: (h) => { const [nn, k] = h.pick([[6, 2], [7, 2], [7, 3], [8, 2], [8, 3]] as const); const parts = Array.from({ length: k }, (_, i) => nn - i); let n = 1; for (const p of parts) n *= p; return { show: parts.join(' × '), say: `chỉnh hợp chập ${k} của ${nn}`, clue: `Chỉnh hợp chập ${k} của ${nn} phần tử bằng bao nhiêu?`, reveal: `Chỉnh hợp bằng tích ${parts.join(' nhân ')} bằng ${n}`, n, cat: 'Tổ hợp', kind: 'Câu tổ hợp.' }; } },
+  { grade: 11, hard: true, fn: (h) => { const u1 = h.int(1, 3), m = h.int(4, 5); const terms = Array.from({ length: m }, (_, i) => u1 * 2 ** i); const n = terms.reduce((x, y) => x + y, 0); return { show: terms.join(' + '), say: `tổng ${m} số hạng đầu của cấp số nhân`, clue: `Một cấp số nhân có số hạng đầu là ${u1}, công bội 2. Tổng của ${m} số hạng đầu tiên là bao nhiêu?`, reveal: `Cộng dồn ${terms.join(' cộng ')} bằng ${n}`, n, cat: 'Dãy số', kind: 'Câu dãy số.' }; } },
 );
 
 // ---------- LỚP 12 ----------
 GENS.push(
-  { grade: 12, fn: (h) => { const a = h.int(1, 5), x0 = h.int(2, 4); const n = 3 * x0 * x0 + a; return { show: `3 × ${x0}^2 + ${a}`, say: `ba nhân ${x0} bình phương cộng ${a}`, clue: `Đạo hàm của hàm số f x bằng x mũ ba cộng ${a} x, tính tại điểm x bằng ${x0}, cho kết quả là bao nhiêu?`, reveal: `Đạo hàm là ba x bình cộng ${a}, thay x bằng ${x0} được ${n}`, n, cat: 'Đạo hàm', kind: 'Câu đạo hàm.' }; } },
+  { grade: 12, hard: true, fn: (h) => { const a = h.int(1, 5), x0 = h.int(2, 4); const n = 3 * x0 * x0 + a; return { show: `3 × ${x0}^2 + ${a}`, say: `ba nhân ${x0} bình phương cộng ${a}`, clue: `Đạo hàm của hàm số f x bằng x mũ ba cộng ${a} x, tính tại điểm x bằng ${x0}, cho kết quả là bao nhiêu?`, reveal: `Đạo hàm là ba x bình cộng ${a}, thay x bằng ${x0} được ${n}`, n, cat: 'Đạo hàm', kind: 'Câu đạo hàm.' }; } },
   { grade: 12, fn: (h) => { const base = h.pick([2, 3, 5, 10]); const e = base === 2 ? h.int(2, 6) : base === 3 ? h.int(2, 4) : h.int(2, 3); const val = base ** e; return { show: `${base}^? = ${val}`, say: `${base} mũ x bằng ${val}`, clue: `Tìm x, biết ${base} mũ x bằng ${val}. x bằng mấy?`, reveal: `${base} mũ ${e} bằng ${val} nên x bằng ${e}`, n: e, cat: 'Phương trình', kind: 'Câu phương trình.' }; } },
-  { grade: 12, fn: (h) => { const a = h.pick([3, 6]); const n = (a ** 3) / 3; return { show: `${a}^3 : 3`, say: `${a} mũ ba chia 3`, clue: `Tích phân từ 0 đến ${a} của x bình phương bằng bao nhiêu?`, reveal: `Tích phân bằng ${a} mũ ba chia 3 bằng ${n}`, n, cat: 'Tích phân', kind: 'Câu tích phân.' }; } },
+  { grade: 12, hard: true, fn: (h) => { const a = h.pick([3, 6]); const n = (a ** 3) / 3; return { show: `${a}^3 : 3`, say: `${a} mũ ba chia 3`, clue: `Tích phân từ 0 đến ${a} của x bình phương bằng bao nhiêu?`, reveal: `Tích phân bằng ${a} mũ ba chia 3 bằng ${n}`, n, cat: 'Tích phân', kind: 'Câu tích phân.' }; } },
   { grade: 12, fn: (h) => { const [a, b, c] = h.pick([[3, 4, 5], [6, 8, 10], [5, 12, 13]] as const); return { show: `√(${a}^2 + ${b}^2)`, say: `căn của ${a} bình phương cộng ${b} bình phương`, clue: `Số phức z bằng ${a} cộng ${b} i. Mô đun của số phức z là bao nhiêu?`, reveal: `Mô đun bằng căn của ${a * a} cộng ${b * b} bằng ${c}`, n: c, cat: 'Số phức', kind: 'Câu số phức.' }; } },
 );
 
 
 // ---------- LỚP 12: dạng KHÓ bổ sung (tăng độ khó 2026-11-04) ----------
 GENS.push(
-  { grade: 12, fn: (h) => { const x0 = h.int(1, 2); const a = x0 === 1 ? 1 : h.int(1, 4); const n = 4 * x0 ** 3 - 2 * a * x0; return { show: `4 × ${x0}^3 − ${2 * a} × ${x0}`, say: `bốn nhân ${x0} mũ ba trừ ${2 * a} nhân ${x0}`, clue: `Đạo hàm của hàm số f x bằng x mũ bốn trừ ${a} x bình phương, tính tại điểm x bằng ${x0}, bằng bao nhiêu?`, reveal: `Đạo hàm là bốn x mũ ba trừ ${2 * a} x, thay x bằng ${x0} được ${n}`, n, cat: 'Đạo hàm', kind: 'Câu đạo hàm.' }; } },
-  { grade: 12, fn: (h) => { const k = h.int(2, 6), c = h.int(1, 9); const n = k * k + c; return { show: `${k}^2 + ${c}`, say: `${k} bình phương cộng ${c}`, clue: `Hàm số y bằng trừ x bình phương cộng ${2 * k} x cộng ${c} đạt giá trị lớn nhất bằng bao nhiêu?`, reveal: `Đỉnh parabol ở x bằng ${k}, giá trị lớn nhất bằng ${n}`, n, cat: 'Hàm số', kind: 'Câu hàm số.' }; } },
-  { grade: 12, fn: (h) => { const a = h.pick([2, 4, 6]); const n = (a * a) / 2 + a; return { show: `${a}^2 : 2 + ${a}`, say: `${a} bình phương chia hai cộng ${a}`, clue: `Tích phân từ 0 đến ${a} của x cộng 1 bằng bao nhiêu?`, reveal: `Tích phân bằng ${a} bình phương chia hai cộng ${a} bằng ${n}`, n, cat: 'Tích phân', kind: 'Câu tích phân.' }; } },
+  { grade: 12, hard: true, fn: (h) => { const x0 = h.int(1, 2); const a = x0 === 1 ? 1 : h.int(1, 4); const n = 4 * x0 ** 3 - 2 * a * x0; return { show: `4 × ${x0}^3 − ${2 * a} × ${x0}`, say: `bốn nhân ${x0} mũ ba trừ ${2 * a} nhân ${x0}`, clue: `Đạo hàm của hàm số f x bằng x mũ bốn trừ ${a} x bình phương, tính tại điểm x bằng ${x0}, bằng bao nhiêu?`, reveal: `Đạo hàm là bốn x mũ ba trừ ${2 * a} x, thay x bằng ${x0} được ${n}`, n, cat: 'Đạo hàm', kind: 'Câu đạo hàm.' }; } },
+  { grade: 12, hard: true, fn: (h) => { const k = h.int(2, 6), c = h.int(1, 9); const n = k * k + c; return { show: `${k}^2 + ${c}`, say: `${k} bình phương cộng ${c}`, clue: `Hàm số y bằng trừ x bình phương cộng ${2 * k} x cộng ${c} đạt giá trị lớn nhất bằng bao nhiêu?`, reveal: `Đỉnh parabol ở x bằng ${k}, giá trị lớn nhất bằng ${n}`, n, cat: 'Hàm số', kind: 'Câu hàm số.' }; } },
+  { grade: 12, hard: true, fn: (h) => { const a = h.pick([2, 4, 6]); const n = (a * a) / 2 + a; return { show: `${a}^2 : 2 + ${a}`, say: `${a} bình phương chia hai cộng ${a}`, clue: `Tích phân từ 0 đến ${a} của x cộng 1 bằng bao nhiêu?`, reveal: `Tích phân bằng ${a} bình phương chia hai cộng ${a} bằng ${n}`, n, cat: 'Tích phân', kind: 'Câu tích phân.' }; } },
 );
 
 // ---------- Xuất bản ----------
@@ -222,10 +223,33 @@ function helpers(rand: () => number): H {
 }
 
 /** Bốc 1 câu toán thuộc đúng 1 lớp (1-12) */
-export function makeMath(grade: number, rand = Math.random): Question {
-  const pool = GENS.filter((g) => g.grade === grade && !g.geo);
+export function makeMath(grade: number, rand = Math.random, opts?: { excludeHard?: boolean }): Question {
+  let pool = GENS.filter((g) => g.grade === grade && !g.geo && (!opts?.excludeHard || !g.hard));
+  if (!pool.length) pool = GENS.filter((g) => g.grade === grade && !g.geo);
   const def = pool[Math.floor(rand() * pool.length)] ?? GENS[0];
   return wrap(def, def.fn(helpers(rand)));
+}
+
+/** Bốc 1 câu KHÓ thật sự: chỉ từ các dạng nâng cao đã gắn nhãn hard (lớp 9-12) */
+export function makeHardMath(rand = Math.random): Question {
+  const pool = GENS.filter((g) => g.hard && !g.geo);
+  const def = pool[Math.floor(rand() * pool.length)] ?? GENS[0];
+  return wrap(def, def.fn(helpers(rand)));
+}
+
+/**
+ * Bốc nguồn câu theo tỉ lệ chủ kênh chốt: hardChance câu khó; phần còn lại chia theo
+ * lowShare cho khối lớp 1-9 (phần dư là lớp 10-12 thường). Với 0.2 / 0.5 thì tổng thể:
+ * 20% khó, 50% lớp 1-9, 30% lớp 10-12 thường.
+ */
+export function rollQuestionBand(
+  rand: () => number,
+  hardChance: number,
+  lowShare: number,
+): { hard: true } | { grade: number } {
+  if (rand() < hardChance) return { hard: true };
+  const lowP = lowShare / (1 - hardChance);
+  return rand() < lowP ? { grade: 1 + Math.floor(rand() * 9) } : { grade: 10 + Math.floor(rand() * 3) };
 }
 
 /** Bốc 1 câu hình học (các lớp 3-10); minGrade lọc bỏ hình dễ khi cần câu khó */
