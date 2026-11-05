@@ -107,6 +107,7 @@ export function useFishing() {
         say(room.newSession(Date.now()));
       }
       if (c.action === 'custom' && c.text === 'next_round') say(room.nextRound(Date.now()));
+      if (c.action === 'custom' && c.text === 'demo_spot') say(room.demoSpotlight(Date.now()));
     },
   });
 

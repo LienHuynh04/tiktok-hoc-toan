@@ -25,12 +25,21 @@ export function FishControls({ view }: { view: FishView | null; stageCount: numb
         >
           ⏭ Kết thúc vòng, trao vương miện
         </button>
+        <button
+          onClick={() => void sendControl('custom', 'demo_spot')}
+          className="rounded-lg bg-slate-800 px-2.5 py-1.5 text-sm font-medium text-slate-200 transition hover:bg-slate-700"
+        >
+          🎬 Xem thử cảnh chúc mừng
+        </button>
       </div>
       <div className="space-y-1.5 text-sm leading-relaxed text-slate-400">
         <p>
           <b className="text-slate-200">Cách chơi:</b> người xem bình luận <b className="text-slate-200">“câu”</b> là xuống hồ
           (vào phòng/follow cũng có cần sẵn). Cá tự cắn câu mỗi 7–18 giây, giật được loài nào nặng bao nhiêu là may rủi công bằng.
-          Vòng 3 phút: cá to nhất vòng nhận 👑. Đủ 100 cá hiếm hoặc 1000 tim thì cá cắn câu liên tục một lúc.
+          Gõ <b className="text-slate-200">“giật”</b> để giật cần: cá sắp cắn thì lên luôn, chưa cắn thì 40% vớ được cá, 60% hụt
+          (nguội 6 giây). Gõ <b className="text-slate-200">“thả mồi”</b> để dụ cá: lần cắn tới đến trong 1–3 giây (nguội 25 giây).
+          Ai câu được cá cũng được ống kính tại chỗ focus vào + popup hiện tên cá ngay trên đầu; cá hiếm/to/kỷ lục thì lên cảnh chúc mừng toàn màn hình.
+          Vòng 3 phút: cá to nhất vòng nhận 👑. Ai giật được cá hiếm, cá từ 10 kg, hoặc phá kỷ lục vòng (từ 5 kg) thì ống kính chuyển hẳn qua bạn đó 5 giây kèm giọng chúc mừng — cá nhỏ vẫn hiện banner như thường để khỏi gián đoạn liên tục. Đủ 100 cá hiếm hoặc 1000 tim thì cá cắn câu liên tục một lúc.
         </p>
         <p>
           <b className="text-slate-200">Loài cá:</b>{' '}

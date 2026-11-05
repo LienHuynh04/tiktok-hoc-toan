@@ -24,6 +24,67 @@ function AnglerFigure({ hue, flip, caught }: { hue: number; flip: boolean; caugh
   );
 }
 
+function SpotlightOverlay({ spot }: { spot: NonNullable<FishView['spotlight']> }) {
+  const confetti = useMemo(
+    () =>
+      Array.from({ length: 16 }, (_, i) => ({
+        id: i,
+        left: 3 + Math.random() * 92,
+        size: 20 + Math.random() * 16,
+        dur: 2.2 + Math.random() * 1.4,
+        delay: Math.random() * 0.7,
+        emoji: ['🎊', '✨', '⭐', '🎉'][i % 4],
+      })),
+    [spot.at],
+  );
+  return (
+    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#06182e]/96 px-8 text-center">
+      {confetti.map((c) => (
+        <span
+          key={c.id}
+          className="confetti"
+          style={{ left: `${c.left}%`, fontSize: c.size, animationDuration: `${c.dur}s`, animationDelay: `${c.delay}s` }}
+        >
+          {c.emoji}
+        </span>
+      ))}
+      <div className="spot-in flex flex-col items-center">
+        <div className="rounded-full bg-amber-400 px-5 py-1.5 text-[24px] font-extrabold tracking-wide text-amber-950 shadow">
+          ✨ TÂM ĐIỂM HỒ CÂU ✨
+        </div>
+        <div className="mt-4 h-[400px] w-[360px]">
+          <AnglerFigure hue={spot.hue} flip={false} caught />
+        </div>
+        <div style={{ fontSize: Math.min(118, 52 + spot.w * 1.7) }} className="leading-none">
+          🐠
+        </div>
+        <div className="mt-1 text-[28px] font-bold tracking-[0.3em] text-sky-300">🎉 CHÚC MỪNG 🎉</div>
+        <div className="mt-1 flex max-w-full items-center gap-3">
+          {spot.avatar ? (
+            <img src={spot.avatar} alt="" className="h-14 w-14 flex-none rounded-full object-cover ring-2 ring-amber-300" />
+          ) : (
+            <span className="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-sky-700 text-[26px] font-bold">
+              {spot.nickname.slice(0, 1)}
+            </span>
+          )}
+          <span className="truncate text-[46px] font-extrabold">{spot.nickname}</span>
+        </div>
+        <div className="text-[40px] font-extrabold text-amber-300">
+          {spot.fish} · {spot.w} kg
+        </div>
+        <div className="mt-2 flex items-center gap-2 text-[22px]">
+          <span className="rounded-full bg-white/10 px-3.5 py-1 font-semibold ring-1 ring-white/25">{spot.tier}</span>
+          {spot.isRoundBest && (
+            <span className="rounded-full bg-amber-400/20 px-3.5 py-1 font-bold text-amber-300 ring-1 ring-amber-300/50">
+              👑 Con to nhất vòng!
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function FishStage({ game }: { game: FishingState }) {
   const { view, channelName } = game;
   const pondFish = useMemo(
@@ -59,8 +120,9 @@ export function FishStage({ game }: { game: FishingState }) {
         <h1 className="text-[56px] font-extrabold leading-none tracking-wide">
           🎣 HỒ CÁ <span className="text-amber-400">VUI</span>
         </h1>
-        <div className="mx-auto mt-2.5 w-fit rounded-full border border-sky-300/40 bg-sky-950/70 px-5 py-1.5 text-[24px]">
-          Comment <b className="text-amber-300">“câu”</b> để xuống hồ câu
+        <div className="mx-auto mt-2.5 w-fit rounded-full border border-sky-300/40 bg-sky-950/70 px-5 py-1.5 text-[23px]">
+          Comment <b className="text-amber-300">“câu”</b> xuống hồ · <b className="text-amber-300">“giật”</b> giật cần ·{' '}
+          <b className="text-amber-300">“thả mồi”</b> dụ cá bu lại
         </div>
       </header>
 
@@ -154,12 +216,45 @@ export function FishStage({ game }: { game: FishingState }) {
           const ang = (i / Math.max(1, view.anglers.length)) * Math.PI * 2 - Math.PI / 2;
           const x = 50 + 46.5 * Math.cos(ang);
           const y = 52 + 41 * Math.sin(ang);
+          const popFresh = a.popup && Date.now() - a.popup.at < 4000;
+          const jerkFresh = a.act?.kind === 'jerk' && Date.now() - a.act.at < 1000;
+          const baitFresh = a.act?.kind === 'bait' && Date.now() - a.act.at < 2500;
           return (
             <div key={a.username} className="absolute z-20 w-[106px]" style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%,-90%)' }}>
               {a.crown && <div className="absolute -top-7 left-1/2 z-10 -translate-x-1/2 text-[30px]">👑</div>}
-              <div className="h-[118px]">
+              {a.justCaught && (
+                <>
+                  <div className="focus-ring pointer-events-none absolute left-1/2 top-[46%] z-0 h-[128px] w-[128px] rounded-full border-[5px] border-amber-300" />
+                  <div className="ripple pointer-events-none absolute bottom-[16px] left-1/2 z-0 h-[26px] w-[74px] rounded-[50%] border-[3px] border-sky-100/90" />
+                </>
+              )}
+              <div className={`relative z-10 h-[118px] transition-transform duration-300 ${a.justCaught ? 'scale-125' : ''} ${jerkFresh ? 'jerk-shake' : ''}`}>
                 <AnglerFigure hue={a.hue} flip={x < 50} caught={a.justCaught} />
               </div>
+              {baitFresh && (
+                <div className="pointer-events-none absolute -top-2 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap text-[19px]">
+                  <span className="sparkle inline-block">✨</span>
+                  <span className="sparkle inline-block" style={{ animationDelay: '0.35s' }}>✨</span>
+                </div>
+              )}
+              {popFresh && (
+                <div
+                  className={`absolute -top-14 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-2xl px-3 py-1.5 text-[17px] font-extrabold shadow-lg ${
+                    a.popup!.kind === 'catch'
+                      ? 'bg-amber-400 text-amber-950'
+                      : a.popup!.kind === 'miss'
+                        ? 'bg-slate-200 text-slate-700'
+                        : 'bg-sky-400 text-sky-950'
+                  }`}
+                >
+                  {a.popup!.kind === 'catch' ? `🐠 ${a.popup!.fish} · ${a.popup!.w} kg!` : a.popup!.kind === 'miss' ? '💨 Hụt rồi!' : '✨ Đã thả mồi…'}
+                  <div
+                    className={`absolute -bottom-[6px] left-1/2 h-[13px] w-[13px] -translate-x-1/2 rotate-45 ${
+                      a.popup!.kind === 'catch' ? 'bg-amber-400' : a.popup!.kind === 'miss' ? 'bg-slate-200' : 'bg-sky-400'
+                    }`}
+                  />
+                </div>
+              )}
               <div className="mx-auto -mt-1 flex w-fit max-w-[150px] items-center gap-1 rounded-full bg-slate-950/80 py-0.5 pl-0.5 pr-2.5 ring-1 ring-white/25">
                 {a.avatar ? (
                   <img src={a.avatar} alt="" className="h-6 w-6 flex-none rounded-full object-cover" />
@@ -194,6 +289,8 @@ export function FishStage({ game }: { game: FishingState }) {
           </div>
         )}
       </div>
+
+      {view.spotlight && <SpotlightOverlay spot={view.spotlight} />}
 
       {/* chân trang */}
       <footer className="flex items-center justify-between bg-[#07182c] px-5 py-2.5 text-[20px] text-sky-200">

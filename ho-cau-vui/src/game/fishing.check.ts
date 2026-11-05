@@ -65,6 +65,45 @@ ok(v.anglers.some((a) => a.crown), 'có cần thủ đội vương miện');
 room.like(1000, now);
 ok(room.view(now).golden, '1000 tim -> cá cắn liên tục');
 
+// ống kính chúc mừng: cá nhỏ không lên, cá hiếm/quá to thì lên
+{
+  const r2 = new FishingRoom(t0, () => 0); // rô phi 0,3 kg
+  r2.newSession(t0);
+  r2.join(p1, t0);
+  r2.tick(t0 + 60_000);
+  ok(!r2.view(t0 + 60_000).spotlight, 'cá nhỏ không lên ống kính');
+  const r3 = new FishingRoom(t0, () => 0.9999); // cá hô 80 kg
+  r3.newSession(t0);
+  r3.join(p1, t0);
+  r3.tick(t0 + 60_000);
+  const sp = r3.view(t0 + 60_000).spotlight;
+  ok(!!sp && sp.fish === 'Cá hô' && sp.nickname === 'An', 'cá hô -> ống kính chúc mừng hiện đúng người');
+  const before = r3.view(t0 + 60_000).totalKg;
+  r3.demoSpotlight(t0 + 60_000);
+  ok(r3.view(t0 + 60_000).totalKg === before, 'xem thử chúc mừng không cộng điểm');
+}
+
+// lệnh GIẬT khi cá sắp cắn -> lên cá ngay + popup; THẢ MỒI -> cá cắn trong 3s; GIẬT bừa -> hụt
+{
+  const rj = new FishingRoom(t0, () => 0); // phao cắn ở giây thứ 4
+  rj.newSession(t0);
+  rj.chat({ ...p1, comment: 'câu' }, t0);
+  rj.chat({ ...p1, comment: 'giật' }, t0 + 500);
+  let vv = rj.view(t0 + 500);
+  ok(vv.totalFish === 1 && vv.anglers[0].popup?.kind === 'catch', 'giật khi sắp cắn -> lên cá + popup');
+  rj.chat({ ...p1, comment: 'giật' }, t0 + 800);
+  ok(rj.view(t0 + 800).totalFish === 1, 'giật trong lúc nguội 6s không ăn thêm');
+
+  const rb = new FishingRoom(t0, () => 0.99); // phao cắn ở ~giây 12
+  rb.newSession(t0);
+  rb.chat({ ...p1, comment: 'câu' }, t0);
+  rb.chat({ ...p1, comment: 'giật' }, t0 + 100);
+  ok(rb.view(t0 + 100).anglers[0].popup?.kind === 'miss', 'giật bừa lúc cá chưa cắn -> hụt');
+  rb.chat({ ...p1, comment: 'thả mồi' }, t0 + 200);
+  rb.tick(t0 + 3400);
+  ok(rb.view(t0 + 3400).totalFish === 1, 'thả mồi -> cá cắn trong ~3 giây');
+}
+
 if (fails) {
   console.error(`fishing.check: ${fails} lỗi`);
   process.exit(1);

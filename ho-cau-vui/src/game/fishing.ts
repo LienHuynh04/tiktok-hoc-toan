@@ -59,6 +59,13 @@ export function rollWeight(sp: Species, rng: () => number): number {
   return Math.round((sp.min + (sp.max - sp.min) * t) * 10) / 10;
 }
 
+export interface AnglerPopup {
+  kind: 'catch' | 'miss' | 'bait';
+  fish?: string;
+  w?: number;
+  at: number;
+}
+
 interface Angler {
   p: Person;
   totalKg: number;
@@ -67,6 +74,10 @@ interface Angler {
   nextBiteAt: number;
   lastCatchAt: number;
   hue: number;
+  popup: AnglerPopup | null;
+  act: { kind: 'jerk' | 'bait'; at: number } | null;
+  lastJerkAt: number;
+  lastBaitAt: number;
 }
 
 export interface CatchInfo {
@@ -76,6 +87,18 @@ export interface CatchInfo {
   w: number;
   tier: string;
   at: number;
+}
+
+export interface Spotlight {
+  username: string;
+  nickname: string;
+  avatar: string;
+  fish: string;
+  w: number;
+  tier: string;
+  hue: number;
+  at: number;
+  isRoundBest: boolean;
 }
 
 export interface FishView {
@@ -88,12 +111,15 @@ export interface FishView {
     hue: number;
     justCaught: boolean;
     crown: boolean;
+    popup: AnglerPopup | null;
+    act: { kind: 'jerk' | 'bait'; at: number } | null;
   }[];
   anglerCount: number;
   top: { nickname: string; avatar: string; totalKg: number }[];
   roundRemainSec: number;
   roundBest: { nickname: string; fish: string; w: number } | null;
   lastCatch: CatchInfo | null;
+  spotlight: Spotlight | null;
   lastJoin: { nickname: string; at: number } | null;
   rareCount: number;
   rareGoal: number;
@@ -126,6 +152,7 @@ export class FishingRoom {
   private totalFish = 0;
   private totalKgAll = 0;
   private lastCatch: CatchInfo | null = null;
+  private spot: (Spotlight & { until: number }) | null = null;
   private lastJoin: { nickname: string; at: number } | null = null;
   private lastIdleAt = 0;
   private rng: () => number;
@@ -147,6 +174,7 @@ export class FishingRoom {
     this.totalFish = 0;
     this.totalKgAll = 0;
     this.lastCatch = null;
+    this.spot = null;
     this.lastJoin = null;
     this.lastIdleAt = now;
     return [
@@ -173,17 +201,47 @@ export class FishingRoom {
       nextBiteAt: now + (4 + this.rng() * 8) * 1000,
       lastCatchAt: 0,
       hue: Math.floor(this.rng() * 360),
+      popup: null,
+      act: null,
+      lastJerkAt: 0,
+      lastBaitAt: 0,
     });
     if (announce) this.lastJoin = { nickname: p.nickname, at: now };
+  }
+
+  /** Gõ GIẬT: cá sắp cắn thì giật lên luôn; chưa thì 40% vớ được cá, 60% hụt. Nguội 6 giây. */
+  private jerk(a: Angler, now: number): Say[] {
+    if (now - a.lastJerkAt < GAME.jerkCooldownMs) return [];
+    a.lastJerkAt = now;
+    a.act = { kind: 'jerk', at: now };
+    if (a.nextBiteAt - now <= 4500 || this.rng() < 0.4) {
+      return this.doCatch(a, now);
+    }
+    a.popup = { kind: 'miss', at: now };
+    a.nextBiteAt += 2000;
+    return [{ text: M(`${a.p.spoken} giật hụt rồi, cá chạy mất dép!`), ttl: 12_000 }];
+  }
+
+  /** Gõ THẢ MỒI: dụ cá bu lại, lần cắn tới đến trong 1-3 giây. Nguội 25 giây. */
+  private bait(a: Angler, now: number): Say[] {
+    if (now - a.lastBaitAt < GAME.baitCooldownMs) return [];
+    a.lastBaitAt = now;
+    a.act = { kind: 'bait', at: now };
+    a.popup = { kind: 'bait', at: now };
+    a.nextBiteAt = Math.min(a.nextBiteAt, now + (1 + this.rng() * 2) * 1000);
+    return [{ text: M(`${a.p.spoken} vừa thả mồi, cá đang bu lại quanh phao...`), ttl: 12_000 }];
   }
 
   chat(p: Person & { comment: string; createTime?: number; safe?: boolean }, now: number): Say[] {
     const isNew = !this.anglers.has(p.username);
     this.join(p, now);
-    const tokens = plain(p.comment).split(' ');
-    const wantsFish = tokens.some((t) => t === 'CAU');
-    if (!wantsFish) return [];
     const a = this.anglers.get(p.username)!;
+    const tokens = plain(p.comment).split(' ').filter(Boolean);
+    const has = (t: string) => tokens.includes(t);
+    const hasPair = (x: string, y: string) => tokens.some((t, i) => t === x && tokens[i + 1] === y);
+    if (has('GIAT')) return this.jerk(a, now);
+    if (hasPair('THA', 'MOI') || has('MOI')) return this.bait(a, now);
+    if (!has('CAU')) return [];
     // gõ "câu" = quăng cần lại: cá sắp cắn nhanh hơn
     a.nextBiteAt = Math.min(a.nextBiteAt, now + (2 + this.rng() * 3) * 1000);
     if (isNew) {
@@ -214,6 +272,7 @@ export class FishingRoom {
 
   hold(ms: number) {
     this.roundEndsAt += ms;
+    if (this.spot) this.spot.until += ms;
     if (this.goldenUntil) this.goldenUntil += ms;
     for (const a of this.anglers.values()) a.nextBiteAt += ms;
   }
@@ -229,23 +288,44 @@ export class FishingRoom {
     a.bestKg = Math.max(a.bestKg, w);
     a.catches++;
     a.lastCatchAt = now;
+    a.popup = { kind: 'catch', fish: sp.name, w, at: now };
     a.nextBiteAt = this.biteDelay(now);
     this.totalFish++;
     this.totalKgAll += w;
     const info: CatchInfo = { username: a.p.username, nickname: a.p.nickname, fish: sp.name, w, tier: sp.tier, at: now };
     this.lastCatch = info;
-    if (!this.roundBest || w > this.roundBest.w) this.roundBest = { ...info };
+    const beatsRound = !this.roundBest || w > this.roundBest.w;
+    if (beatsRound) this.roundBest = { ...info };
+    // Ống kính chúc mừng: cá hiếm, cá to, hoặc phá kỷ lục vòng -> ống kính chuyển hẳn qua cần thủ đó
+    const notable = !!sp.rare || w >= GAME.spotlightMinKg || (beatsRound && w >= 5);
+    if (notable && (!this.spot || now >= this.spot.until || w >= this.spot.w)) {
+      this.spot = {
+        username: a.p.username,
+        nickname: a.p.nickname,
+        avatar: a.p.avatar,
+        fish: sp.name,
+        w,
+        tier: sp.tier,
+        hue: a.hue,
+        at: now,
+        isRoundBest: beatsRound,
+        until: now + GAME.spotlightSec * 1000,
+      };
+    }
     if (sp.rare) {
       this.rareCount++;
       return [
         {
           main: true,
-          text: M(`Không thể tin được! ${a.p.spoken} vừa giật được ${sp.name} nặng ${w} ký — ${sp.tier} của hồ! Xin chúc mừng!`),
+          text: M(`Ống kính đang hướng về ${a.p.spoken}! Không thể tin được, bạn ấy vừa giật được ${sp.name} nặng ${w} ký — ${sp.tier} của hồ! Xin chúc mừng!`),
         },
       ];
     }
-    if (w >= 15) {
-      return [{ main: true, text: M(`${a.p.spoken} giật được ${sp.name} ${w} ký! Một con cá thật to, cả hồ vỗ tay nào!`) }];
+    if (w >= GAME.spotlightMinKg) {
+      return [{ main: true, text: M(`Ống kính chuyển qua ${a.p.spoken}! Bạn ấy giật được ${sp.name} ${w} ký, một con cá thật to. Cả hồ chúc mừng nào!`) }];
+    }
+    if (beatsRound && w >= 5) {
+      return [{ text: M(`${a.p.spoken} vươn lên dẫn đầu vòng với ${sp.name} ${w} ký!`), ttl: 20_000 }];
     }
     if (w >= 7) {
       return [{ text: M(`${a.p.spoken} vừa lên ${sp.name} ${w} ký.`), ttl: 20_000 }];
@@ -267,6 +347,25 @@ export class FishingRoom {
     this.roundBest = null;
     this.roundEndsAt = now + GAME.roundSec * 1000;
     return lines;
+  }
+
+  /** Chủ phòng xem thử cảnh chúc mừng: chỉ hiện ống kính + đọc chúc mừng, không cộng điểm */
+  demoSpotlight(now: number): Say[] {
+    const first = [...this.anglers.values()][0];
+    const p = first?.p ?? { username: 'guest', nickname: 'Bạn đầu tiên', spoken: 'bạn đầu tiên', avatar: '' };
+    this.spot = {
+      username: p.username,
+      nickname: p.nickname,
+      avatar: p.avatar,
+      fish: 'Cá tầm',
+      w: 23.5,
+      tier: 'Cá hiếm',
+      hue: first?.hue ?? 200,
+      at: now,
+      isRoundBest: true,
+      until: now + GAME.spotlightSec * 1000,
+    };
+    return [{ main: true, text: M(`Ống kính chuyển qua ${p.spoken}! Bạn ấy giật được Cá tầm 23 ký rưỡi, cá hiếm của hồ. Cả hồ chúc mừng nào!`) }];
   }
 
   nextRound(now: number): Say[] {
@@ -306,6 +405,8 @@ export class FishingRoom {
         hue: a.hue,
         justCaught: now - a.lastCatchAt < 2500,
         crown: this.crownUser === a.p.username,
+        popup: a.popup,
+        act: a.act,
       })),
       anglerCount: list.length,
       top: [...list]
@@ -315,6 +416,20 @@ export class FishingRoom {
       roundRemainSec: Math.max(0, Math.ceil((this.roundEndsAt - now) / 1000)),
       roundBest: this.roundBest ? { nickname: this.roundBest.nickname, fish: this.roundBest.fish, w: this.roundBest.w } : null,
       lastCatch: this.lastCatch,
+      spotlight:
+        this.spot && now < this.spot.until
+          ? {
+              username: this.spot.username,
+              nickname: this.spot.nickname,
+              avatar: this.spot.avatar,
+              fish: this.spot.fish,
+              w: this.spot.w,
+              tier: this.spot.tier,
+              hue: this.spot.hue,
+              at: this.spot.at,
+              isRoundBest: this.spot.isRoundBest,
+            }
+          : null,
       lastJoin: this.lastJoin,
       rareCount: this.rareCount,
       rareGoal: GAME.rareGoal,

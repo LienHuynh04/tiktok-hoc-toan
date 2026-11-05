@@ -5,7 +5,9 @@ Người xem bình luận **"câu"** là xuống hồ: mỗi người một cầ
 ## Cách chơi
 
 - **Xuống hồ:** bình luận "câu" (vào phòng live/follow cũng được cấp cần sẵn). Gõ lại "câu" là quăng cần lại, cá sắp cắn nhanh hơn.
-- **Giật cá:** mỗi cần thủ cá cắn sau 7–18 giây, loài và cân nặng quay may rủi công bằng (cân nặng thiên về đầu nhẹ, cá càng hiếm càng khó). Giọng đọc (nam) hô to khi có cá to ≥15 kg hoặc cá hiếm.
+- **Giật cá:** mỗi cần thủ cá cắn sau 7–18 giây, loài và cân nặng quay may rủi công bằng (cân nặng thiên về đầu nhẹ, cá càng hiếm càng khó). Ai câu được cá, ống kính tại chỗ **focus vào cần thủ đó** (phóng to + vòng sáng + gợn sóng) kèm **popup** "🐠 tên cá · cân nặng" ngay trên đầu.
+- **Lệnh gõ thêm:** `GIẬT` — giật cần: cá sắp cắn thì lên luôn, chưa cắn thì 40% vớ được cá / 60% hụt (nguội 6s, có hiệu ứng rung cần + popup "Hụt rồi!"). `THẢ MỒI` — dụ cá bu lại, lần cắn tới đến trong 1–3 giây (nguội 25s, hiệu ứng lấp lánh).
+- **Ống kính chúc mừng:** cá hiếm, cá từ 10 kg, hoặc phá kỷ lục vòng (từ 5 kg) thì sân khấu chuyển hẳn sang cảnh cận chúc mừng 5 giây, giọng đọc (nam) hô to chúc mừng.
 - **Vòng câu 3 phút:** con cá to nhất vòng cho chủ nhân nhận 👑 vương miện vòng sau. Bảng xếp hạng tính tổng kg cả buổi.
 - **Cá hiếm:** cá tầm + cá hô; hồ đếm đủ 100 con hiếm thì mở hội 15 giây cá cắn liên tục.
 - **Tim:** đủ 1000 tim → 20 giây cá cắn câu liên tục (nhịp chờ giảm một nửa).

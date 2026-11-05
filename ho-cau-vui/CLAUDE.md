@@ -15,4 +15,5 @@
 - Giọng đọc: nam (tiền tố M:), chỉ phát ở trang stage; câu main cho cá hiếm/cá ≥15kg/hết vòng.
 - Sân khấu: cần thủ SVG chibi tự vẽ (nón lá + áo đổi hue theo người) đứng quanh hồ ellipse,
   phao đỏ theo hướng vào tâm hồ; banner giật cá vàng ở đáy hồ; tối đa hiện 14 cần thủ.
+- Focus + popup: MỌI lần câu được đều có focus tại chỗ (view.anglers[].popup/act) — đừng gỡ; cảnh toàn màn hình (spotlight) chỉ cho cá đáng chú ý. Lệnh GIẬT (40% vớ cá/60% hụt khi chưa cắn, nguội 6s) + THẢ MỒI (cắn trong 1–3s, nguội 25s) ở fishing.ts jerk()/bait().
 - Kiểm chứng: `npm run check` (fishing.check.ts, RNG hạt giống cố định, mô phỏng 600 tick) + lint + build.
