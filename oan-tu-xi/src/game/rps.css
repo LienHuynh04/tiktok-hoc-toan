@@ -1,0 +1,100 @@
+/* Hiệu ứng riêng của sân khấu Oẳn Tù Xì */
+
+/* Lắc tay hô "oẳn tù xì": nắm đấm nảy lên xuống nhanh */
+@keyframes rpsPump {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-16px) rotate(5deg);
+  }
+}
+.rps-pump {
+  animation: rpsPump 0.38s ease-in-out infinite;
+}
+.rps-pump-slow {
+  animation: rpsPump 0.9s ease-in-out infinite;
+}
+
+/* Mở đòn: bàn tay bung to nảy ra */
+@keyframes rpsPop {
+  0% {
+    transform: scale(0.3) rotate(-14deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.25) rotate(4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+.rps-pop {
+  animation: rpsPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Học sinh đang đấu: nhún nhẹ tại bàn */
+@keyframes rpsBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+.rps-bob {
+  animation: rpsBob 0.8s ease-in-out infinite;
+}
+
+/* Sao bay lên khi thắng cô */
+@keyframes rpsFloatUp {
+  0% {
+    transform: translateY(6px) scale(0.7);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-54px) scale(1.15);
+    opacity: 0;
+  }
+}
+.rps-float-up {
+  animation: rpsFloatUp 1.6s ease-out infinite;
+}
+
+/* Dấu ? chờ ra đòn: thở nhẹ */
+@keyframes rpsPulseSoft {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+.rps-pulse-soft {
+  animation: rpsPulseSoft 1s ease-in-out infinite;
+}
+
+/* Tay cô giáo vung khi hô */
+@keyframes rpsArmPump {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-16deg);
+  }
+}
+.rps-arm-pump {
+  animation: rpsArmPump 0.38s ease-in-out infinite;
+  transform-origin: 150px 128px;
+}
