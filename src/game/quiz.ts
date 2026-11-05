@@ -216,6 +216,8 @@ export class Classroom {
   frontDesk = '';
   /** Ý muốn "Lên Bảng May Mắn": bạn tặng cỏ bốn lá buổi này, mới nhất trước, tối đa 6 bạn (chỉ hiển thị tên) */
   luckBoard: { username: string; nickname: string }[] = [];
+  /** số lần từng ý muốn đã được thực hiện buổi này (hiện trên thanh Ý MUỐN dưới đáy sân khấu) */
+  wishCounts: Record<WishKind, number> = { rose: 0, front: 0, luck: 0 };
   clapUntil = 0;
   private lastChatAt: number;
   /** lần cuối có người xem làm gì (bình luận, tặng quà, thả tim): lâu quá thì coi là lớp vắng */
@@ -738,6 +740,7 @@ export class Classroom {
    * không cộng điểm, không gợi ý đáp án, không miễn phạt — để lớp luôn công bằng */
   wish(e: Person, kind: WishKind, now: number): Say[] {
     const s = this.touch(e, now);
+    this.wishCounts[kind]++;
     if (kind === 'rose') return [{ ...this.t(this.line('wishRose', s.spoken), true), ttl: 60_000 }];
     if (kind === 'front') {
       this.frontDesk = e.username;
@@ -1209,6 +1212,7 @@ export class Classroom {
       stats: this.stats,
       flowers: this.flowers,
       luckBoard: this.luckBoard.map((x) => x.nickname), // Bảng May Mắn (ý muốn cỏ bốn lá)
+      wishCounts: { ...this.wishCounts },
       lastFlowerAt: this.lastFlowerAt,
       clapping: now < this.clapUntil,
       recess: r && {

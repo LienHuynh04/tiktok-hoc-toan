@@ -563,6 +563,7 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.deepEqual(w.view(t + 5000).luckBoard, ['Bạn 9', 'Bạn 8'], 'Bảng May Mắn giữ cả buổi, không xoá theo tiết');
   for (let i = 10; i < 17; i++) w.wish(who(i), 'luck', t + 6000 + i);
   assert.equal(w.luckBoard.length, 6, 'bảng tối đa 6 tên');
+  assert.deepEqual(w.view(t + 7000).wishCounts, { rose: 1, front: 1, luck: 10 }, 'thanh Ý MUỐN đếm số lần đã thực hiện thật');
 }
 
 console.log('quiz.check: tất cả đều đúng');
