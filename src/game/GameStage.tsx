@@ -1001,14 +1001,14 @@ function WishBar({ v }: { v: StageView }) {
     { icon: '🍀', label: 'Lên Bảng May Mắn', price: '10 xu', n: v.wishCounts.luck },
   ];
   return (
-    <div className="absolute bottom-[12px] left-1/2 z-30 flex w-[1024px] -translate-x-1/2 items-center gap-2 rounded-[18px] border-[3px] border-[#7a4a1d] bg-[#3b2410]/90 px-3 py-2 shadow-[0_8px_16px_rgba(0,0,0,0.35)]">
-      <div className="whitespace-nowrap px-1 text-[19px] font-extrabold uppercase tracking-wider text-[#ffe680]">Ý muốn</div>
+    <div className="absolute bottom-[12px] left-1/2 z-30 flex w-[1024px] -translate-x-1/2 items-center gap-1.5 rounded-[18px] border-[3px] border-[#7a4a1d] bg-[#3b2410]/90 px-2 py-2 shadow-[0_8px_16px_rgba(0,0,0,0.35)]">
+      <div className="whitespace-nowrap px-0.5 text-[17px] font-extrabold uppercase tracking-wide text-[#ffe680]">Ý muốn</div>
       {items.map((it) => (
-        <div key={it.label} className="flex min-w-0 flex-1 items-center gap-2 rounded-[12px] bg-[#fff8e1]/10 px-3 py-1">
-          <span className="text-[36px] leading-none">{it.icon}</span>
+        <div key={it.label} className="flex min-w-0 flex-1 items-center gap-1.5 rounded-[12px] bg-[#fff8e1]/10 px-2 py-1">
+          <span className="text-[32px] leading-none">{it.icon}</span>
           <div className="min-w-0 flex-1 leading-tight">
-            <div className="truncate text-[20px] font-bold text-[#fff8e1]">{it.label}</div>
-            <div className="text-[16px] font-semibold text-[#f0c96a]">{it.price}</div>
+            <div className="whitespace-nowrap text-[19px] font-bold text-[#fff8e1]">{it.label}</div>
+            <div className="text-[15px] font-semibold text-[#f0c96a]">{it.price}</div>
           </div>
           <div className={`rounded-full px-2 py-[1px] text-[18px] font-extrabold ${it.n > 0 ? 'bg-[#f59e0b] text-white' : 'bg-black/40 text-[#d8c49a]'}`}>×{it.n}</div>
         </div>
