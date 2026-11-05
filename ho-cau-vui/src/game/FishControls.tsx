@@ -31,6 +31,32 @@ export function FishControls({ view }: { view: FishView | null; stageCount: numb
         >
           🎬 Xem thử cảnh chúc mừng
         </button>
+        {view?.musicOn ? (
+          <button
+            onClick={() => void sendControl('custom', 'music_off')}
+            className="rounded-lg bg-slate-800 px-2.5 py-1.5 text-sm font-medium text-slate-200 transition hover:bg-slate-700"
+          >
+            🔇 Tắt nhạc hồ câu
+          </button>
+        ) : (
+          <button
+            onClick={() => void sendControl('custom', 'music_on')}
+            className="rounded-lg bg-sky-600 px-2.5 py-1.5 text-sm font-medium text-white transition hover:bg-sky-500"
+          >
+            🎵 Bật nhạc hồ câu
+          </button>
+        )}
+        <label className="flex items-center gap-2 rounded-lg bg-slate-800 px-2.5 py-1.5 text-sm text-slate-200">
+          🔊 Nhạc
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={Math.round((view?.musicVolume ?? 0.9) * 100)}
+            onChange={(e) => void sendControl('custom', `music_vol:${Number(e.target.value) / 100}`)}
+            className="w-28 accent-sky-500"
+          />
+        </label>
       </div>
       <div className="space-y-1.5 text-sm leading-relaxed text-slate-400">
         <p>
@@ -46,6 +72,12 @@ export function FishControls({ view }: { view: FishView | null; stageCount: numb
           {SPECIES.map((sp) => `${sp.name} ${sp.min}–${sp.max}kg`).join(' · ')}. Cá tầm và cá hô là cá hiếm, lên cá là đọc to cả hồ.
         </p>
         <p>Quà chỉ được cảm ơn bằng giọng đọc — không đổi được cá, để sân chơi công bằng và đúng luật của kênh.</p>
+        <p>
+          <b className="text-slate-200">Nhạc & giọng đọc:</b> nhạc nền hồ câu (soạn sẵn trong trang, không file ngoài) tự phát
+          khi mở stage và tự nhỏ xuống lúc MC đọc. Trình duyệt chỉ cho phát tiếng sau tương tác đầu tiên: bấm{' '}
+          <b className="text-slate-200">Interact</b> một lần vào cửa sổ stage trong LIVE Studio lúc bắt đầu buổi là cả nhạc
+          lẫn giọng đọc cùng lên.
+        </p>
       </div>
     </section>
   );

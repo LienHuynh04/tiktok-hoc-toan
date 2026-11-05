@@ -45,6 +45,12 @@ room.chat({ ...p2, comment: 'cho mình câu với' }, t0);
 room.join(p3, t0);
 let v = room.view(t0);
 ok(v.anglerCount === 3, '3 cần thủ xuống hồ');
+ok(v.musicOn === true && v.musicVolume > 0 && v.musicVolume <= 1, 'nhạc nền bật sẵn, âm lượng mặc định hợp lệ');
+room.musicOn = false;
+room.musicVolume = 0.4;
+v = room.view(t0);
+ok(v.musicOn === false && v.musicVolume === 0.4, 'trạng thái nhạc + âm lượng theo phòng ra view cho trang điều khiển');
+room.musicOn = true;
 ok(v.lastJoin?.nickname === 'Bình', 'banner xuống hồ cho người gõ câu mới nhất');
 
 // mô phỏng 10 phút: cá phải cắn, điểm phải khớp

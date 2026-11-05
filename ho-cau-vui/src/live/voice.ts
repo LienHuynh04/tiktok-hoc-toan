@@ -52,6 +52,11 @@ class Voice {
     void this.next();
   }
 
+  /** Sau tương tác đầu tiên của người dùng: thử phát tiếp các câu đang chờ (trình duyệt vừa cho phép tiếng) */
+  kick() {
+    if (this.enabled && !this.playing) void this.next();
+  }
+
   stop() {
     for (const l of [...this.normal, ...this.priority]) l.done?.();
     this.normal = [];

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLiveEvents } from '../live/useLiveEvents';
 import type { GiftEvent, LiveStatus } from '../live/types';
 import { voice, speakableName } from '../live/voice';
+import { music } from '../live/music';
 import { containsBanned } from '../live/bannedWords';
 import { GiftThanker, OncePerPerson } from '../live/chatter';
 import { IS_STAGE } from '../live/page';
@@ -108,6 +109,19 @@ export function useFishing() {
       }
       if (c.action === 'custom' && c.text === 'next_round') say(room.nextRound(Date.now()));
       if (c.action === 'custom' && c.text === 'demo_spot') say(room.demoSpotlight(Date.now()));
+      if (c.action === 'custom' && (c.text === 'music_on' || c.text === 'music_off')) {
+        room.musicOn = c.text === 'music_on';
+        music.setEnabled(room.musicOn);
+        dirty.current = true;
+      }
+      if (c.action === 'custom' && c.text?.startsWith('music_vol:')) {
+        const v = Number(c.text.slice('music_vol:'.length));
+        if (Number.isFinite(v)) {
+          room.musicVolume = Math.min(1, Math.max(0, v));
+          music.setVolume(room.musicVolume);
+          dirty.current = true;
+        }
+      }
     },
   });
 
@@ -118,6 +132,18 @@ export function useFishing() {
     const room = new FishingRoom(Date.now());
     roomRef.current = room;
     say(room.newSession(Date.now()));
+    // Nhạc nền bật sẵn; 1 lần chạm/click đầu tiên trên stage mở khoá CẢ nhạc lẫn giọng đọc
+    // (trình duyệt chặn tự phát tiếng trước tương tác) — watchdog thử lại liên tục như phòng Yoga.
+    music.setVolume(room.musicVolume);
+    music.setEnabled(room.musicOn);
+    const unlock = () => {
+      music.resume();
+      voice.kick();
+    };
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('focus', unlock);
+    document.addEventListener('visibilitychange', unlock);
+    const watchdog = setInterval(unlock, 1500);
     let lastSent = 0;
     let lastTick = Date.now();
     const timer = setInterval(() => {
@@ -130,6 +156,7 @@ export function useFishing() {
       lastTick = now;
       say(room.tick(now));
       flushChatter(room, now);
+      music.setDucked(voice.busy); // MC đang đọc thì nhạc tự nhỏ xuống
       if (!dirty.current && now - lastSent < 1000) return;
       dirty.current = false;
       setView(room.view(now));
@@ -141,6 +168,11 @@ export function useFishing() {
     return () => {
       stop = true;
       clearInterval(timer);
+      clearInterval(watchdog);
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('focus', unlock);
+      document.removeEventListener('visibilitychange', unlock);
+      music.setEnabled(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

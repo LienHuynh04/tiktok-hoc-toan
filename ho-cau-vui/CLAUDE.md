@@ -13,6 +13,7 @@
   to — bản tham chiếu có bảng "tặng quà ra cá to" nhưng đó là pay-to-fish, trái quy tắc kênh
   và rủi ro chính sách TikTok. Tim chỉ đổi NHỊP cắn (như trống hội ở Kéo Co), không đổi loài cá.
 - Giọng đọc: nam (tiền tố M:), chỉ phát ở trang stage; câu main cho cá hiếm/cá ≥15kg/hết vòng.
+- Nhạc nền: `src/live/music.ts` — Web Audio tự soạn (sớm mai bên hồ: pad Cmaj7–G/B–Am7–Fmaj7 72 BPM + gảy ngũ cung qua delay + tiếng nước vỗ bờ), KHÔNG file ngoài. Bật sẵn (room.musicOn/musicVolume ra view), trang điều khiển có nút tắt/bật + thanh trượt âm lượng (lệnh custom music_on/music_off/music_vol:), nhạc tự nhỏ xuống (duck) khi MC đọc. Stage mở khoá tiếng bằng watchdog dùng chung: 1 lần Interact đầu tiên trong LIVE Studio mở cả nhạc lẫn giọng (luật autoplay của trình duyệt, không né được).
 - Sân khấu: cần thủ SVG chibi tự vẽ (nón lá + áo đổi hue theo người) đứng quanh hồ ellipse,
   phao đỏ theo hướng vào tâm hồ; banner giật cá vàng ở đáy hồ; tối đa hiện 14 cần thủ.
 - Focus + popup: MỌI lần câu được đều có focus tại chỗ (view.anglers[].popup/act) — đừng gỡ; cảnh toàn màn hình (spotlight) chỉ cho cá đáng chú ý. Lệnh GIẬT (40% vớ cá/60% hụt khi chưa cắn, nguội 6s) + THẢ MỒI (cắn trong 1–3s, nguội 25s) ở fishing.ts jerk()/bait().

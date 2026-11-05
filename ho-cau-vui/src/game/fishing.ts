@@ -128,6 +128,8 @@ export interface FishView {
   golden: boolean;
   totalFish: number;
   totalKg: number;
+  musicOn: boolean; // nhạc nền do trang stage phát riêng (live/music.ts), phòng chỉ giữ trạng thái
+  musicVolume: number;
 }
 
 const M = (s: string) => `M: ${s}`;
@@ -155,6 +157,8 @@ export class FishingRoom {
   private spot: (Spotlight & { until: number }) | null = null;
   private lastJoin: { nickname: string; at: number } | null = null;
   private lastIdleAt = 0;
+  musicOn = true; // nhạc nền bật sẵn khi mở hồ (chủ kênh chốt: game nào có nhạc là tự phát)
+  musicVolume = GAME.musicVolume;
   private rng: () => number;
 
   constructor(now: number, rng: () => number = Math.random) {
@@ -438,6 +442,8 @@ export class FishingRoom {
       golden: now < this.goldenUntil,
       totalFish: this.totalFish,
       totalKg: Math.round(this.totalKgAll * 10) / 10,
+      musicOn: this.musicOn,
+      musicVolume: this.musicVolume,
     };
   }
 }

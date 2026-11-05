@@ -15,4 +15,5 @@ export const GAME = {
   giftLineMaxWaitMs: 30_000, // câu cảm ơn quà chờ tối đa
   giftThanksCooldownMs: 30_000, // cùng 1 người tặng liên tục: cảm ơn 1 lần mỗi 30 giây
   bigGiftCoins: 50, // quà từ mức này luôn được cảm ơn ngay
+  musicVolume: 0.9, // âm lượng nhạc nền hồ câu lúc mở trang (trang điều khiển chỉnh được 0-1)
 };

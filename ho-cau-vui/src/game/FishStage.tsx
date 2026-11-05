@@ -116,7 +116,9 @@ export function FishStage({ game }: { game: FishingState }) {
     <div className="relative flex h-full w-full flex-col overflow-hidden bg-[linear-gradient(180deg,#081c33_0%,#0d2f52_46%,#0a2a47_100%)] text-white">
       {/* tiêu đề + note */}
       <header className="pt-5 text-center">
-        <div className="text-[22px] font-medium tracking-wide text-sky-300/80">{channelName}</div>
+        <div className="text-[22px] font-medium tracking-wide text-sky-300/80">
+          {channelName} · {view.musicOn ? '🎵 nhạc hồ câu' : '🔇 tắt nhạc'}
+        </div>
         <h1 className="text-[56px] font-extrabold leading-none tracking-wide">
           🎣 HỒ CÁ <span className="text-amber-400">VUI</span>
         </h1>
