@@ -8,7 +8,7 @@ import { GiftThanker, OncePerPerson } from '../live/chatter';
 import { IS_STAGE } from '../live/page';
 import { GAME } from './config';
 import { QUESTIONS } from './bank';
-import { Classroom, plain, type ClassView, type RecessGame, type Say } from './quiz';
+import { Classroom, plain, wishKind, type ClassView, type RecessGame, type Say } from './quiz';
 import { sfx } from './sfx';
 
 // ?view=stage&mute=1: xem thử trang stage không phát tiếng
@@ -130,8 +130,11 @@ export function useGame() {
       setLastGift({ ...e, nickname: p.nickname, at: Date.now() });
       const hint = room.gift(p, coins, Date.now());
       say(hint);
+      // quà thuộc bảng "Ý muốn của người xem" (hoa hồng / thả tim / cỏ bốn lá): cô thực hiện ý muốn ngay
+      const wish = wishKind(e.giftName, e.diamondCount) ? room.wish(p, wishKind(e.giftName, e.diamondCount)!, Date.now()) : [];
+      say(wish);
       // combo / tặng liên tục chỉ cảm ơn 1 lần mỗi 30 giây; quà to luôn cảm ơn
-      if (!hint.length && talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length)) say([room.thank(p, e.giftName, coins)]);
+      if (!hint.length && !wish.length && talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length)) say([room.thank(p, e.giftName, coins)]);
     },
 
     onFollow: (e) => {

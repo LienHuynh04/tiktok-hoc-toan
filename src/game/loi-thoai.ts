@@ -563,6 +563,20 @@ export const LINES = {
     (n) => `Cả lớp nhìn ${n} mà học tập nha. Cảm ơn bạn nhỏ nhiều lắm.`,
     (n) => `${n} tặng quà xịn. Cô đặt bạn nhỏ lên bàn đầu trong tim cô.`,
   ] as L1,
+  // Ý muốn của người xem (bảng trong LIVE Studio): vinh danh thuần túy, không điểm, không gợi ý đáp án
+  wishRose: [
+    (n) => `${n} tặng hoa hồng, tham gia vào lớp học rồi! Cô chào mừng bạn nhỏ nha.`,
+    (n) => `Cả lớp chào ${n} nào! Bạn nhỏ tặng hoa hồng là vào lớp mình rồi đó.`,
+    (n) => `Hoan nghênh ${n} vào lớp! Hoa hồng đẹp quá, cô cảm ơn bạn nhỏ.`,
+  ] as L1,
+  wishFront: [
+    (n) => `${n} tặng cử chỉ thả tim! Bạn nhỏ được lên ngồi BÀN ĐẦU tiết này nha. Cả lớp vỗ tay nào!`,
+    (n) => `Bàn đầu hôm nay là của ${n}! Cử chỉ thả tim xịn quá. Ngồi ngay ngắn, học giỏi nha bạn nhỏ.`,
+  ] as L1,
+  wishLuck: [
+    (n) => `${n} tặng cỏ bốn lá! Tên bạn nhỏ được lên BẢNG MAY MẮN của lớp rồi. Cô chúc ${n} thật nhiều may mắn!`,
+    (n) => `Cỏ bốn lá của ${n} đây! Cô ghim tên bạn nhỏ lên Bảng May Mắn, chúc bạn nhỏ cả buổi gặp may.`,
+  ] as L1,
   giftHint: [
     (n) => `${n} xin cô mở thêm một chữ, cả lớp nhờ bạn đó nha.`,
     (n) => `Nhờ quà của ${n}, cô mở thêm một chữ cho cả lớp.`,

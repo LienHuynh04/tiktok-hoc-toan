@@ -1,7 +1,7 @@
 // Kiểm tra lõi game Lớp Toán: npx tsx src/game/quiz.check.ts
 // Câu hỏi do math.ts tự sinh (bank rỗng); kiểm chứng độc lập của đáp án nằm ở math.check.ts.
 import assert from 'node:assert/strict';
-import { Classroom, LineBag, compactVi, dayPeriod, plain, scramble, topicName } from './quiz';
+import { Classroom, LineBag, compactVi, dayPeriod, plain, scramble, topicName, wishKind } from './quiz';
 import type { Question } from './questions';
 import { GAME } from './config';
 import { makeMath } from './math';
@@ -524,6 +524,45 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
     [[6, 4]],
   );
   assert.ok(c.reportLog[0].category.length > 0);
+}
+
+// ---------- Ý muốn của người xem: hoa hồng vào lớp · thả tim lên bàn đầu · cỏ bốn lá lên Bảng May Mắn ----------
+{
+  assert.equal(wishKind('Rose', 1), 'rose');
+  assert.equal(wishKind('Hoa hồng', 1), 'rose');
+  assert.equal(wishKind('Finger Heart', 5), 'front');
+  assert.equal(wishKind('Cử chỉ thả tim', 5), 'front');
+  assert.equal(wishKind('Four Leaf Clover', 10), 'luck');
+  assert.equal(wishKind('Cỏ bốn lá', 10), 'luck');
+  assert.equal(wishKind('Rose', 5), null, 'đúng tên sai giá thì không tính');
+  assert.equal(wishKind('Mũ', 99), null);
+  const w = new Classroom([], t, () => 0.42);
+  w.newRound(t);
+  // hoa hồng: vào lớp + cô chào mừng, KHÔNG điểm
+  const rose = w.wish(who(9), 'rose', t);
+  assert.equal(rose.length, 1);
+  assert.ok(rose[0].text.includes('Bạn 9'));
+  assert.ok(w.students.has('u9'));
+  assert.equal(w.students.get('u9')!.score, 0, 'ý muốn không cộng điểm');
+  // thả tim: ngồi ghế đầu tiên + cờ front + cả lớp vỗ tay
+  w.wish(who(9), 'front', t);
+  const vw = w.view(t);
+  assert.equal(vw.seats[0].username, 'u9', 'bạn bàn đầu ngồi ghế đầu tiên');
+  assert.equal(vw.seats[0].front, true);
+  assert.equal(vw.clapping, true);
+  // sang tiết mới: bàn đầu trả lại, ai cũng tranh lại từ đầu
+  w.newRound(t + 1000);
+  assert.equal(w.frontDesk, '');
+  assert.ok(w.view(t + 1000).seats.every((x) => !x.front));
+  // cỏ bốn lá: lên bảng, mới nhất trước, trùng người thì không nhân đôi, tối đa 6, giữ qua tiết mới
+  w.wish(who(9), 'luck', t + 2000);
+  w.wish(who(8), 'luck', t + 3000);
+  w.wish(who(9), 'luck', t + 4000);
+  assert.deepEqual(w.view(t + 4000).luckBoard, ['Bạn 9', 'Bạn 8'], 'tặng lại thì lên đầu bảng (mới nhất trước), không nhân đôi');
+  w.newRound(t + 5000);
+  assert.deepEqual(w.view(t + 5000).luckBoard, ['Bạn 9', 'Bạn 8'], 'Bảng May Mắn giữ cả buổi, không xoá theo tiết');
+  for (let i = 10; i < 17; i++) w.wish(who(i), 'luck', t + 6000 + i);
+  assert.equal(w.luckBoard.length, 6, 'bảng tối đa 6 tên');
 }
 
 console.log('quiz.check: tất cả đều đúng');

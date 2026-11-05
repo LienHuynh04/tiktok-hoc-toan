@@ -93,6 +93,17 @@ export const compactVi = (s: string) => normVi(s).replace(/[^\p{L}\p{N}]/gu, '')
 export const plain = (s: string) =>
   compactVi(s).normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd');
 
+export type WishKind = 'rose' | 'front' | 'luck';
+/** Nhận diện 3 món quà của bảng "Ý muốn của người xem" (LIVE Studio) theo tên quà + giá 1 món (xu).
+ * Tên khớp cả tiếng Anh của TikTok lẫn tiếng Việt: Rose/Hoa hồng · Finger Heart/Cử chỉ thả tim · Clover/Cỏ bốn lá */
+export function wishKind(giftName: string, unitCoins: number): WishKind | null {
+  const n = plain(giftName);
+  if (unitCoins === 1 && (n.includes('rose') || n.includes('hoahong'))) return 'rose';
+  if (unitCoins === 5 && (n.includes('finger') || n.includes('thatim') || n.includes('cuchi'))) return 'front';
+  if (unitCoins === 10 && (n.includes('clover') || n.includes('cobonla'))) return 'luck';
+  return null;
+}
+
 /** Buổi trong ngày theo giờ máy: sáng 5-10h, trưa 10-13h, chiều 13-17h, tối 17-22h, khuya 22-5h */
 export type DayPeriod = 'sang' | 'trua' | 'chieu' | 'toi' | 'khuya';
 export function dayPeriod(now: number): DayPeriod {
@@ -201,6 +212,10 @@ export class Classroom {
   stats = { received: 0, attempts: 0 };
   flowers = 0;
   lastFlowerAt = 0;
+  /** Ý muốn "Lên bàn đầu": username đang ngồi bàn đầu tiết này (chỉ vinh danh, không điểm), sang tiết thì xoá */
+  frontDesk = '';
+  /** Ý muốn "Lên Bảng May Mắn": bạn tặng cỏ bốn lá buổi này, mới nhất trước, tối đa 6 bạn (chỉ hiển thị tên) */
+  luckBoard: { username: string; nickname: string }[] = [];
   clapUntil = 0;
   private lastChatAt: number;
   /** lần cuối có người xem làm gì (bình luận, tặng quà, thả tim): lâu quá thì coi là lớp vắng */
@@ -718,6 +733,20 @@ export class Classroom {
   thank(e: Person, giftName: string, coins: number): Say {
     return this.t(coins >= GAME.bigGiftCoins ? this.line('bigGift', e.spoken) : this.line('thankGift', e.spoken, giftName), true);
   }
+
+  /** Ý muốn của người xem: cô thực hiện ngay khi quà tới. Cả 3 món đều là VINH DANH thuần túy:
+   * không cộng điểm, không gợi ý đáp án, không miễn phạt — để lớp luôn công bằng */
+  wish(e: Person, kind: WishKind, now: number): Say[] {
+    const s = this.touch(e, now);
+    if (kind === 'rose') return [{ ...this.t(this.line('wishRose', s.spoken), true), ttl: 60_000 }];
+    if (kind === 'front') {
+      this.frontDesk = e.username;
+      this.clapUntil = now + GAME.clapSec * 1000; // cả lớp vỗ tay chúc mừng
+      return [{ ...this.t(this.line('wishFront', s.spoken), true), ttl: 60_000 }];
+    }
+    this.luckBoard = [{ username: e.username, nickname: s.nickname }, ...this.luckBoard.filter((x) => x.username !== e.username)].slice(0, 6);
+    return [{ ...this.t(this.line('wishLuck', s.spoken), true), ttl: 60_000 }];
+  }
   follow(e: Person): Say {
     return this.t(this.line('thankFollow', e.spoken));
   }
@@ -947,6 +976,7 @@ export class Classroom {
     this.keepTopic = false;
     this.round++;
     this.monitor = ''; // tiết mới: cả lớp tranh lớp trưởng lại từ đầu
+    this.frontDesk = ''; // bàn đầu chỉ vinh danh trong 1 tiết
     this.qNo = 0;
     this.q = null;
     this.correct = [];
@@ -1101,6 +1131,15 @@ export class Classroom {
     const showAnswer = this.phase === 'reveal';
     const asking = this.phase === 'question' || this.phase === 'bonus' || this.phase === 'reveal';
     const seated = this.seats(GAME.seats + GAME.standing);
+    // bạn ngồi bàn đầu được xếp ghế đầu tiên để cả lớp nhìn thấy (kể cả khi điểm chưa đủ lọt vào ghế)
+    if (this.frontDesk) {
+      const i = seated.findIndex((s) => s.username === this.frontDesk);
+      const holder = i >= 0 ? seated[i] : this.students.get(this.frontDesk);
+      if (holder && i !== 0) {
+        if (i > 0) seated.splice(i, 1);
+        seated.unshift(holder);
+      }
+    }
     const titles = new Map(this.titleHolders().map((s, i) => [s.username, i === 0 ? 'lop-truong' : 'lop-pho']));
     const pub = ({ username, nickname, avatar, girl, score, session, lastActive, joinedAt, desk, days, bubble, standUntil }: Student) => ({
       desk,
@@ -1117,6 +1156,7 @@ export class Classroom {
       lastActive,
       joinedAt,
       title: titles.get(username) ?? '',
+      front: this.frontDesk === username, // đang ngồi bàn đầu (ý muốn thả tim)
       // câu đang hỏi: trả lời đúng / sai / chưa (ngoài giờ hỏi thì không hiện)
       answered: !asking ? '' : this.correct.some((a) => a.username === username) ? 'right' : this.wrong.has(username) ? 'wrong' : '',
     });
@@ -1168,6 +1208,7 @@ export class Classroom {
       classSize: this.students.size,
       stats: this.stats,
       flowers: this.flowers,
+      luckBoard: this.luckBoard.map((x) => x.nickname), // Bảng May Mắn (ý muốn cỏ bốn lá)
       lastFlowerAt: this.lastFlowerAt,
       clapping: now < this.clapUntil,
       recess: r && {

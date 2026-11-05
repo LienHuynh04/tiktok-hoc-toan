@@ -60,6 +60,8 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
             {view.players < GAME.smallRoomPlayers && <span className="text-amber-300"> · phòng vắng: có người đúng là {GAME.smallRoomEndAfterSec} giây sau chốt câu</span>}
           </div>
           {view.topic && <div>Dạng toán cả lớp chọn: {view.topic}</div>}
+          {view.seats.find((s) => s.front) && <div>⭐ Bàn đầu tiết này: <b className="text-amber-300">{view.seats.find((s) => s.front)?.nickname}</b></div>}
+          {view.luckBoard.length > 0 && <div>🍀 Bảng May Mắn: <b className="text-emerald-300">{view.luckBoard.join(' · ')}</b></div>}
           {sent > 0 && <div>Giả lập đã gửi: {sent}</div>}
         </div>
       )}
@@ -95,7 +97,9 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
         <Btn onClick={() => sendControl('custom', 'newRound')}>🔄 Ván mới</Btn>
         <Btn onClick={() => emitTest('chat', { ...fake(Math.floor(Math.random() * 50)), comment: view?.answer.toLowerCase() ?? '' })}>✅ 1 bạn trả lời đúng</Btn>
         <Btn onClick={() => emitTest('chat', { ...fake(Math.floor(Math.random() * 50)), comment: 'vào lớp' })}>🙋 1 bạn vào lớp</Btn>
-        <Btn onClick={() => emitTest('gift', { ...fake(3), giftName: 'Hoa hồng', giftId: 1, diamondCount: 1, repeatCount: 1 })}>🌹 Tặng hoa</Btn>
+        <Btn onClick={() => emitTest('gift', { ...fake(3), giftName: 'Hoa hồng', giftId: 1, diamondCount: 1, repeatCount: 1 })}>🌹 Hoa hồng (vào lớp)</Btn>
+        <Btn onClick={() => emitTest('gift', { ...fake(6), giftName: 'Cử chỉ thả tim', giftId: 3, diamondCount: 5, repeatCount: 1 })}>🫰 Thả tim (lên bàn đầu)</Btn>
+        <Btn onClick={() => emitTest('gift', { ...fake(7), giftName: 'Cỏ bốn lá', giftId: 4, diamondCount: 10, repeatCount: 1 })}>🍀 Cỏ bốn lá (Bảng May Mắn)</Btn>
         <Btn onClick={() => emitTest('gift', { ...fake(4), giftName: 'Mũ', giftId: 2, diamondCount: 99, repeatCount: 1 })}>🎁 Quà to (thêm giờ)</Btn>
         <Btn onClick={() => emitTest('like', { ...fake(5), likeCount: 300 })}>❤️ 300 tim</Btn>
         <Btn onClick={() => emitTest('chat', { ...fake(Math.floor(Math.random() * 50)), comment: 'hôm nay sinh nhật con cô ơi' })}>🎂 Thử: 1 bạn báo sinh nhật</Btn>

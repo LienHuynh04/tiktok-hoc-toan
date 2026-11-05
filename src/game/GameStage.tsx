@@ -80,6 +80,7 @@ export function GameStage({ game }: { game: GameState }) {
       <Motto />
       <Board v={v} now={now} />
       <DayTop v={v} />
+      <LuckBoard v={v} />
       <Vase v={v} />
       <Teacher v={v} now={now} />
       <Punished v={v} />
@@ -789,6 +790,10 @@ function Students({ v, now }: { v: StageView; now: number }) {
                 <Hair username={s.username} girl={s.girl} />
               </div>
             </div>
+            {s.front && <div className="pointer-events-none absolute -inset-[6px] z-20 rounded-[22px] border-[5px] border-[#fbbf24] shadow-[0_0_26px_rgba(251,191,36,0.85)]" />}
+            {s.front && (
+              <div className="absolute -top-[60px] left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#f59e0b] px-3 py-[2px] text-[17px] font-extrabold text-white shadow-lg">⭐ BÀN ĐẦU</div>
+            )}
             {s.answered === 'right' && <div className="badge bg-[#16a34a]">✓</div>}
             {s.answered === 'wrong' && <div className="badge bg-[#dc2626]">✗</div>}
             <DeskGifts desk={s.desk} x={x} y={y} w={w} show={show} scale={scale} />
@@ -982,6 +987,24 @@ function Motto() {
   return (
     <div className="motto absolute left-1/2 top-[168px] -translate-x-1/2 whitespace-nowrap px-10 py-[6px] text-[38px] font-extrabold tracking-wider">
       TIÊN HỌC LỄ – HẬU HỌC VĂN
+    </div>
+  );
+}
+
+// Bảng May Mắn: ghim tên bạn tặng cỏ bốn lá (ý muốn 10 xu) ở góc dưới phải, giữ cả buổi live
+function LuckBoard({ v }: { v: StageView }) {
+  if (!v.luckBoard.length) return null;
+  return (
+    <div className="absolute bottom-[16px] right-[14px] z-20 w-[264px] rotate-1 rounded-[14px] border-[3px] border-[#4d9b4d] bg-[#f1fbe9]/95 px-3 pb-2 pt-3 text-[#1e4620] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
+      <div className="absolute -top-[18px] left-1/2 -translate-x-1/2 text-[30px]">🍀</div>
+      <div className="text-center text-[21px] font-extrabold leading-tight text-[#2e7d32]">BẢNG MAY MẮN</div>
+      <div className="mt-1 space-y-[2px]">
+        {v.luckBoard.map((n, i) => (
+          <div key={`${n}-${i}`} className="truncate text-center text-[20px] font-semibold leading-[25px]">
+            {n}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
