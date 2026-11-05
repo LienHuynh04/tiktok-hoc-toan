@@ -1,0 +1,26 @@
+/* Hiệu ứng riêng của Đấu Trường Sinh Tồn (tiền tố arena-) */
+
+@keyframes arenaBob {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-5px) scale(1.04); }
+}
+.arena-bob {
+  animation: arenaBob 0.8s ease-in-out infinite;
+}
+
+@keyframes arenaPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.07); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.arena-pop {
+  animation: arenaPop 0.3s ease-out;
+}
+
+@keyframes arenaPoison {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.85; }
+}
+.arena-poison {
+  animation: arenaPoison 1.6s ease-in-out infinite;
+}
