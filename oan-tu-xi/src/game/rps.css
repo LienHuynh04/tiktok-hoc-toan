@@ -98,3 +98,70 @@
   animation: rpsArmPump 0.38s ease-in-out infinite;
   transform-origin: 150px 128px;
 }
+
+/* Nhân vật thua lượt: choáng váng lắc lư */
+@keyframes rpsWobble {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-3.5deg);
+  }
+  75% {
+    transform: rotate(3deg);
+  }
+}
+.rps-wobble {
+  animation: rpsWobble 0.55s ease-in-out infinite;
+  transform-origin: 50% 95%;
+}
+
+/* Con dấu kết quả trận đóng xuống */
+@keyframes rpsStamp {
+  0% {
+    transform: scale(2.6) rotate(-18deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.92) rotate(-8deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(-8deg);
+    opacity: 1;
+  }
+}
+.rps-stamp {
+  animation: rpsStamp 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Tim vỡ: nảy to rồi mờ */
+@keyframes rpsHeartBreak {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.7) rotate(-10deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+.rps-heart-break {
+  animation: rpsHeartBreak 0.7s ease-out;
+}
+
+/* Bong bóng thoại nhún nhẹ */
+@keyframes rpsBubbleBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+.rps-bubble {
+  animation: rpsBubbleBob 2.2s ease-in-out infinite;
+}

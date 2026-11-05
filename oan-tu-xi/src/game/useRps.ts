@@ -100,7 +100,7 @@ export function useRps() {
       if (c.action === 'setName' && c.text) setChannelName(c.text);
       const room = roomRef.current;
       if (!room) return;
-      if (c.action === 'speak' && c.text) voice.say(`F: ${c.text}`, true);
+      if (c.action === 'speak' && c.text) voice.say(`M: ${c.text}`, true);
       if (c.action === 'setRate' && c.text) voice.rate = Number(c.text) || 1;
       if (c.action === 'reset') {
         voice.stop();
