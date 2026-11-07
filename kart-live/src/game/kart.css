@@ -1,0 +1,57 @@
+/* Hiệu ứng riêng của Đua Xe Kart Live (tiền tố kart-) — chỉ cho lớp HUD phủ trên canvas 3D */
+
+@keyframes kartPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.07); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.kart-pop {
+  animation: kartPop 0.3s ease-out;
+}
+
+@keyframes kartCount {
+  0% { transform: scale(1.8); opacity: 0; }
+  40% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.94); opacity: 1; }
+}
+.kart-count {
+  animation: kartCount 0.9s ease-out;
+}
+
+@keyframes kartBanner {
+  0% { transform: translateY(-24px); opacity: 0; }
+  12% { transform: translateY(0); opacity: 1; }
+  88% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-12px); opacity: 0; }
+}
+.kart-banner {
+  animation: kartBanner 5.5s ease-out forwards;
+}
+
+@keyframes kartHeart {
+  0% { transform: translateY(0) scale(0.7); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(-190px) scale(1.25); opacity: 0; }
+}
+.kart-heart {
+  animation: kartHeart 2.4s ease-out forwards;
+}
+
+@keyframes kartSpeedlines {
+  from { background-position-x: 0; }
+  to { background-position-x: -480px; }
+}
+.kart-speed {
+  background-image: repeating-linear-gradient(115deg, transparent 0 34px, rgba(255, 255, 255, 0.07) 34px 40px, transparent 40px 84px);
+  -webkit-mask-image: linear-gradient(180deg, transparent 26%, black 48%);
+  mask-image: linear-gradient(180deg, transparent 26%, black 48%);
+  animation: kartSpeedlines 0.5s linear infinite;
+}
+
+@keyframes kartGlowPulse {
+  0%, 100% { box-shadow: 0 0 22px 4px rgba(250, 204, 21, 0.55); }
+  50% { box-shadow: 0 0 34px 10px rgba(250, 204, 21, 0.85); }
+}
+.kart-vip {
+  animation: kartGlowPulse 1.1s ease-in-out infinite;
+}
