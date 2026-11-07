@@ -3,7 +3,7 @@ export const GAME = {
   defaultChannelName: 'Auto Tarot Live',
   topicSec: 30, // người chơi gõ TAROT mà chưa kèm chủ đề: có 30 giây để chọn chủ đề, quá hạn tự huỷ phiên
   pickSec: 5, // người đang được xem có 5 giây gõ 1/2/3 chọn lá (nhịp nhanh như Phòng Tarot, chủ kênh chốt 2026-11-07), quá hạn tự chọn lá giữa
-  revealSec: 22, // thời gian lá bài + lời giải hiện trên sân khấu (đồng hồ bị giữ khi giọng đang đọc)
+  revealSec: 15, // thời gian lá bài + lời giải hiện trên sân khấu (giảm 22 → 15 theo ý chủ kênh 2026-11-07 cho nhịp nhanh; đồng hồ vẫn bị giữ khi giọng đang đọc nên không cắt ngang câu)
   queueMax: 8, // hàng chờ (đã có chủ đề) tối đa
   choosingMax: 6, // số người đang ở bước chọn chủ đề tối đa cùng lúc
   cooldownOthers: 2, // vừa xem xong phải nhường ít nhất 2 lượt của người khác mới được xem lại

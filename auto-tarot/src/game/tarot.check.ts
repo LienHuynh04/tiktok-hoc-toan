@@ -34,6 +34,7 @@ for (const c of CARDS) {
   }
 }
 assert.equal(GAME.pickSec, 5, 'mỗi người có 5 giây chọn lá');
+assert.equal(GAME.revealSec, 15, 'mỗi lượt xem bài hiện 15 giây trên sân khấu');
 assert.equal(GAME.topicSec, 30, 'chọn chủ đề trong 30 giây');
 
 // ---------- nhận diện chủ đề ----------
