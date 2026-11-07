@@ -61,7 +61,7 @@ export interface TarotView {
     picked: number;
     auto: boolean;
     secLeft: number;
-    cards: { numeral: string; name: string; en: string; symbol: string; c1: string; c2: string; keywords: string; reversed: boolean; faceUp: boolean }[];
+    cards: { numeral: string; name: string; en: string; symbol: string; c1: string; c2: string; keywords: string; reversed: boolean; faceUp: boolean; img: string }[];
   } | null;
   lastDone: { nickname: string; topic: string; cardName: string } | null;
   readings: number;
@@ -410,6 +410,7 @@ export class TarotRoom {
               keywords: d.card.keywords,
               reversed: d.reversed,
               faceUp: act.state === 'READING' && i === act.picked,
+              img: `/assets/cards/${d.card.id}.jpg`, // ảnh bộ Rider-Waite ở public/assets/cards (thiếu file thì sân khấu tự dùng mặt vẽ CSS)
             })),
           }
         : null,

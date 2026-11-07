@@ -2,6 +2,10 @@
 
 Game tarot TỰ ĐỘNG cho TikTok LIVE, phát triển từ Phòng Tarot trong cùng repo: mỗi người xem có một **phiên chơi riêng** chạy theo quy trình 3 bước, hệ thống tự điều phối lần lượt, chủ kênh không cần bấm điều khiển. Sân khấu dọc 1080×1920 cho TikTok LIVE Studio / OBS.
 
+## Ảnh lá bài
+
+Mặt ngửa dùng **ảnh bộ Rider–Waite cổ điển** (bộ bài cộng đồng tarot dùng phổ biến nhất) tại `public/assets/cards/<mã lá>.jpg` — 22 lá Ẩn Chính cắt từ tấm ghép chủ kênh tải lên (bản gốc ở `src/anh/`). Thiếu file nào, sân khấu tự dùng mặt bài vẽ CSS cho lá đó. Muốn ảnh nét hơn: chép đè file cùng tên vào đúng thư mục, không cần sửa code.
+
 ## Quy trình 3 bước cho từng người chơi
 
 1. **Chọn chủ đề**: người xem gõ thẳng một chủ đề: `tình yêu`, `người cũ`, `công việc`, `tài chính`, `tương lai`, `thông điệp vũ trụ` → vào hàng chờ ngay. Gõ `TAROT` hoặc `xem bài` trước cũng được, hệ thống nhắc chọn chủ đề (có 30 giây, quá hạn phiên tự huỷ).

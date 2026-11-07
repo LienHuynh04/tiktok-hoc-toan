@@ -1,7 +1,18 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { TarotState } from './useTarot';
 import type { TarotView } from './tarot';
+import { CARDS } from './cards';
 import './tarot.css';
+
+// Tải trước ảnh 22 lá để lúc lật bài không bị chờ (thiếu file thì bỏ qua, sân khấu dùng mặt vẽ CSS)
+function usePreloadCards() {
+  useEffect(() => {
+    for (const c of CARDS) {
+      const im = new Image();
+      im.src = `/assets/cards/${c.id}.jpg`;
+    }
+  }, []);
+}
 
 type CardV = TarotView['current'] extends infer C ? (C extends { cards: (infer K)[] } ? K : never) : never;
 
@@ -22,6 +33,7 @@ function useStars() {
 export function TarotStage({ game }: { game: TarotState }) {
   const v = game.view;
   const stars = useStars();
+  usePreloadCards();
   const cur = v?.current ?? null;
 
   return (
@@ -82,7 +94,7 @@ export function TarotStage({ game }: { game: TarotState }) {
           {cur && (
             <div className="absolute inset-x-0 top-[520px] flex items-start justify-center gap-[36px]">
               {cur.cards.map((c, i) => (
-                <CardSlot key={i} c={c} index={i} phase={v.phase} picked={cur.picked} />
+                <CardSlot key={`${i}:${c.img}`} c={c} index={i} phase={v.phase} picked={cur.picked} />
               ))}
             </div>
           )}
@@ -153,6 +165,7 @@ export function TarotStage({ game }: { game: TarotState }) {
 function CardSlot({ c, index, phase, picked }: { c: CardV; index: number; phase: TarotView['phase']; picked: number }) {
   const isPicked = phase === 'reveal' && picked === index;
   const dimmed = phase === 'reveal' && picked !== index;
+  const [imgErr, setImgErr] = useState(false);
   return (
     <div className={`w-[290px] transition-all duration-700 ${dimmed ? 'scale-[0.82] opacity-35' : ''} ${isPicked ? 'z-10 scale-[1.22]' : ''}`}>
       <div className={`tcard h-[440px] w-[290px] ${isPicked ? 'flipped' : ''} ${phase === 'offer' ? 'tcard-float' : ''}`} style={{ animationDelay: `${index * 0.5}s` }}>
@@ -164,17 +177,36 @@ function CardSlot({ c, index, phase, picked }: { c: CardV; index: number; phase:
             <div className="mt-6 flex h-[74px] w-[74px] items-center justify-center rounded-full bg-amber-300/90 text-[40px] font-extrabold text-indigo-950">{index + 1}</div>
             <div className="mt-3 text-[24px] text-fuchsia-100/80">Gõ {index + 1} để chọn lá này</div>
           </div>
-          {/* Mặt ngửa */}
-          <div className="tcard-face tcard-backface tcard-front flex flex-col items-center px-4 py-5 text-center" style={{ background: `linear-gradient(165deg, ${c.c1}, ${c.c2})` }}>
-            <div className="text-[26px] font-bold tracking-[0.25em] text-amber-200">{c.numeral}</div>
-            <div className="mt-3 text-[104px] leading-none" style={c.reversed ? { transform: 'rotate(180deg)' } : undefined}>
-              {c.symbol}
+          {/* Mặt ngửa: ưu tiên ảnh bộ bài thật (Rider-Waite) ở public/assets/cards; thiếu/lỗi file thì dùng mặt vẽ CSS */}
+          {!imgErr ? (
+            <div className="tcard-face tcard-backface tcard-front overflow-hidden" style={{ background: '#f5efe0' }}>
+              <img
+                src={c.img}
+                alt={c.name}
+                className="h-full w-full object-cover"
+                style={c.reversed ? { transform: 'rotate(180deg)' } : undefined}
+                onError={() => setImgErr(true)}
+                draggable={false}
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-2 pt-14 text-center">
+                <span className="text-[27px] font-extrabold text-amber-100" style={{ textShadow: '0 2px 8px rgba(0,0,0,.8)' }}>
+                  {c.numeral} · {c.name}
+                </span>
+              </div>
+              {c.reversed && <div className="absolute right-3 top-3 rotate-6 rounded-md bg-red-600 px-2.5 py-0.5 text-[21px] font-extrabold tracking-wider">NGƯỢC</div>}
             </div>
-            <div className="mt-3 text-[33px] font-extrabold leading-tight">{c.name}</div>
-            <div className="text-[22px] italic text-white/75">{c.en}</div>
-            <div className="mt-auto text-[21px] leading-snug text-white/85">{c.keywords}</div>
-            {c.reversed && <div className="absolute right-3 top-3 rotate-6 rounded-md bg-red-600 px-2.5 py-0.5 text-[21px] font-extrabold tracking-wider">NGƯỢC</div>}
-          </div>
+          ) : (
+            <div className="tcard-face tcard-backface tcard-front flex flex-col items-center px-4 py-5 text-center" style={{ background: `linear-gradient(165deg, ${c.c1}, ${c.c2})` }}>
+              <div className="text-[26px] font-bold tracking-[0.25em] text-amber-200">{c.numeral}</div>
+              <div className="mt-3 text-[104px] leading-none" style={c.reversed ? { transform: 'rotate(180deg)' } : undefined}>
+                {c.symbol}
+              </div>
+              <div className="mt-3 text-[33px] font-extrabold leading-tight">{c.name}</div>
+              <div className="text-[22px] italic text-white/75">{c.en}</div>
+              <div className="mt-auto text-[21px] leading-snug text-white/85">{c.keywords}</div>
+              {c.reversed && <div className="absolute right-3 top-3 rotate-6 rounded-md bg-red-600 px-2.5 py-0.5 text-[21px] font-extrabold tracking-wider">NGƯỢC</div>}
+            </div>
+          )}
         </div>
       </div>
     </div>
