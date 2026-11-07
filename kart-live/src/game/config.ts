@@ -1,12 +1,9 @@
 // Cấu hình Đua Xe Kart Live. Mọi con số chỉnh ở đây, engine (kart.ts) chỉ đọc.
 export const GAME = {
   defaultChannelName: 'Đua Xe Kart Live',
-  lobbySec: 25, // chờ ở vạch xuất phát cho mọi người nhận xe
-  countdownSec: 3, // đếm ngược 3-2-1
-  trackM: 1200, // đường đua dài 1200m (biển + sa mạc)
   baseSpeed: 25, // tốc độ gốc m/s (~90 km/h hiển thị)
   speedVar: 0.05, // mỗi tay đua ±5% tốc độ gốc (cố định theo tên)
-  rubberBand: 0.09, // tụt sau đoàn đầu >80m: tối đa +9% cho cuộc đua luôn sát nút
+  rubberBand: 0.09, // tụt sau người dẫn đầu >80m: tối đa +9% cho đoàn đua luôn sát nút
   nitroPassive: 2.4, // thanh nitro tự đầy 2,4 điểm/giây khi lái
   padNitro: 25, // cán đệm tăng tốc: +25 nitro
   dodgeNitro: 12, // né chướng ngại thành công: +12 nitro
@@ -21,6 +18,15 @@ export const GAME = {
   shotSlowSec: 1.6,
   shotRangeM: 45, // đạn chỉ tới được xe ngay phía trước trong 45m
   shieldSec: 6, // khiên tồn tại 6 giây, chặn 1 đòn
+  // ——— ĐUA VÔ HẠN + ĐIỂM (user chốt 2026-11-07): không còn chặng/đích ———
+  // Đường đua chạy mãi, người xem vào lúc nào cũng có xe và đua ngay.
+  pointEveryM: 100, // cứ chạy được 100m là +pointValue điểm
+  pointValue: 1,
+  checkpointM: 1000, // mỗi 1000m là 1 cột mốc
+  checkpointBonus: [10, 7, 5, 3, 2, 1], // qua cột mốc: thưởng theo HẠNG tại thời điểm qua (hạng 7+ được 1)
+  spawnBehindMedianM: 30, // xe mới xuất phát sau tay đua giữa đoàn 30m (gần camera, vào nhịp ngay)
+  spawnShieldSec: 3, // xe mới có khiên 3 giây cho quen đường
+  idleRetireSec: 600, // 10 phút không tương tác: xe rời đường đua, nhường chỗ cho người mới
   // Tương tác theo ĐẶC TẢ user chốt 2026-11-07 (ngoại lệ riêng của game này):
   // tim và quà tác động thẳng vào xe của người gửi.
   likeNitroPerLike: 0.8, // mỗi tim nạp 0,8 nitro cho xe của người thả (~125 tim = đầy thanh)
@@ -31,9 +37,6 @@ export const GAME = {
   giftBigSec: 4,
   vipBoostMult: 1.6, // quà VIP (>=100 xu): SIÊU TỐC x1,6
   vipBoostSec: 5, // ... trong 5 giây + nạp đầy nitro
-  finishSec: 12, // có người về nhất: chờ thêm 12 giây cho đoàn cán đích
-  podiumSec: 12, // hiện bục vinh quang
-  raceMaxSec: 300, // đua tối đa 5 phút, hết giờ xếp hạng theo quãng đường
   maxRacers: 24,
   laneCooldownMs: 900, // đổi làn liên tục cũng phải có nhịp
   idleLineEveryMs: 75_000,
@@ -41,7 +44,7 @@ export const GAME = {
   giftLineMaxWaitMs: 30_000,
   giftThanksCooldownMs: 30_000,
   bigGiftCoins: 50,
-  vipGiftCoins: 100, // quà từ 100 xu: vinh danh VIP (vẫn KHÔNG thêm tốc độ)
+  vipGiftCoins: 100, // quà từ 100 xu: SIÊU TỐC + vinh danh VIP
   auraSec: 20, // hào quang vinh danh quanh xe của người tặng
   startNitro: 30, // xuất phát có sẵn 30 nitro
   musicVolume: 0.9,

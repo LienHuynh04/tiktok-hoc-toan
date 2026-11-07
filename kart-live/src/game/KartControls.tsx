@@ -5,14 +5,14 @@ export function KartControls({ view, stageCount }: { view: KartView | null; stag
   if (!view) {
     return <p className="text-sm text-slate-400">Đang chờ trang stage chạy game… (mở link stage hoặc đợi vài giây)</p>;
   }
-  const phaseText = { lobby: 'đang chờ xuất phát', countdown: 'đang đếm ngược', race: 'đang đua', podium: 'bục vinh quang' }[view.phase];
+  const phaseText = { lobby: 'đang chờ tay đua đầu tiên', race: 'đang đua vô hạn' }[view.phase];
   return (
     <div className="space-y-4 text-sm text-slate-300">
       <div>
         <h2 className="mb-2 font-semibold text-slate-100">🏎️ Điều khiển Đua Xe Kart Live</h2>
         <p className="leading-relaxed">
-          Chặng {Math.max(1, view.raceNo)} · {phaseText} · {view.racerCount} tay đua · {view.totalLikes} tim đã thả ·{' '}
-          {stageCount} trang stage đang mở
+          Đua vô hạn · {phaseText} · {view.racerCount} tay đua · Đoàn đã chạy {(view.leaderDist / 1000).toFixed(1)}km ·{' '}
+          {view.totalLikes} tim đã thả · {stageCount} trang stage đang mở
         </p>
       </div>
 
@@ -51,8 +51,10 @@ export function KartControls({ view, stageCount }: { view: KartView | null; stag
 
       <div className="rounded-xl bg-slate-800/60 p-4 leading-relaxed">
         <p>
-          <b className="text-slate-100">Cách chơi:</b> người xem bình luận bất cứ chữ gì là nhận ngay 1 chiếc kart 3D mang
-          tên mình (vào giữa chặng cũng được). Lái bằng bình luận: <b className="text-slate-100">TRÁI / PHẢI</b> đổi làn
+          <b className="text-slate-100">Cách chơi:</b> đường đua <b className="text-slate-100">vô hạn</b> — người xem bình
+          luận bất cứ chữ gì là nhận ngay 1 chiếc kart 3D mang tên mình, vào lúc nào cũng đua ngay và xe chạy mãi. Tính
+          điểm: cứ 100m được 1 điểm, qua mỗi cột mốc 1km được thưởng theo hạng (10/7/5/3/2/1). Xe của người xem vắng
+          mặt quá 10 phút sẽ rời đường đua. Lái bằng bình luận: <b className="text-slate-100">TRÁI / PHẢI</b> đổi làn
           né thùng dầu và vũng nhớt, cán <b className="text-slate-100">đệm phát sáng</b> để nạp nitro. Thanh nitro đầy
           thì chọn 1 kỹ năng: <b className="text-slate-100">NITRO</b> bốc tốc, <b className="text-slate-100">ĐẠN</b> làm
           chậm xe ngay trước mặt, <b className="text-slate-100">KHIÊN</b> chặn 1 đòn.

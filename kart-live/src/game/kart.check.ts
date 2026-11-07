@@ -1,6 +1,7 @@
 // Kiểm chứng engine Đua Xe Kart Live — chạy: npm run check
-// Nhận xe bằng bình luận, lái bằng TRÁI/PHẢI, kỹ năng bằng nitro tự kiếm,
-// tim/quà tác động thẳng vào xe người gửi THEO ĐẶC TẢ user chốt 2026-11-07.
+// ĐUA VÔ HẠN: vào lúc nào cũng có xe, chạy mãi, tính điểm theo quãng đường +
+// thưởng cột mốc. Tim/quà tác động thẳng vào xe người gửi THEO ĐẶC TẢ
+// user chốt 2026-11-07.
 import { KartRoom, colorFor, type Person } from './kart';
 import { GAME } from './config';
 
@@ -32,19 +33,21 @@ ok(colorFor('abc') === colorFor('abc') && colorFor('abc') >= 0 && colorFor('abc'
   };
   const view = () => r.view(now);
   const kart = (u: string) => view().racers.find((x) => x.username === u)!;
+  const anyRoom = r as unknown as {
+    karts: Map<string, { nitro: number; dist: number; lastActiveAt: number; nextPointAt: number; nextCheckpointAt: number; shieldUntil: number }>;
+    hazards: unknown[];
+  };
 
-  // ——— 1 mình: chưa xuất phát ———
+  // ——— sảnh trống: chưa ai vào thì chưa đua ———
+  step(1000);
+  ok(view().phase === 'lobby' && view().racerCount === 0, 'chưa có tay đua: sảnh chờ');
+
+  // ——— 1 người vào là đua ngay (đua vô hạn không chờ đủ xe) ———
   r.chat({ ...P('solo', 'Một Mình'), comment: 'xin đua' }, now);
-  step(GAME.lobbySec * 1000 + 1000);
-  ok(view().phase === 'lobby', 'mới 1 tay đua: vẫn chờ ở vạch xuất phát');
-
-  // ——— đủ 2 xe: đếm ngược rồi xuất phát ———
+  step(200);
+  ok(view().phase === 'race' && view().racerCount === 1, '1 tay đua vào: đường đua vô hạn bắt đầu ngay');
   r.chat({ ...P('hai', 'Bạn Hai'), comment: 'tôi nữa' }, now);
-  step(1000); // 1 tick để phòng rút ngắn thời gian chờ xuống tối đa 8s
-  step(8100);
-  ok(view().phase === 'countdown', 'đủ 2 tay đua: vào đếm ngược');
-  step(GAME.countdownSec * 1000 + 100);
-  ok(view().phase === 'race' && view().raceNo === 1 && view().racerCount === 2, 'chặng 1 xuất phát với 2 xe');
+  ok(view().racerCount === 2, 'người thứ hai vào: có xe ngay giữa đường đua');
 
   // ——— đổi làn bằng bình luận ———
   const lane0 = kart('solo').lane;
@@ -57,7 +60,6 @@ ok(colorFor('abc') === colorFor('abc') && colorFor('abc') >= 0 && colorFor('abc'
   ok(kart('solo').lane === lane0, 'sau 900ms: gõ PHẢI lách về được');
 
   // ——— nitro đầy dần khi lái; chưa đầy thì gõ NITRO không ăn ———
-  const anyRoom = r as unknown as { karts: Map<string, { nitro: number; dist: number }> };
   anyRoom.karts.get('solo')!.nitro = 50;
   r.chat({ ...P('solo', 'Một Mình'), comment: 'nitro' }, now);
   ok(kart('solo').nitro === 50 && !kart('solo').boosting, 'nitro chưa đầy: gõ NITRO không tốn, không bốc');
@@ -91,16 +93,20 @@ ok(colorFor('abc') === colorFor('abc') && colorFor('abc') >= 0 && colorFor('abc'
   ok(kart('hai').nitro === nitroHaiBefore, 'tim của người khác không nạp cho xe mình');
   ok(view().totalLikes === 50, 'tổng tim của phòng được đếm');
 
-  // ——— VÀO GIỮA CHẶNG: nhận xe sau đoàn cuối ———
-  const minDist = Math.min(...view().racers.map((x) => x.dist));
+  // ——— VÀO GIỮA ĐƯỜNG ĐUA: xuất phát gần đoàn, có khiên làm quen ———
+  const distsBefore = view().racers.map((x) => x.dist).sort((a, b) => a - b);
+  const medianBefore = distsBefore[Math.floor(distsBefore.length / 2)];
   r.chat({ ...P('muon', 'Bạn Muộn'), comment: 'cho đua với' }, now);
-  ok(kart('muon').dist <= minDist && view().racerCount === 3, 'vào giữa chặng: xuất phát sau đoàn, vẫn đua được');
+  ok(view().racerCount === 3, 'vào giữa đường đua: có xe ngay');
+  ok(kart('muon').dist <= medianBefore && kart('muon').dist >= medianBefore - GAME.spawnBehindMedianM - 1, 'xe mới xuất phát sau tay đua giữa đoàn 30m');
+  ok(kart('muon').shielded, 'xe mới có khiên 3 giây làm quen đường');
 
   // ——— QUÀ THEO ĐẶC TẢ: bốc tốc / chơi xấu / siêu tốc ———
   anyRoom.karts.get('solo')!.dist = kart('hai').dist + 500; // solo bỏ xa, không dính chơi xấu
   r.gift(P('hai', 'Bạn Hai'), 10, now);
   ok(kart('hai').boosting, 'quà nhỏ 10 xu: xe bốc tốc');
-  anyRoom.karts.get('muon')!.dist = kart('hai').dist + 30; // muon (đã vào đua ở bước trước) ở ngay trước hai 30m
+  anyRoom.karts.get('muon')!.dist = kart('hai').dist + 30; // muon ở ngay trước hai 30m
+  anyRoom.karts.get('muon')!.shieldUntil = 0; // khiên làm quen của xe mới đã hết (không thì khiên đỡ đòn chơi xấu)
   r.gift(P('hai', 'Bạn Hai'), 50, now);
   ok(kart('muon').slowed, 'quà 50 xu: xe ngay phía trước bị làm chậm (chơi xấu)');
   ok(view().supporters[0]?.nickname === 'Bạn Hai' && view().supporters[0].coins === 60, 'người ủng hộ lên bảng vinh danh (10+50 xu)');
@@ -108,19 +114,41 @@ ok(colorFor('abc') === colorFor('abc') && colorFor('abc') >= 0 && colorFor('abc'
   const haiVip = kart('hai');
   ok(haiVip.nitro === 100 && haiVip.aura && haiVip.auraVip && haiVip.boosting, 'quà VIP 299 xu: đầy nitro + hào quang + siêu tốc');
 
-  // ——— đua tới đích: có vô địch, có điểm, qua bục vinh quang rồi về sảnh ———
+  // ——— ĐIỂM: 100m = 1 điểm, qua cột mốc 1000m dẫn đầu được +10 và 1 sao ———
+  const soloK = anyRoom.karts.get('solo')!;
+  soloK.dist = 990;
+  soloK.nextPointAt = 1000;
+  soloK.nextCheckpointAt = 1000;
+  anyRoom.karts.get('hai')!.dist = 100;
+  anyRoom.karts.get('muon')!.dist = 50;
+  const ptsBefore = kart('solo').points;
+  step(1000);
+  step(1000);
+  ok(kart('solo').dist >= 1000, 'solo cán qua 1000m');
+  ok(kart('solo').points - ptsBefore >= 11, 'qua 1000m dẫn đầu: +1 điểm đường +10 điểm cột mốc');
+  ok(kart('solo').wins === 1, 'dẫn đầu qua cột mốc: +1 sao Vua Đường Đua');
+  ok(view().checkpoints >= 1 && view().top[0]?.nickname === 'Một Mình', 'bảng điểm: solo dẫn đầu sau cột mốc 1');
+
+  // ——— ĐUA MÃI KHÔNG DỪNG: chạy qua 2,5km vẫn đang đua, chướng ngại được dọn sau đoàn ———
   let guard = 0;
-  while (view().phase !== 'podium' && guard++ < 400) step(1000);
-  ok(view().phase === 'podium', 'đua hết giờ/chạm đích: lên bục vinh quang');
-  ok(view().podium?.top.length === 3 && view().top.length > 0, 'bục có top 3, bảng Vua Đường Đua có điểm');
-  ok(view().totals.races === 1, 'đã tính 1 chặng');
-  step(GAME.podiumSec * 1000 + 200);
-  ok(view().phase === 'lobby', 'hết bục: về sảnh chờ chặng mới');
+  while (view().leaderDist < 2500 && guard++ < 500) step(1000);
+  ok(view().phase === 'race' && view().leaderDist >= 2500, 'đua vô hạn: qua 2,5km vẫn chạy tiếp, không về đích, không bục');
+  ok(view().checkpoints >= 2, 'đã qua ít nhất 2 cột mốc');
+  ok(anyRoom.hazards.length < 80, 'chướng ngại phía sau đoàn được dọn, mảng không phình vô hạn');
+
+  // ——— VẮNG LÂU THÌ RỜI ĐƯỜNG ĐUA (bot thì không) ———
+  anyRoom.karts.get('hai')!.lastActiveAt = now - (GAME.idleRetireSec * 1000 + 1000);
+  const countBefore = view().racerCount;
+  step(200);
+  ok(!view().racers.some((x) => x.username === 'hai') && view().racerCount === countBefore - 1, 'vắng quá 10 phút: xe rời đường đua');
 
   // ——— demo cho trang điều khiển ———
   const saysDemo = r.demoRace(now);
   step(500);
   ok(view().racerCount >= 7 && saysDemo.length >= 0, 'demo: 7 bot vào đua được');
+  anyRoom.karts.get('bot_0')!.lastActiveAt = now - 999_000_000;
+  step(200);
+  ok(view().racers.some((x) => x.username === 'bot_0'), 'bot demo không bị rời đường đua vì vắng');
 }
 
 if (fails === 0) console.log('KART CHECK: tất cả đạt ✔');

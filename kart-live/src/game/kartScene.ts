@@ -10,7 +10,6 @@ import { KART_COLORS, type KartView } from './kart';
 type RacerView = KartView['racers'][number];
 
 const LANE_X = 3.35; // làn -1/0/1 -> x = -3.35 / 0 / 3.35
-const TRACK_END = 1200;
 
 // RNG tất định để stage và bản xem trước dựng cảnh giống hệt nhau
 function mulberry32(seed: number) {
@@ -350,7 +349,12 @@ function makePalm(rng: () => number): THREE.Group {
   return g;
 }
 
-function makeGantry(text: string, z: number): THREE.Group {
+interface CheckpointGantry {
+  group: THREE.Group;
+  setKm: (km: number) => void;
+}
+
+function makeCheckpointGantry(): CheckpointGantry {
   const g = new THREE.Group();
   const pillarMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.5 });
   for (const sx of [-6.4, 6.4]) {
@@ -361,18 +365,29 @@ function makeGantry(text: string, z: number): THREE.Group {
   const beam = new THREE.Mesh(new THREE.BoxGeometry(13.5, 1.9, 0.5), new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.6 }));
   beam.position.set(0, 7.4, 0);
   g.add(beam);
-  const banner = new THREE.Mesh(
-    new THREE.PlaneGeometry(12.6, 1.95),
-    new THREE.MeshBasicMaterial({ map: bannerTexture(text, '#b91c1c', '#ffffff'), side: THREE.DoubleSide }),
-  );
-  banner.position.set(0, 7.4, 0.28);
-  g.add(banner);
-  const bannerBack = banner.clone();
-  bannerBack.rotation.y = Math.PI;
-  bannerBack.position.z = -0.28;
-  g.add(bannerBack);
-  g.position.z = z;
-  return g;
+  const mats: THREE.MeshBasicMaterial[] = [];
+  for (const side of [1, -1]) {
+    const mat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+    const banner = new THREE.Mesh(new THREE.PlaneGeometry(12.6, 1.95), mat);
+    banner.position.set(0, 7.4, 0.28 * side);
+    if (side < 0) banner.rotation.y = Math.PI;
+    mats.push(mat);
+    g.add(banner);
+  }
+  let curKm = -1;
+  return {
+    group: g,
+    setKm(km: number) {
+      if (km === curKm) return;
+      curKm = km;
+      const tex = bannerTexture(km === 0 ? '🏁 XUẤT PHÁT' : `🏁 CỘT MỐC ${km}KM`, '#b91c1c', '#ffffff');
+      for (const m of mats) {
+        m.map?.dispose();
+        m.map = tex;
+        m.needsUpdate = true;
+      }
+    },
+  };
 }
 
 function makeLighthouse(): THREE.Group {
@@ -437,6 +452,13 @@ export class KartScene3D {
   private disposed = false;
   private barrelTex: THREE.CanvasTexture;
   private padTex: THREE.CanvasTexture;
+  // ——— cảnh vô hạn: các vật tĩnh được tái sử dụng quanh camera ———
+  private road!: THREE.Mesh;
+  private grounds: THREE.Mesh[] = [];
+  private sunSprite!: THREE.Sprite;
+  private props: THREE.Object3D[] = []; // cọ + nhà + hải đăng, vòng đời 1340m
+  private gates: CheckpointGantry[] = [];
+  private gateLines: THREE.Mesh[] = [];
 
   constructor(private container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -457,6 +479,7 @@ export class KartScene3D {
     const sun = glowSprite('rgba(255,244,200,1)', 'rgba(251,191,36,0.45)');
     sun.scale.set(60, 60, 1);
     sun.position.set(120, 95, 700);
+    this.sunSprite = sun;
     this.scene.add(sun);
     const rngC = mulberry32(42);
     for (let i = 0; i < 12; i++) {
@@ -471,6 +494,7 @@ export class KartScene3D {
     const sand = new THREE.Mesh(new THREE.PlaneGeometry(700, 1500), new THREE.MeshStandardMaterial({ color: 0xeed9a4, roughness: 1 }));
     sand.rotation.x = -Math.PI / 2;
     sand.position.set(-60, -0.05, 620);
+    this.grounds.push(sand);
     this.scene.add(sand);
     const sea = new THREE.Mesh(
       new THREE.PlaneGeometry(420, 1500),
@@ -478,16 +502,19 @@ export class KartScene3D {
     );
     sea.rotation.x = -Math.PI / 2;
     sea.position.set(232, -0.02, 620);
+    this.grounds.push(sea);
     this.scene.add(sea);
     const foam = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1500), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75 }));
     foam.rotation.x = -Math.PI / 2;
     foam.position.set(19.5, 0.0, 620);
+    this.grounds.push(foam);
     this.scene.add(foam);
 
     // đường đua
     const road = new THREE.Mesh(new THREE.PlaneGeometry(11.4, 1290), new THREE.MeshStandardMaterial({ map: roadTexture(), roughness: 0.95 }));
     road.rotation.x = -Math.PI / 2;
     road.position.set(0, 0, 615);
+    this.road = road;
     this.scene.add(road);
     // vạch đích caro
     const finishTex = canvasTexture(256, 64, (g) => {
@@ -498,13 +525,18 @@ export class KartScene3D {
           g.fillRect(x, y, s, s);
         }
     });
-    const finishLine = new THREE.Mesh(new THREE.PlaneGeometry(11.4, 2.4), new THREE.MeshBasicMaterial({ map: finishTex }));
-    finishLine.rotation.x = -Math.PI / 2;
-    finishLine.position.set(0, 0.02, TRACK_END);
-    this.scene.add(finishLine);
-
-    this.scene.add(makeGantry('🏁 XUẤT PHÁT', 0));
-    this.scene.add(makeGantry('🏁 VỀ ĐÍCH', TRACK_END));
+    for (let i = 0; i < 2; i++) {
+      const line = new THREE.Mesh(new THREE.PlaneGeometry(11.4, 2.4), new THREE.MeshBasicMaterial({ map: finishTex }));
+      line.rotation.x = -Math.PI / 2;
+      line.position.set(0, 0.02, i * 1000);
+      this.gateLines.push(line);
+      this.scene.add(line);
+      const gate = makeCheckpointGantry();
+      gate.setKm(i);
+      gate.group.position.z = i * 1000;
+      this.gates.push(gate);
+      this.scene.add(gate.group);
+    }
 
     // cảnh quan hai bên đường
     const rng = mulberry32(7);
@@ -513,16 +545,19 @@ export class KartScene3D {
       const left = rng() < 0.62;
       palm.position.set(left ? -8.5 - rng() * 15 : 8.8 + rng() * 5.5, 0, rng() * 1260 - 20);
       palm.rotation.y = rng() * Math.PI * 2;
+      this.props.push(palm);
       this.scene.add(palm);
     }
     for (let i = 0; i < 7; i++) {
       const house = makeHouse(rng);
       house.position.set(-17 - rng() * 14, 0, 90 + i * 165 + rng() * 60);
       house.rotation.y = 0.4 + rng() * 0.5;
+      this.props.push(house);
       this.scene.add(house);
     }
     const light = makeLighthouse();
-    light.position.set(15.5, 0, TRACK_END - 55);
+    light.position.set(15.5, 0, 1145);
+    this.props.push(light);
     this.scene.add(light);
 
     this.barrelTex = canvasTexture(128, 128, (g) => {
@@ -696,7 +731,7 @@ export class KartScene3D {
     // ——— camera bám đoàn đua (lerp theo THỜI GIAN thật, không phụ thuộc fps) ———
     const dists = v.racers.map(distOf).sort((a, b) => a - b);
     const medianD = dists.length ? dists[Math.floor(dists.length / 2)] : 0;
-    const targetFocus = v.phase === 'lobby' || v.phase === 'countdown' ? 6 : Math.max(6, medianD - 8);
+    const targetFocus = v.phase === 'race' ? Math.max(6, medianD - 8) : 6;
     const dtFrame = Math.min(0.1, Math.max(0.001, (nowMs - this.lastFrameAt) / 1000));
     this.lastFrameAt = nowMs;
     let step = 1 - Math.exp(-dtFrame * 3);
@@ -706,10 +741,28 @@ export class KartScene3D {
     cam.position.set(Math.sin(t * 0.11) * 1.2, 8.2, this.focusZ - 17.5);
     cam.lookAt(0, 1.0, this.focusZ + 20);
 
-    // mây trôi chậm
+    // mây trôi chậm + vòng theo camera
     for (const c of this.clouds) {
       c.position.x += 0.008;
       if (c.position.x > 190) c.position.x = -190;
+      if (c.position.z < this.focusZ - 120) c.position.z += 1400;
+      else if (c.position.z > this.focusZ + 1280) c.position.z -= 1400;
+    }
+
+    // ——— cảnh vô hạn: trượt/tái sử dụng mọi vật tĩnh quanh camera ———
+    // đường: nhảy từng ô texture 15m nên hoa văn đứng yên trong thế giới thật
+    this.road.position.z = Math.round((this.focusZ + 150) / 15) * 15;
+    for (const g of this.grounds) g.position.z = this.focusZ + 500;
+    this.sunSprite.position.z = this.focusZ + 700;
+    for (const p of this.props) {
+      if (p.position.z < this.focusZ - 80) p.position.z += 1340;
+    }
+    // cổng + vạch cột mốc: luôn ở 2 mốc 1000m gần nhất phía trước
+    const b0 = Math.max(0, Math.floor((this.focusZ + 30) / 1000) * 1000);
+    for (let i = 0; i < 2; i++) {
+      this.gates[i].group.position.z = b0 + i * 1000;
+      this.gates[i].setKm(b0 / 1000 + i);
+      this.gateLines[i].position.z = b0 + i * 1000 + 0.02;
     }
     this.renderer.render(this.scene, this.camera);
   }

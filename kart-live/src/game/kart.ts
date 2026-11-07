@@ -1,6 +1,12 @@
-// Engine Đua Xe Kart Live: MỖI người xem là 1 tay đua kart, đua CÙNG LÚC trên đường
-// biển–sa mạc 1200m, góc nhìn 3D từ phía sau đoàn đua.
-// - Bình luận bất cứ lúc nào là nhận xe (vào giữa chặng cũng được, xuất phát sau đoàn).
+// Engine Đua Xe Kart Live — ĐUA VÔ HẠN: đường đua chạy MÃI không có đích,
+// MỖI người xem là 1 tay đua kart, góc nhìn 3D từ phía sau đoàn đua.
+// - Người xem vào LÚC NÀO cũng nhận xe và đua ngay (xuất phát gần đoàn đua),
+//   xe tự chạy liên tục; chủ xe chỉ cần gõ lệnh khi muốn lái/chơi kỹ năng.
+// - Tính ĐIỂM (user chốt 2026-11-07): cứ 100m được +1 điểm; qua mỗi cột mốc
+//   1000m được thưởng theo HẠNG tại thời điểm qua mốc (10/7/5/3/2/1). Bảng
+//   Vua Đường Đua xếp theo tổng điểm cả buổi live.
+// - Xe của người xem vắng mặt quá 10 phút (không bình luận/tim/quà) sẽ rời
+//   đường đua để nhường chỗ; bot demo thì chạy mãi.
 // - Lái bằng bình luận: TRÁI / PHẢI đổi làn né thùng dầu và vũng nhớt, cán đệm tăng tốc.
 // - Thanh nitro đầy dần khi lái + cán đệm + né đẹp. Đầy thanh chọn 1 kỹ năng:
 //   NITRO (bốc tốc), ĐẠN (làm chậm xe ngay trước mặt), KHIÊN (chặn 1 đòn).
@@ -27,7 +33,7 @@ export interface Person {
   avatar: string;
 }
 
-type Phase = 'lobby' | 'countdown' | 'race' | 'podium';
+type Phase = 'lobby' | 'race';
 
 interface Kart {
   p: Person;
@@ -44,11 +50,13 @@ interface Kart {
   slowUntil: number;
   slowMult: number;
   shieldUntil: number;
-  place: number; // 0 = chưa về đích
-  wins: number;
-  points: number; // điểm vô địch cả buổi
+  wins: number; // số lần dẫn đầu qua cột mốc
+  points: number; // điểm cả buổi: quãng đường + thưởng cột mốc
   inRace: boolean;
   lastLaneAt: number;
+  lastActiveAt: number; // lần cuối chủ xe tương tác (để xét rời đường đua)
+  nextPointAt: number; // mốc quãng đường kế tiếp được +điểm
+  nextCheckpointAt: number; // cột mốc 1000m kế tiếp
   hzIdx: number; // con trỏ chướng ngại tiếp theo sẽ cán
   padIdx: number; // con trỏ đệm tiếp theo
   auraUntil: number;
@@ -69,10 +77,7 @@ interface Pad {
 export interface KartView {
   at: number;
   phase: Phase;
-  phaseRemainSec: number;
-  countdown: number; // 3..1 khi đếm ngược, 0 còn lại
-  raceNo: number;
-  trackM: number;
+  checkpoints: number; // số cột mốc người dẫn đầu đã qua
   leaderDist: number;
   racers: {
     username: string;
@@ -86,21 +91,20 @@ export interface KartView {
     boosting: boolean;
     slowed: boolean;
     shielded: boolean;
-    place: number;
+    place: number; // hạng theo quãng đường tại thời điểm chụp
     wins: number;
+    points: number;
     aura: boolean;
     auraVip: boolean;
-    finished: boolean;
   }[];
   racerCount: number;
   hazards: { dist: number; blocked: number[]; kind: 'barrel' | 'oil' }[];
   pads: { dist: number; lane: number }[];
   totalLikes: number;
-  podium: { top: { nickname: string; avatar: string; color: number; place: number }[] } | null;
   top: { nickname: string; avatar: string; points: number; wins: number }[];
   supporters: { nickname: string; coins: number }[];
   lastEvent: { text: string; at: number } | null;
-  totals: { races: number };
+  totals: { checkpoints: number };
   musicOn: boolean;
   musicVolume: number;
 }
@@ -110,7 +114,7 @@ export const plain = (s: string) =>
   s
     .toUpperCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .replace(/Đ/g, 'D')
     .replace(/[^A-Z0-9 ]/g, ' ')
     .replace(/\s+/g, ' ')
@@ -128,9 +132,11 @@ function hashStr(s: string): number {
   return h;
 }
 export const colorFor = (username: string) => hashStr(username) % KART_COLORS.length;
+const isBot = (username: string) => username.startsWith('bot_');
 
 const IDLE_LINES = [
-  'Cả nhà bình luận bất cứ chữ gì là nhận một chiếc kart mang tên mình nhé!',
+  'Cả nhà bình luận bất cứ chữ gì là nhận một chiếc kart mang tên mình, vào là đua ngay nhé!',
+  'Đường đua này chạy mãi không có đích: cứ 100 mét là được 1 điểm, qua mỗi cột mốc 1 cây số còn được thưởng điểm theo hạng nữa!',
   'Đang đua thì gõ TRÁI hoặc PHẢI để đổi làn né thùng dầu, nhớ cán đệm phát sáng để nạp nitro!',
   'Thanh nitro đầy thì gõ NITRO để bốc tốc, ĐẠN để chơi xe trước mặt, hoặc KHIÊN để phòng thủ!',
   'Thả tim là xe của bạn tăng tốc nhẹ và nạp thêm nitro đấy, thả càng nhiều xe càng bốc!',
@@ -145,28 +151,23 @@ export class KartRoom {
 
   private karts = new Map<string, Kart>();
   private phase: Phase = 'lobby';
-  private phaseEndsAt = 0;
-  private raceNo = 0;
   private raceStartedAt = 0;
-  private finishEndsAt = 0;
-  private totals = { races: 0 };
   private hazards: Hazard[] = [];
   private pads: Pad[] = [];
-  private nextSpawnAt = 0;
+  private nextSpawnAt = 160;
   private totalLikes = 0;
-  private finishCount = 0;
-  private podiumInfo: KartView['podium'] = null;
+  private checkpoints = 0; // cột mốc cao nhất đoàn đã qua
   private supporters = new Map<string, { nickname: string; coins: number }>();
   private lastEvent: KartView['lastEvent'] = null;
   private leaderName = '';
   private lastLeadSayAt = 0;
+  private lastCheckpointSayAt = 0;
   private lastTickAt = 0;
   private lastIdleAt = 0;
   private idleIdx = 0;
   private timeOffset = 0; // hold(): dời mọi mốc thời gian khi MC đang đọc câu chính
 
   constructor(now: number, private rng: () => number = Math.random) {
-    this.phaseEndsAt = this.eff(now) + GAME.lobbySec * 1000;
     this.lastTickAt = this.eff(now);
     this.lastIdleAt = this.eff(now);
   }
@@ -178,7 +179,7 @@ export class KartRoom {
     if (ms > 0) this.timeOffset += ms;
   }
   chatterWindow(_now: number): boolean {
-    return this.phase !== 'countdown';
+    return true;
   }
 
   private t(text: string, main = false): Say {
@@ -192,40 +193,23 @@ export class KartRoom {
     const t = this.eff(now);
     this.karts.clear();
     this.supporters.clear();
-    this.totals = { races: 0 };
-    this.raceNo = 0;
-    this.totalLikes = 0;
-    this.leaderName = '';
-    this.toLobby(t);
-    return [this.t('Chào cả nhà đến với Đua Xe Kart Live! Bình luận bất cứ chữ gì là nhận ngay một chiếc kart mang tên mình. Thả tim là xe của bạn tăng tốc và nạp nitro, tặng quà là xe bốc tốc vượt lên nhé!', true)];
-  }
-
-  private toLobby(t: number) {
-    this.phase = 'lobby';
-    this.phaseEndsAt = t + GAME.lobbySec * 1000;
     this.hazards = [];
     this.pads = [];
-    this.podiumInfo = null;
-    for (const k of this.karts.values()) {
-      // giữ inRace: tay đua đã đăng ký thì các chặng sau vẫn đua tiếp, khỏi bình luận lại
-      k.dist = 0;
-      k.speed = 0;
-      k.place = 0;
-      k.nitro = GAME.startNitro;
-      k.boostUntil = 0;
-      k.cheerUntil = 0;
-      k.vipUntil = 0;
-      k.padUntil = 0;
-      k.slowUntil = 0;
-      k.shieldUntil = 0;
-      k.hzIdx = 0;
-      k.padIdx = 0;
-    }
+    this.nextSpawnAt = 160;
+    this.phase = 'lobby';
+    this.totalLikes = 0;
+    this.checkpoints = 0;
+    this.leaderName = '';
+    void t;
+    return [this.t('Chào cả nhà đến với Đua Xe Kart Live! Đây là đường đua VÔ HẠN: bình luận bất cứ chữ gì là nhận ngay một chiếc kart và đua liền, chạy mãi không dừng. Cứ 100 mét là có điểm, qua cột mốc 1 cây số được thưởng lớn. Thả tim là xe tăng tốc và nạp nitro, tặng quà là xe bốc tốc vượt lên nhé!', true)];
   }
 
   private addKart(p: Person, t: number): Kart {
     let k = this.karts.get(p.username);
-    if (k) return k;
+    if (k) {
+      k.lastActiveAt = t;
+      return k;
+    }
     const h = hashStr(p.username);
     k = {
       p,
@@ -242,11 +226,13 @@ export class KartRoom {
       slowUntil: 0,
       slowMult: GAME.slowMult,
       shieldUntil: 0,
-      place: 0,
       wins: 0,
       points: 0,
       inRace: false,
       lastLaneAt: 0,
+      lastActiveAt: t,
+      nextPointAt: GAME.pointEveryM,
+      nextCheckpointAt: GAME.checkpointM,
       hzIdx: 0,
       padIdx: 0,
       auraUntil: 0,
@@ -271,21 +257,25 @@ export class KartRoom {
   private enterRace(k: Kart, t: number) {
     if (k.inRace) return;
     k.inRace = true;
-    if (this.phase === 'race' || this.phase === 'countdown') {
-      // Vào giữa chặng: xuất phát sau đoàn cuối 25m để không phá cuộc đua
-      let min = Infinity;
-      for (const o of this.karts.values()) if (o.inRace && o.place === 0) min = Math.min(min, o.dist);
-      k.dist = Number.isFinite(min) ? Math.max(0, min - 25) : 0;
-      // bỏ qua chướng ngại/đệm đã nằm sau vị trí xuất phát
-      while (k.hzIdx < this.hazards.length && this.hazards[k.hzIdx].dist < k.dist) k.hzIdx++;
-      while (k.padIdx < this.pads.length && this.pads[k.padIdx].dist < k.dist) k.padIdx++;
+    const others = [...this.karts.values()].filter((o) => o !== k && o.inRace);
+    if (this.phase === 'race' && others.length > 0) {
+      // Vào giữa đường đua vô hạn: xuất phát sau tay đua GIỮA đoàn một đoạn,
+      // gần camera và vào nhịp ngay, kèm khiên 3 giây cho quen đường
+      const dists = others.map((o) => o.dist).sort((a, b) => a - b);
+      const median = dists[Math.floor(dists.length / 2)];
+      k.dist = Math.max(0, median - GAME.spawnBehindMedianM);
+      k.shieldUntil = Math.max(k.shieldUntil, t + GAME.spawnShieldSec * 1000);
     } else {
       k.dist = 0;
-      k.hzIdx = 0;
-      k.padIdx = 0;
     }
+    k.nextPointAt = (Math.floor(k.dist / GAME.pointEveryM) + 1) * GAME.pointEveryM;
+    k.nextCheckpointAt = (Math.floor(k.dist / GAME.checkpointM) + 1) * GAME.checkpointM;
+    // bỏ qua chướng ngại/đệm đã nằm sau vị trí xuất phát
+    k.hzIdx = 0;
+    while (k.hzIdx < this.hazards.length && this.hazards[k.hzIdx].dist < k.dist) k.hzIdx++;
+    k.padIdx = 0;
+    while (k.padIdx < this.pads.length && this.pads[k.padIdx].dist < k.dist) k.padIdx++;
     if (k.nitro < GAME.startNitro) k.nitro = GAME.startNitro;
-    void t;
   }
 
   /** Quà THEO ĐẶC TẢ (user chốt 2026-11-07): tác động thẳng vào cuộc đua.
@@ -302,7 +292,7 @@ export class KartRoom {
     s.coins += coins;
     s.nickname = p.nickname;
     this.supporters.set(p.username, s);
-    if (this.phase !== 'race' || k.place > 0) return;
+    if (this.phase !== 'race') return;
     if (coins >= GAME.vipGiftCoins) {
       k.vipUntil = t + GAME.vipBoostSec * 1000;
       k.nitro = 100;
@@ -312,7 +302,7 @@ export class KartRoom {
       // chơi xấu xe ngay phía trước (trong tầm đạn)
       let target: Kart | null = null;
       for (const o of this.karts.values()) {
-        if (o === k || !o.inRace || o.place > 0) continue;
+        if (o === k || !o.inRace) continue;
         const gap = o.dist - k.dist;
         if (gap > 0 && gap <= GAME.shotRangeM && (!target || gap < target.dist - k.dist)) target = o;
       }
@@ -342,7 +332,7 @@ export class KartRoom {
     this.totalLikes += count;
     const k = this.addKart(p, t);
     this.enterRace(k, t);
-    if (this.phase === 'race' && k.place === 0) {
+    if (this.phase === 'race') {
       k.nitro = Math.min(100, k.nitro + count * GAME.likeNitroPerLike);
       k.cheerUntil = t + GAME.cheerMs;
     }
@@ -354,11 +344,11 @@ export class KartRoom {
     const k = this.addKart(e, t);
     const wasIn = k.inRace;
     this.enterRace(k, t);
-    if (!wasIn && this.phase === 'lobby') {
-      // chào tay đua mới ở sảnh chờ (câu phụ, không chặn nhịp)
-      return [this.t(`Chào ${e.spoken}! Xe số ${this.karts.size} đã sẵn sàng ở vạch xuất phát!`)];
+    if (!wasIn) {
+      // chào tay đua mới (câu phụ, không chặn nhịp)
+      return [this.t(`Chào ${e.spoken}! Xe kart của bạn đã lăn bánh, gõ TRÁI, PHẢI để lái nhé!`)];
     }
-    if (this.phase !== 'race' || k.place > 0) return [];
+    if (this.phase !== 'race') return [];
 
     const words = plain(e.comment).split(' ');
     const has = (...ws: string[]) => ws.some((w) => words.includes(w));
@@ -380,7 +370,7 @@ export class KartRoom {
     // Kỹ năng — tốn trọn thanh nitro
     if (has('NITRO', 'TANG', 'TOC')) return this.skillNitro(k, t);
     if (has('DAN', 'BAN')) return this.skillShot(k, t);
-    if (has('KHIEN', 'KHien'.toUpperCase())) return this.skillShield(k, t);
+    if (has('KHIEN')) return this.skillShield(k, t);
     return [];
   }
 
@@ -396,7 +386,7 @@ export class KartRoom {
     // tìm xe gần nhất ngay phía trước trong tầm đạn
     let target: Kart | null = null;
     for (const o of this.karts.values()) {
-      if (o === k || !o.inRace || o.place > 0) continue;
+      if (o === k || !o.inRace) continue;
       const gap = o.dist - k.dist;
       if (gap > 0 && gap <= GAME.shotRangeM && (!target || gap < target.dist - k.dist)) target = o;
     }
@@ -423,35 +413,14 @@ export class KartRoom {
   startRace(now: number): Say[] {
     const t = this.eff(now);
     if (this.phase !== 'lobby') return [];
-    return this.beginCountdown(t);
+    if (![...this.karts.values()].some((k) => k.inRace)) return [];
+    return this.startEndless(t);
   }
 
-  private beginCountdown(t: number): Say[] {
-    const racers = [...this.karts.values()].filter((k) => k.inRace);
-    if (racers.length === 0) return [];
-    this.raceNo++;
-    this.phase = 'countdown';
-    this.phaseEndsAt = t + GAME.countdownSec * 1000;
-    this.finishCount = 0;
-    this.leaderName = '';
-    this.hazards = [];
-    this.pads = [];
-    this.nextSpawnAt = 160; // chướng ngại đầu tiên cách vạch 160m
-    for (const k of racers) {
-      k.dist = 0;
-      k.speed = 0;
-      k.place = 0;
-      k.nitro = GAME.startNitro;
-      k.hzIdx = 0;
-      k.padIdx = 0;
-      k.boostUntil = 0;
-      k.cheerUntil = 0;
-      k.vipUntil = 0;
-      k.padUntil = 0;
-      k.slowUntil = 0;
-      k.shieldUntil = 0;
-    }
-    return [this.t(`Chặng ${this.raceNo} sắp bắt đầu với ${racers.length} tay đua! Chuẩn bị: gõ TRÁI, PHẢI để lái, né thùng dầu và cán đệm nạp nitro nhé!`, true)];
+  private startEndless(t: number): Say[] {
+    this.phase = 'race';
+    this.raceStartedAt = t;
+    return [this.t('Đường đua vô hạn bắt đầu! Xe cứ chạy mãi, ai vào lúc nào cũng đua được. Cứ 100 mét là có điểm, qua cột mốc 1 cây số được thưởng lớn nhé!', true)];
   }
 
   demoRace(now: number): Say[] {
@@ -463,13 +432,13 @@ export class KartRoom {
       const k = this.addKart(p, t);
       this.enterRace(k, t);
     }
-    if (this.phase === 'lobby') says.push(...this.beginCountdown(t));
+    if (this.phase === 'lobby') says.push(...this.startEndless(t));
     return says;
   }
 
-  /** Sinh chướng ngại + đệm phía trước đoàn đua */
-  private spawnAhead(leaderDist: number) {
-    while (this.nextSpawnAt < leaderDist + 260 && this.nextSpawnAt < GAME.trackM - 60) {
+  /** Sinh chướng ngại + đệm phía trước đoàn đua, dọn những thứ đoàn đã bỏ xa */
+  private spawnAhead(leaderDist: number, minDist: number) {
+    while (this.nextSpawnAt < leaderDist + 260) {
       const d = this.nextSpawnAt;
       if (this.rng() < 0.62) {
         const safeLane = Math.floor(this.rng() * 3) - 1;
@@ -479,6 +448,20 @@ export class KartRoom {
         this.pads.push({ dist: d, lane: Math.floor(this.rng() * 3) - 1 });
       }
       this.nextSpawnAt += 55 + this.rng() * 55;
+    }
+    // dọn phía sau: mọi xe đều đã cán qua (con trỏ của từng xe đã vượt) — trừ số đã dọn khỏi đầu mảng
+    const cut = minDist - 120;
+    let n = 0;
+    while (n < this.hazards.length && this.hazards[n].dist < cut) n++;
+    if (n > 0) {
+      this.hazards.splice(0, n);
+      for (const k of this.karts.values()) k.hzIdx = Math.max(0, k.hzIdx - n);
+    }
+    let m = 0;
+    while (m < this.pads.length && this.pads[m].dist < cut) m++;
+    if (m > 0) {
+      this.pads.splice(0, m);
+      for (const k of this.karts.values()) k.padIdx = Math.max(0, k.padIdx - m);
     }
   }
 
@@ -500,43 +483,43 @@ export class KartRoom {
     this.lastTickAt = t;
     const says: Say[] = [];
 
-    if (this.phase === 'lobby') {
-      const n = [...this.karts.values()].filter((k) => k.inRace).length;
-      if (n >= 2 && this.phaseEndsAt - t > 8000) this.phaseEndsAt = t + 8000; // đủ xe thì rút ngắn chờ, tối đa 8 giây nữa là chạy
-      if (t >= this.phaseEndsAt && n >= 2) says.push(...this.beginCountdown(t));
-      else if (t >= this.phaseEndsAt) this.phaseEndsAt = t + 10_000; // chưa đủ 2 xe thì chờ thêm
-      if (t - this.lastIdleAt >= GAME.idleLineEveryMs) {
-        this.lastIdleAt = t;
-        says.push(this.t(IDLE_LINES[this.idleIdx++ % IDLE_LINES.length]));
+    // ——— rời đường đua khi vắng mặt quá lâu (bot thì không) ———
+    for (const k of [...this.karts.values()]) {
+      if (!isBot(k.p.username) && t - k.lastActiveAt > GAME.idleRetireSec * 1000) {
+        this.karts.delete(k.p.username);
+        if (k.inRace) {
+          this.event(`👋 ${k.p.nickname} rời đường đua`, t);
+          says.push(this.t(`${k.p.spoken} vắng lâu nên xe đã rời đường đua. Khi nào quay lại, bình luận là có xe mới ngay nhé!`));
+        }
       }
-      return says;
     }
 
-    if (this.phase === 'countdown') {
-      if (t >= this.phaseEndsAt) {
-        this.phase = 'race';
-        this.raceStartedAt = t;
-        this.phaseEndsAt = t + GAME.raceMaxSec * 1000;
-        says.push(this.t('Xuất phát! Đua thôi cả nhà ơi!', true));
-      }
-      return says;
-    }
-
-    if (this.phase === 'podium') {
-      if (t >= this.phaseEndsAt) this.toLobby(t);
-      return says;
-    }
-
-    // ——— ĐANG ĐUA ———
     const active = [...this.karts.values()].filter((k) => k.inRace);
+
+    if (this.phase === 'lobby') {
+      if (active.length >= 1) {
+        says.push(...this.startEndless(t));
+      } else {
+        if (t - this.lastIdleAt >= GAME.idleLineEveryMs) {
+          this.lastIdleAt = t;
+          says.push(this.t(IDLE_LINES[this.idleIdx++ % IDLE_LINES.length]));
+        }
+        return says;
+      }
+    }
+
+    if (active.length === 0) {
+      this.phase = 'lobby';
+      this.leaderName = '';
+      return says;
+    }
+
+    // ——— ĐANG ĐUA VÔ HẠN ———
     const leaderDist = Math.max(0, ...active.map((k) => k.dist));
-    this.spawnAhead(leaderDist);
+    const minDist = Math.min(...active.map((k) => k.dist));
+    this.spawnAhead(leaderDist, minDist);
 
     for (const k of active) {
-      if (k.place > 0) {
-        k.speed = 0;
-        continue;
-      }
       k.speed = this.speedOf(k, t, leaderDist);
       k.dist += k.speed * dt;
       k.nitro = Math.min(100, k.nitro + GAME.nitroPassive * dt);
@@ -564,20 +547,32 @@ export class KartRoom {
           k.nitro = Math.min(100, k.nitro + GAME.dodgeNitro); // né đẹp
         }
       }
-      // về đích
-      if (k.dist >= GAME.trackM) {
-        k.dist = GAME.trackM;
-        k.place = ++this.finishCount;
-        if (k.place === 1) {
-          this.finishEndsAt = t + GAME.finishSec * 1000;
-          this.event(`🏁 ${k.p.nickname} về nhất!`, t);
-          says.push(this.t(`Về nhất rồi! ${k.p.spoken} cán đích đầu tiên ở chặng ${this.raceNo}! Mọi người còn ${GAME.finishSec} giây để cán đích!`, true));
+      // ——— ĐIỂM quãng đường: mỗi pointEveryM được +pointValue ———
+      while (k.dist >= k.nextPointAt) {
+        k.points += GAME.pointValue;
+        k.nextPointAt += GAME.pointEveryM;
+      }
+      // ——— CỘT MỐC: thưởng theo hạng tại thời điểm qua mốc ———
+      while (k.dist >= k.nextCheckpointAt) {
+        const rank = 1 + active.filter((o) => o !== k && o.dist > k.dist).length;
+        const bonus = GAME.checkpointBonus[rank - 1] ?? 1;
+        k.points += bonus;
+        const km = Math.round(k.nextCheckpointAt / GAME.checkpointM);
+        k.nextCheckpointAt += GAME.checkpointM;
+        if (km > this.checkpoints) this.checkpoints = km;
+        if (rank === 1) {
+          k.wins++;
+          this.event(`🏁 ${k.p.nickname} dẫn đầu qua cột mốc ${km}km (+${bonus}đ)`, t);
+          if (t - this.lastCheckpointSayAt > 15_000) {
+            this.lastCheckpointSayAt = t;
+            says.push(this.t(`${k.p.spoken} dẫn đầu qua cột mốc ${km} cây số, nhận thưởng ${bonus} điểm! Tổng điểm của bạn ấy đang là ${k.points} điểm!`, true));
+          }
         }
       }
     }
 
-    // đổi ngôi dẫn đầu
-    const leader = active.filter((k) => k.place === 0).sort((a, b) => b.dist - a.dist)[0] ?? active.sort((a, b) => (a.place || 99) - (b.place || 99))[0];
+    // đổi ngôi dẫn đầu (theo quãng đường)
+    const leader = [...active].sort((a, b) => b.dist - a.dist)[0];
     if (leader && leader.p.username !== this.leaderName) {
       const first = this.leaderName === '';
       this.leaderName = leader.p.username;
@@ -588,84 +583,55 @@ export class KartRoom {
       }
     }
 
-    const allDone = active.length > 0 && active.every((k) => k.place > 0);
-    const timeUp = t >= this.phaseEndsAt;
-    const windowUp = this.finishCount > 0 && t >= this.finishEndsAt;
-    if (allDone || timeUp || windowUp) {
-      says.push(...this.toPodium(t, active));
+    // câu rảnh giữa buổi đua dài
+    if (t - this.lastIdleAt >= GAME.idleLineEveryMs) {
+      this.lastIdleAt = t;
+      says.push(this.t(IDLE_LINES[this.idleIdx++ % IDLE_LINES.length]));
     }
     return says;
   }
 
-  private toPodium(t: number, active: Kart[]): Say[] {
-    // xe chưa cán đích xếp theo quãng đường
-    const ranked = [...active].sort((a, b) => (a.place || 999) - (b.place || 999) || b.dist - a.dist);
-    ranked.forEach((k, i) => {
-      if (k.place === 0) k.place = i + 1;
-    });
-    const pts = [10, 7, 5, 3, 2, 1];
-    ranked.forEach((k, i) => {
-      k.points += pts[i] ?? 0;
-      if (i === 0) k.wins++;
-    });
-    this.totals.races++;
-    this.podiumInfo = {
-      top: ranked.slice(0, 3).map((k) => ({ nickname: k.p.nickname, avatar: k.p.avatar, color: k.color, place: k.place })),
-    };
-    this.phase = 'podium';
-    this.phaseEndsAt = t + GAME.podiumSec * 1000;
-    const w = ranked[0];
-    return w ? [this.t(`Chặng ${this.raceNo} kết thúc! Vô địch là ${w.p.spoken}! Cả nhà chuẩn bị chặng tiếp theo, bình luận là nhận xe ngay!`, true)] : [];
-  }
-
   view(now: number): KartView {
     const t = this.eff(now);
-    const racers = [...this.karts.values()]
-      .filter((k) => k.inRace)
-      .sort((a, b) => b.dist - a.dist)
-      .slice(0, GAME.maxRacers)
-      .map((k) => ({
-        username: k.p.username,
-        nickname: k.p.nickname,
-        avatar: k.p.avatar,
-        color: k.color,
-        dist: Math.round(k.dist * 10) / 10,
-        speed: Math.round(k.speed * 10) / 10,
-        lane: k.lane,
-        nitro: Math.round(k.nitro),
-        boosting: k.boostUntil > t || k.padUntil > t || k.cheerUntil > t || k.vipUntil > t,
-        slowed: k.slowUntil > t,
-        shielded: k.shieldUntil > t,
-        place: k.place,
-        wins: k.wins,
-        aura: k.auraUntil > t,
-        auraVip: k.auraUntil > t && k.auraVip,
-        finished: k.place > 0,
-      }));
+    const sorted = [...this.karts.values()].filter((k) => k.inRace).sort((a, b) => b.dist - a.dist);
+    const racers = sorted.slice(0, GAME.maxRacers).map((k, i) => ({
+      username: k.p.username,
+      nickname: k.p.nickname,
+      avatar: k.p.avatar,
+      color: k.color,
+      dist: Math.round(k.dist * 10) / 10,
+      speed: Math.round(k.speed * 10) / 10,
+      lane: k.lane,
+      nitro: Math.round(k.nitro),
+      boosting: k.boostUntil > t || k.padUntil > t || k.cheerUntil > t || k.vipUntil > t,
+      slowed: k.slowUntil > t,
+      shielded: k.shieldUntil > t,
+      place: i + 1,
+      wins: k.wins,
+      points: k.points,
+      aura: k.auraUntil > t,
+      auraVip: k.auraUntil > t && k.auraVip,
+    }));
     const leaderDist = racers.length ? Math.max(...racers.map((r) => r.dist)) : 0;
     const near = (d: number) => d > leaderDist - 90 && d < leaderDist + 300;
     return {
       at: now,
       phase: this.phase,
-      phaseRemainSec: Math.max(0, Math.ceil((this.phaseEndsAt - t) / 1000)),
-      countdown: this.phase === 'countdown' ? Math.max(1, Math.ceil((this.phaseEndsAt - t) / 1000)) : 0,
-      raceNo: this.raceNo,
-      trackM: GAME.trackM,
+      checkpoints: this.checkpoints,
       leaderDist,
       racers,
-      racerCount: racers.length,
+      racerCount: sorted.length,
       hazards: this.hazards.filter((h) => near(h.dist)).map((h) => ({ dist: h.dist, blocked: [-1, 0, 1].filter((l) => h.blocked[l + 1]), kind: h.kind })),
       pads: this.pads.filter((p) => near(p.dist)).map((p) => ({ dist: p.dist, lane: p.lane })),
       totalLikes: this.totalLikes,
-      podium: this.phase === 'podium' ? this.podiumInfo : null,
       top: [...this.karts.values()]
         .filter((k) => k.points > 0)
-        .sort((a, b) => b.points - a.points)
+        .sort((a, b) => b.points - a.points || b.wins - a.wins)
         .slice(0, 5)
         .map((k) => ({ nickname: k.p.nickname, avatar: k.p.avatar, points: k.points, wins: k.wins })),
       supporters: [...this.supporters.values()].sort((a, b) => b.coins - a.coins).slice(0, 5),
       lastEvent: this.lastEvent && t - this.lastEvent.at < 6000 ? this.lastEvent : null,
-      totals: { ...this.totals },
+      totals: { checkpoints: this.checkpoints },
       musicOn: this.musicOn,
       musicVolume: this.musicVolume,
     };

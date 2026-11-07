@@ -43,8 +43,9 @@ export function KartStage({ game }: { game: KartState }) {
 
   const giftFresh = game.lastGift && now - game.lastGift.at < 6000 ? game.lastGift : null;
   const giftCoins = giftFresh ? giftFresh.diamondCount * giftFresh.repeatCount : 0;
-  const sorted = [...view.racers].sort((a, b) => (a.place || 99) - (b.place || 99) || b.dist - a.dist);
-  const raceClock = view.phase === 'race' ? Math.max(0, view.trackM - view.leaderDist) : 0;
+  // bảng trực tiếp xếp theo ĐIỂM (điểm là thứ hạng chính của đua vô hạn), hòa thì so quãng đường
+  const sorted = [...view.racers].sort((a, b) => b.points - a.points || b.dist - a.dist);
+  const leaderKm = (view.leaderDist / 1000).toFixed(1);
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-sky-400 text-white">
@@ -58,38 +59,36 @@ export function KartStage({ game }: { game: KartState }) {
         </div>
       </div>
       <div className="absolute right-[26px] top-[24px] rounded-2xl bg-slate-900/85 px-5 py-2 text-right text-[28px] font-extrabold shadow-xl">
-        {view.phase === 'lobby' && `Xuất phát sau ${view.phaseRemainSec}s`}
-        {view.phase === 'countdown' && 'SẮN SÀNG…'}
-        {view.phase === 'race' && `🏁 còn ${Math.round(raceClock)}m`}
-        {view.phase === 'podium' && `Chặng ${view.raceNo} kết thúc`}
+        {view.phase === 'lobby' && '♾️ ĐUA VÔ HẠN'}
+        {view.phase === 'race' && `🏁 Đoàn đã chạy ${leaderKm}km`}
         <div className="text-[20px] font-bold text-sky-300">
-          Chặng {Math.max(1, view.raceNo)} · {view.racerCount} tay đua
+          {view.racerCount} tay đua · Đã qua {view.checkpoints} cột mốc
         </div>
       </div>
 
-      {/* bảng xếp hạng trực tiếp */}
-      {(view.phase === 'race' || view.phase === 'podium') && (
+      {/* bảng điểm trực tiếp */}
+      {view.phase === 'race' && (
         <div className="absolute left-[26px] top-[118px] w-[330px] space-y-[6px]">
           {sorted.slice(0, 6).map((r, i) => (
             <div
               key={r.username}
               className={`flex items-center gap-2 rounded-xl px-3 py-[5px] text-[24px] font-bold shadow ${i === 0 ? 'bg-amber-400/95 text-slate-900' : 'bg-slate-900/70'}`}
             >
-              <span className="w-[34px] text-center">{r.finished ? MEDAL[r.place - 1] ?? r.place : i + 1}</span>
+              <span className="w-[34px] text-center">{MEDAL[i] ?? i + 1}</span>
               <span className="h-[18px] w-[18px] shrink-0 rounded-full border-2 border-white/70" style={{ background: hex(r.color) }} />
               <span className="min-w-0 flex-1 truncate">{r.nickname}</span>
               {r.boosting && <span>🔥</span>}
               {r.shielded && <span>🛡️</span>}
               {r.slowed && <span>💫</span>}
-              <span className="text-[20px] opacity-85">{r.finished ? 'ĐÍCH' : `${Math.round(r.dist)}m`}</span>
+              <span className="text-[20px] opacity-85">{r.points}đ · {Math.round(r.dist)}m</span>
             </div>
           ))}
           {view.racerCount > 6 && <div className="pl-2 text-[20px] font-bold text-white/85">… và {view.racerCount - 6} tay đua nữa</div>}
         </div>
       )}
 
-      {/* bản đồ đường đua thu nhỏ */}
-      {(view.phase === 'race' || view.phase === 'countdown') && (
+      {/* bản đồ đoàn đua thu nhỏ: cửa sổ 300m quanh người dẫn đầu */}
+      {view.phase === 'race' && (
         <div className="absolute right-[30px] top-[150px] flex h-[560px] w-[54px] flex-col items-center">
           <div className="text-[24px]">🏁</div>
           <div className="relative w-[10px] flex-1 rounded-full bg-slate-900/45">
@@ -97,11 +96,11 @@ export function KartStage({ game }: { game: KartState }) {
               <div
                 key={r.username}
                 className="absolute left-1/2 h-[20px] w-[20px] -translate-x-1/2 rounded-full border-2 border-white"
-                style={{ background: hex(r.color), bottom: `calc(${(r.dist / view.trackM) * 100}% - 10px)` }}
+                style={{ background: hex(r.color), bottom: `calc(${Math.max(0, Math.min(100, ((r.dist - (view.leaderDist - 300)) / 300) * 100))}% - 10px)` }}
               />
             ))}
           </div>
-          <div className="text-[20px] font-bold">Vạch xuất phát</div>
+          <div className="text-[20px] font-bold">300m quanh đoàn đầu</div>
         </div>
       )}
 
@@ -112,7 +111,7 @@ export function KartStage({ game }: { game: KartState }) {
         </div>
       )}
 
-      {/* banner quà — chỉ vinh danh */}
+      {/* banner quà — theo đặc tả: quà bốc tốc cho xe người tặng */}
       {giftFresh && (
         <div
           className={`kart-pop absolute left-1/2 top-[210px] -translate-x-1/2 whitespace-nowrap rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 px-7 py-3 text-[28px] font-extrabold text-amber-950 shadow-2xl ${giftCoins >= 100 ? 'kart-vip' : ''}`}
@@ -122,14 +121,14 @@ export function KartStage({ game }: { game: KartState }) {
         </div>
       )}
 
-      {/* sảnh chờ */}
+      {/* sảnh chờ tay đua đầu tiên */}
       {view.phase === 'lobby' && (
         <div className="absolute left-1/2 top-[300px] w-[900px] -translate-x-1/2 rounded-[28px] bg-slate-900/80 px-8 py-6 text-center shadow-2xl backdrop-blur-sm">
-          <div className="text-[44px] font-extrabold text-amber-300">🏁 SẮP XUẤT PHÁT — {view.phaseRemainSec}s</div>
+          <div className="text-[44px] font-extrabold text-amber-300">♾️ ĐUA VÔ HẠN — VÀO LÀ ĐUA NGAY</div>
           <div className="mt-2 text-[30px] leading-snug">
             Bình luận <b className="text-sky-300">bất cứ chữ gì</b> là nhận ngay 1 chiếc kart mang tên mình!
           </div>
-          <div className="mt-1 text-[26px] text-white/85">Vào giữa chặng vẫn đua được · Đua hoàn toàn miễn phí</div>
+          <div className="mt-1 text-[26px] text-white/85">Đường đua chạy mãi không có đích · Cứ 100m được 1 điểm · Qua cột mốc 1km được thưởng theo hạng</div>
           {view.racerCount > 0 && (
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {view.racers.slice(0, 14).map((r) => (
@@ -140,30 +139,6 @@ export function KartStage({ game }: { game: KartState }) {
               {view.racerCount > 14 && <span className="px-2 py-1 text-[24px]">+{view.racerCount - 14}</span>}
             </div>
           )}
-        </div>
-      )}
-
-      {/* đếm ngược */}
-      {view.phase === 'countdown' && (
-        <div key={view.countdown} className="kart-count absolute left-1/2 top-[560px] -translate-x-1/2 text-[220px] font-black text-amber-300 drop-shadow-[0_10px_24px_rgba(0,0,0,0.55)]">
-          {view.countdown}
-        </div>
-      )}
-
-      {/* bục vinh quang */}
-      {view.phase === 'podium' && view.podium && (
-        <div className="kart-pop absolute left-1/2 top-[330px] w-[880px] -translate-x-1/2 rounded-[28px] bg-slate-900/85 px-8 py-6 text-center shadow-2xl">
-          <div className="text-[46px] font-extrabold text-amber-300">🏆 BỤC VINH QUANG — CHẶNG {view.raceNo}</div>
-          <div className="mt-4 space-y-3">
-            {view.podium.top.map((p) => (
-              <div key={p.place} className="flex items-center justify-center gap-4 text-[36px] font-extrabold">
-                <span className="text-[44px]">{MEDAL[p.place - 1]}</span>
-                <span className="h-[26px] w-[26px] rounded-full border-[3px] border-white/80" style={{ background: hex(p.color) }} />
-                <span>{p.nickname}</span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 text-[26px] text-white/85">Chặng mới sắp bắt đầu — bình luận là nhận xe ngay!</div>
         </div>
       )}
 
@@ -218,7 +193,7 @@ export function KartStage({ game }: { game: KartState }) {
 
       {/* tên kênh */}
       <div className="absolute bottom-[96px] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900/60 px-6 py-2 text-[24px] font-bold text-white/90">
-        {game.channelName} · Chặng {Math.max(1, view.raceNo)} · Đã đua {view.totals.races} chặng
+        {game.channelName} · Đua vô hạn · Đoàn đã chạy {leaderKm}km · Đã qua {view.totals.checkpoints} cột mốc
       </div>
     </div>
   );
