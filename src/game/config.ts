@@ -4,7 +4,7 @@
 
 export const GAME = {
   // Tên lớp mặc định (hiện trên bảng hiệu). Chủ kênh đổi ở ô "Tên lớp" trang điều khiển.
-  defaultChannelName: 'Lớp Học',
+  defaultChannelName: 'Lớp Tổng Hợp',
 
   // ---------- Một tiết học ----------
   questionsPerRound: 20,

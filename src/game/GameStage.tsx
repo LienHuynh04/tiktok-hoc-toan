@@ -7,7 +7,7 @@ import { Hair } from './Hair';
 import './stage.css';
 
 /**
- * Màn hình Lớp Toán 1080x1920. Nền là ảnh public/assets/bg/lop.webp (941x1672 phóng lên 1080 ngang),
+ * Màn hình Lớp Học 1080x1920. Nền là ảnh public/assets/bg/lop.webp (941x1672 phóng lên 1080 ngang),
  * nên mọi toạ độ dưới đây = toạ độ trên ảnh gốc x K.
  */
 const K = 1080 / 941;
@@ -15,11 +15,11 @@ const K = 1080 / 941;
 // Bàn dài + ghế băng vẽ đè lên dãy bàn lẻ trong ảnh nền (đo trên ảnh gốc): mép trên mặt bàn y, mép dưới b, 2 đầu bàn x1..x2.
 // n = số bạn ngồi mỗi dãy (chủ kênh chốt 2026-11-04: 7–8 bạn một dãy, các bạn nhỏ lại một chút). Dãy cuối nằm dưới giao diện TikTok nên để trống.
 const ROWS = [
-  { y: 812, b: 922, x1: 100, x2: 838, n: GAME.rowSeats[0], s: 0.92 },
-  { y: 942, b: 1069, x1: 72, x2: 870, n: GAME.rowSeats[1], s: 0.98 },
-  { y: 1093, b: 1232, x1: 45, x2: 902, n: GAME.rowSeats[2], s: 1.04 },
-  { y: 1253, b: 1414, x1: 28, x2: 922, n: GAME.rowSeats[3], s: 1.1 },
-  { y: 1458, b: 1646, x1: 5, x2: 938, n: 0, s: 1.16 },
+  { y: 789, b: 908, x1: 88, x2: 882, n: GAME.rowSeats[0], s: 0.92 },
+  { y: 955, b: 1078, x1: 67, x2: 908, n: GAME.rowSeats[1], s: 0.98 },
+  { y: 1120, b: 1249, x1: 46, x2: 923, n: GAME.rowSeats[2], s: 1.04 },
+  { y: 1285, b: 1424, x1: 26, x2: 933, n: GAME.rowSeats[3], s: 1.1 },
+  { y: 1460, b: 1636, x1: 5, x2: 938, n: 0, s: 1.16 },
 ];
 const KID = 0.82; // các bạn nhỏ hơn bản ghế lẻ để ngồi vừa bàn dài
 const SEAT_ROW: number[] = ROWS.flatMap((r, ri) => Array.from({ length: r.n }, () => ri));
@@ -77,7 +77,6 @@ export function GameStage({ game }: { game: GameState }) {
   return (
     <div className={`relative h-full w-full overflow-hidden ${v.clapping ? 'class-clap' : ''}`}>
       <Header v={v} name={game.channelName} />
-      <Motto />
       <Board v={v} now={now} />
       <DayTop v={v} />
       <LuckBoard v={v} />
@@ -104,16 +103,16 @@ function Header({ v, name }: { v: StageView; name: string }) {
     v.phase === 'recess'
       ? 'Giờ ra chơi'
       : v.phase === 'vote'
-        ? 'Chọn dạng toán tiết sau'
+        ? 'Chọn dạng học tiết sau'
         : v.qNo > 0 && v.phase !== 'results'
           ? `${v.review ? 'Ôn bài' : `Tiết ${v.round}`} · Câu ${v.qNo}/${v.total}`
           : `Tiết ${v.round}`;
   return (
-    <div className="absolute left-1/2 top-[14px] flex w-[470px] -translate-x-1/2 flex-col items-center rounded-[28px] border-[5px] border-[#7a4a1d] bg-[#f6e3b4] px-6 py-3 shadow-[0_8px_0_#5b3512]">
-      <div className="max-w-full truncate font-extrabold leading-none tracking-wide text-[#7a2e0e]" style={{ fontSize: name.length > 14 ? 34 : 46 }}>
+    <div className="absolute left-1/2 top-[8px] flex -translate-x-1/2 items-center gap-3 whitespace-nowrap rounded-full border-[4px] border-[#7a4a1d] bg-[#f6e3b4] px-6 py-[7px] shadow-[0_5px_0_#5b3512]">
+      <div className="font-extrabold leading-none tracking-wide text-[#7a2e0e]" style={{ fontSize: name.length > 14 ? 26 : 31 }}>
         {name.toUpperCase()}
       </div>
-      <div className="mt-1 text-[26px] font-semibold text-[#6b4a22]">
+      <div className="text-[22px] font-semibold leading-none text-[#6b4a22]">
         {sub} · {v.classSize} bạn
       </div>
     </div>
@@ -124,15 +123,15 @@ function Header({ v, name }: { v: StageView; name: string }) {
 function Board({ v, now }: { v: StageView; now: number }) {
   const left = Math.max(0, Math.ceil((v.endsAt - now) / 1000));
   return (
-    <div className={`chalk absolute left-[350px] top-[262px] h-[348px] w-[555px] text-[#f4f1e6] ${v.golden && v.phase !== 'recess' ? 'golden-board' : ''}`}>
+    <div className={`chalk absolute left-[300px] top-[250px] h-[375px] w-[620px] text-[#f4f1e6] ${v.golden && v.phase !== 'recess' ? 'golden-board' : ''}`}>
       {v.phase === 'intro' && v.round % 2 === 0 && v.weekTop.length > 0 && <WeekBoard v={v} left={left} />}
       {v.phase === 'intro' && !(v.round % 2 === 0 && v.weekTop.length > 0) && (
         <div className="flex h-full flex-col items-center justify-center text-center">
           <div className="text-[64px] leading-none">Sắp vào học!</div>
           <div className="mt-6 text-[36px] leading-snug">
-            Cô ra phép tính, cả lớp tính nhẩm.
+            Cô ra câu hỏi đủ các môn, cả lớp cùng trả lời.
             <br />
-            Gõ số vào <b className="text-[#ffe680]">bình luận</b>
+            Gõ đáp án vào <b className="text-[#ffe680]">bình luận</b>
             <br />
             Nhanh nhất <b className="text-[#ffe680]">+10 điểm</b>
           </div>
@@ -592,7 +591,7 @@ function WeekBoard({ v, left }: { v: StageView; left: number }) {
 function DayTop({ v }: { v: StageView }) {
   const rows = v.todayTop ?? [];
   return (
-    <div className="absolute left-[14px] top-[238px] z-20 w-[320px] -rotate-2 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-3 pb-2 pt-3 text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
+    <div className="absolute bottom-[206px] left-[14px] z-20 w-[320px] -rotate-2 rounded-[14px] border-[3px] border-[#c9a45c] bg-[#fff8e1]/95 px-3 pb-2 pt-3 text-[#4a2c0e] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
       <div className="absolute -top-[18px] left-1/2 -translate-x-1/2 text-[30px]">📌</div>
       <div className="whitespace-nowrap text-center text-[20px] font-extrabold leading-tight text-[#b45309]">🏆 Học sinh xuất sắc hôm nay</div>
       {rows.length === 0 && <div className="py-3 text-center text-[20px] text-[#8a6a3a]">Chưa có ai, trả lời đúng là lên bảng!</div>}
@@ -651,7 +650,7 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
 function Podium({ v }: { v: StageView }) {
   if (v.phase !== 'question' && v.phase !== 'bonus' && v.phase !== 'reveal') return null;
   return (
-    <div className="absolute left-[417px] top-[634px] w-[420px]">
+    <div className="absolute left-[400px] top-[680px] w-[420px]">
       <div className="flex items-center justify-between rounded-t-[14px] bg-[#7a2e0e] px-3 py-[1px] text-[19px] font-bold text-[#ffe9b8]">
         <span>⚡ Nhanh nhất</span>
         <span>{v.correctCount} bạn đã đúng</span>
@@ -685,7 +684,7 @@ const SEAT_HINTS = ['⭐ Tính nhanh, điểm cao được vào lớp ngồi!', 
 function SeatHint({ now }: { now: number }) {
   const i = Math.floor(now / 8000) % SEAT_HINTS.length;
   return (
-    <div className="pointer-events-none absolute left-[397px] top-[718px] z-[9] flex w-[460px] justify-center">
+    <div className="pointer-events-none absolute left-[380px] top-[772px] z-[9] flex w-[460px] justify-center">
       <AnimatePresence mode="wait">
         <motion.div
           key={i}
@@ -984,14 +983,6 @@ function Standing({ v, now }: { v: StageView; now: number }) {
 }
 
 // Bảng khẩu hiệu đỏ trên bảng đen
-function Motto() {
-  return (
-    <div className="motto absolute left-1/2 top-[168px] -translate-x-1/2 whitespace-nowrap px-10 py-[6px] text-[38px] font-extrabold tracking-wider">
-      TIÊN HỌC LỄ – HẬU HỌC VĂN
-    </div>
-  );
-}
-
 // Thanh Ý MUỐN nằm ngang dưới đáy sân khấu (làm sẵn trong hình, thay vị trí panel của TikTok):
 // 3 món quà + giá + số lần cô đã thực hiện thật buổi này
 function WishBar({ v }: { v: StageView }) {

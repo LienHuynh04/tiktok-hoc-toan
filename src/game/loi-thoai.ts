@@ -38,19 +38,19 @@ const penalty = () => {
 export const LINES = {
   // ---------- Vào tiết ----------
   intro: [
-    'Cả lớp ổn định nào! Tiết toán mới bắt đầu rồi. Cô ra phép tính, ai gõ đáp án nhanh nhất thì nhiều điểm nhất.',
-    'Trống vào lớp rồi nha. Hai mươi câu toán, câu cuối là câu hỏi vàng nhân đôi điểm. Chuẩn bị bàn phím đi.',
-    'Ngồi ngay ngắn lại, cất điện thoại đi... à quên, lớp mình học bằng điện thoại. Vào bài toán thôi!',
-    'Tiết này cô đố hai mươi câu toán. Gõ số vào bình luận là được, tính nhẩm nha, cấm bấm máy tính đó.',
-    'Hai mươi câu, từ cộng trừ dễ ợt tới toán đố khó dần. Ai tính nhanh nhất thì ngồi bàn đầu.',
-    'Tiết này có cả câu tìm số còn thiếu nha các bạn nhỏ. Nhìn kỹ dấu hỏi trên bảng đó.',
-    'Hôm nay cô kiểm tra bảng cửu chương đó nha. Bạn nhỏ nào chưa thuộc thì lo mà ôn đi.',
-    'Ai ngủ gật thì dậy, ai ăn vặt thì cất. Tiết toán mới, điểm làm lại từ đầu, ai cũng có cơ hội ngồi bàn đầu.',
-    'Chào cả lớp! Hôm nay cô hỏi khó hơn hôm qua một chút. Bạn nhỏ nào giỏi toán thì chứng minh đi.',
+    'Cả lớp ổn định nào! Tiết học mới bắt đầu rồi. Cô ra câu hỏi đủ các môn, ai gõ đáp án nhanh nhất thì nhiều điểm nhất.',
+    'Trống vào lớp rồi nha. Hai mươi câu đủ các môn: Toán, Anh, Văn, Địa và câu đố. Câu cuối là câu hỏi vàng nhân đôi điểm, chuẩn bị bàn phím đi.',
+    'Ngồi ngay ngắn lại, cất điện thoại đi... à quên, lớp mình học bằng điện thoại. Vào bài thôi!',
+    'Tiết này cô đố hai mươi câu đủ các môn. Gõ đáp án vào bình luận là được, suy nghĩ cho kỹ, cấm tra cứu đó.',
+    'Hai mươi câu, từ câu dễ ợt tới câu khó dần, môn nào cũng có. Ai trả lời nhanh nhất thì ngồi bàn đầu.',
+    'Tiết này có cả câu đoán chữ, nối từ nha các bạn nhỏ. Nhìn kỹ gợi ý trên bảng đó.',
+    'Hôm nay cô kiểm tra đủ thứ đó nha. Bạn nhỏ nào chưa ôn bài thì lo mà ôn đi.',
+    'Ai ngủ gật thì dậy, ai ăn vặt thì cất. Tiết học mới, điểm làm lại từ đầu, ai cũng có cơ hội ngồi bàn đầu.',
+    'Chào cả lớp! Hôm nay cô hỏi khó hơn hôm qua một chút. Bạn nhỏ nào tự tin thì chứng minh đi.',
     'Vào học! Ai trả lời đúng nhanh nhất được mười điểm, chậm hơn thì ít điểm hơn. Chép đáp án của bạn thì được đúng một điểm thôi nha.',
     'Lớp trưởng đâu, hô cả lớp đứng dậy coi. Thôi khỏi, ngồi luôn đi, vào câu một.',
     'Tiết mới tới rồi. Bàn đầu đang trống, ai tính nhanh thì lên ngồi.',
-    'Cả lớp chú ý lên bảng. Phép tính cô viết to đùng, việc của các bạn nhỏ là nhẩm cho ra đáp án.',
+    'Cả lớp chú ý lên bảng. Câu hỏi cô viết to đùng, việc của các bạn nhỏ là tìm cho ra đáp án.',
   ] as L0,
 
   goldenIntro: [
@@ -177,7 +177,7 @@ export const LINES = {
   ] as L0,
   timeEvening: [
     'Chào buổi tối các bạn nhỏ! Ăn cơm tối xong vào học với cô nha.',
-    'Tối rồi, cả nhà quây quần, các bạn nhỏ rủ ba mẹ chơi tính toán cùng luôn đi.',
+    'Tối rồi, cả nhà quây quần, các bạn nhỏ rủ ba mẹ vào chơi cùng luôn đi.',
     'Buổi tối lớp mình đông vui quá. Tiết này ai làm lớp trưởng đây?',
   ] as L0,
   timeNight: [
@@ -220,7 +220,7 @@ export const LINES = {
   voteIntro: [
     (a, b) => `Tiết sau tính dạng nào đây các bạn nhỏ? Gõ số một nếu chọn ${a}, gõ số hai nếu chọn ${b}.`,
     (a, b) => `Cả lớp quyết định nha! Một là ${a}, hai là ${b}. Gõ số vào bình luận đi nào.`,
-    (a, b) => `Cô cho các bạn nhỏ chọn dạng toán tiết sau: một, ${a}. Hai, ${b}. Bên nào nhiều phiếu hơn thì học bên đó.`,
+    (a, b) => `Cô cho các bạn nhỏ chọn dạng học tiết sau: một, ${a}. Hai, ${b}. Bên nào nhiều phiếu hơn thì học bên đó.`,
   ] as L2,
   voteResult: [
     (t) => `Cả lớp đã chọn rồi! Tiết này mình tính nhiều câu ${t} nha.`,
@@ -235,7 +235,7 @@ export const LINES = {
   ] as L1,
   voteNobody: [
     'Chưa ai chọn hết, vậy cô tự chọn câu hỏi nha.',
-    'Không ai bình chọn hả? Thôi cô trộn đủ dạng toán luôn.',
+    'Không ai bình chọn hả? Thôi cô trộn đủ các môn luôn.',
   ] as L0,
 
   // ---------- Câu đố mẹo (câu 7, 13) ----------
@@ -304,8 +304,8 @@ export const LINES = {
   ] as L2,
   mathNobody: [
     (a) => `Không ai tính ra luôn hả? ${a} đó cả lớp.`,
-    (a) => `${a}. Lớp mình học toán chắc ngủ gật hết rồi.`,
-    (a) => `${a}! Cô giáo toán mà nghe là buồn lắm đó.`,
+    (a) => `${a}. Lớp mình chắc ngủ gật hết rồi.`,
+    (a) => `${a}! Cô mà nghe là buồn lắm đó.`,
     (a) => `${a} nha. Tối nay cả lớp ôn lại bảng cửu chương cho cô.`,
   ] as L1,
   mathWrong: [
@@ -588,7 +588,7 @@ export const LINES = {
   // Lớp Toán: quà to lúc chưa ai đúng thì cô cho thêm giờ (không mở số)
   mathGiftHint: [
     (n) => `${n} xin cô thêm giờ, cả lớp nhờ bạn đó nha. Thêm mười giây, nhẩm lẹ lên!`,
-    (n) => `Nhờ quà của ${n}, cô cho cả lớp thêm mười giây tính toán.`,
+    (n) => `Nhờ quà của ${n}, cô cho cả lớp thêm mười giây suy nghĩ.`,
     (n) => `${n} giải cứu cả lớp, thêm mười giây nè. Ai chưa ra thì ráng lên!`,
     (n) => `${n} tặng quà, cô thưởng cả lớp thêm mười giây.`,
     (n) => `Cảm ơn ${n}! Thêm mười giây trên đồng hồ rồi, ai tính ra nào?`,

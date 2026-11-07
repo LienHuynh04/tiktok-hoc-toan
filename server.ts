@@ -669,7 +669,7 @@ app.get('/bao-cao', (req, res) => {
   const banned = Object.entries(soLop.banned).sort((a, b) => b[1].at - a[1].at);
   const list = (items: string[], empty: string) => (items.length ? `<ol>${items.map((i) => `<li>${i}</li>`).join('')}</ol>` : `<p class="muted">${empty}</p>`);
   res.type('html').send(`<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Báo cáo Lớp Toán ${esc(day)}</title>
+<title>Báo cáo Lớp Tổng Hợp ${esc(day)}</title>
 <style>body{font-family:system-ui,sans-serif;max-width:860px;margin:0 auto;padding:16px;background:#fdf8ec;color:#3b2a14}
 h1{margin:0 0 4px}h2{margin-top:28px;border-bottom:2px solid #e9d8a6;padding-bottom:4px}.muted{color:#8a7350}
 .stats{display:flex;gap:12px;flex-wrap:wrap}.stat{background:#fff;border-radius:12px;padding:10px 16px;box-shadow:0 1px 3px #0002}
@@ -688,7 +688,7 @@ ${list(easy.map((r) => `<b>${esc(r.answer)}</b> · ${esc(r.category)} · ${r.cor
 ${list(top.map(([, s]) => `${esc(s.nickname)} · ${s.points} điểm`), 'Chưa có điểm (hoặc không phải hôm nay).')}
 <h2>🎒 Chuyên cần (đi học nhiều ngày liền)</h2>
 ${list(loyal.map(([, a]) => `${esc(a.nickname)} · ${a.streak} ngày liền · tổng ${a.total} ngày`), 'Chưa có ai.')}
-<h2>🚫 Câu đã bấm "Bỏ câu này"</h2><p class="muted">Câu toán do game tự sinh nên nút Bỏ chỉ bỏ qua câu đang hỏi (không ghi sổ, không có câu để sửa). Mục này luôn trống ở Lớp Toán.</p>
+<h2>🚫 Câu đã bấm "Bỏ câu này"</h2><p class="muted">Câu toán do game tự sinh nên nút Bỏ chỉ bỏ qua câu đang hỏi (không ghi sổ, không có câu để sửa). Mục này luôn trống ở Lớp Tổng Hợp.</p>
 ${list(banned.map(([id, b]) => `<b>${esc(b.answer)}</b> · ${esc(b.clue)} <code>${esc(id)}</code>`), 'Chưa bỏ câu nào.')}
 </body></html>`);
 });
