@@ -14,7 +14,7 @@ Mặt ngửa dùng **ảnh bộ Rider–Waite cổ điển** (bộ bài cộng �
 
 ## Quản lý người chơi (máy trạng thái từng người)
 
-Mỗi nickname một phiên riêng: `WAITING_TOPIC → WAITING_CARD → READING → COMPLETED`. Nhiều người ở các bước khác nhau cùng lúc nhưng kết quả xử lý lần lượt, không nhầm chủ đề giữa người chơi. Vừa xem xong phải **nhường ít nhất 2 lượt của người khác** (hoặc chờ 5 phút) mới được xem lại, tránh một người chiếm sóng liên tục. Xong một người, hệ thống tự gọi người tiếp theo.
+Mỗi nickname một phiên riêng: `WAITING_TOPIC → WAITING_CARD → READING → COMPLETED`. Nhiều người ở các bước khác nhau cùng lúc nhưng kết quả xử lý lần lượt, không nhầm chủ đề giữa người chơi. Xem xong, người chơi gõ lại chủ đề là **vào hàng chờ lại như người mới**: phòng vắng thì được xem tiếp ngay, phòng có người thì xếp hàng chờ tới lượt như bình thường. Xong một người, hệ thống tự gọi người tiếp theo.
 
 Sân khấu hiển thị: người đang chơi + chủ đề, 3 lá úp và lá được chọn, nội dung lời giải, danh sách hàng chờ, người đang chọn chủ đề, và lượt vừa xem xong. Trang điều khiển hiện trạng thái phiên của từng người theo thời gian thực.
 
@@ -34,7 +34,7 @@ Trang điều khiển: http://localhost:3021 · Link cho LIVE Studio: http://lvh
 
 - `server.ts`: máy chủ chung (kết nối TikTok, giọng đọc Edge TTS + Google dự phòng, SSE).
 - `src/game/cards.ts`: 22 lá Ẩn Chính vẽ bằng CSS (không file ảnh) + **132 lời giải theo 6 chủ đề** tự viết + bộ ghép lời giải `readingText` giữ độ dài 35–55 từ.
-- `src/game/tarot.ts`: engine phiên người chơi (máy trạng thái, hàng chờ, timeout, khoá nhường lượt).
+- `src/game/tarot.ts`: engine phiên người chơi (máy trạng thái, hàng chờ, timeout).
 - `src/game/TarotStage.tsx` / `TarotControls.tsx`: sân khấu và trang điều khiển (có nút giả lập đủ các bước để thử khi chưa live).
 - `src/live/`: hạ tầng live dùng chung (giọng đọc, sự kiện SSE, chống từ cấm).
 - Kiểm chứng: `npm run check` (máy trạng thái, không nhầm phiên, độ dài lời giải), `npm run lint`, `npm run build`.

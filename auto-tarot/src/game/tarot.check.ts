@@ -135,24 +135,30 @@ assert.equal(detectTopic(plain('hôm nay trời đẹp quá')), null, 'chat thư
   assert.equal(v.current?.auto, true);
 }
 
-// ---------- chống chiếm lượt: vừa xem xong phải nhường 2 lượt ----------
+// ---------- xem lại sau khi xem xong: phòng trống xem ngay, phòng có người xếp hàng như thường ----------
 {
-  const c = new TarotRoom(t0, rand);
-  c.newSession(t0);
-  const serve = (i: number, topic: string, at: number) => {
+  const serve = (c: TarotRoom, i: number, topic: string, at: number) => {
     chat(c, i, topic, at);
     chat(c, i, '1', at + 1000);
     c.tick(at + 1000 + GAME.revealSec * 1000 + 1);
     return at + 1000 + GAME.revealSec * 1000 + 2;
   };
-  let now = serve(1, 'tình yêu', t0);
-  const blocked = chat(c, 1, 'tình yêu', now);
-  assert.ok(blocked.some((l) => l.text.includes('nhường lượt')), 'vừa xem xong thì bị nhắc nhường lượt');
-  assert.equal(c.view(now).sessions.filter((s) => s.nickname === 'Bạn 1').length, 0, 'không tạo phiên mới khi đang khoá lượt');
-  now = serve(2, 'công việc', now);
-  now = serve(3, 'tài chính', now);
-  chat(c, 1, 'tình yêu', now); // đã nhường đủ 2 lượt -> xem lại được
-  assert.ok(c.view(now).current?.nickname === 'Bạn 1' || c.view(now).queue.some((q) => q.nickname === 'Bạn 1'), 'nhường đủ 2 lượt thì được xem lại');
+  // phòng trống: vừa xem xong, gõ lại chủ đề là được gọi lên ngay, không câu nhắc nhường nào
+  const c = new TarotRoom(t0, rand);
+  c.newSession(t0);
+  let now = serve(c, 1, 'tình yêu', t0);
+  const again = chat(c, 1, 'công việc', now);
+  assert.ok(!again.some((l) => l.text.includes('nhường')), 'không còn câu nhắc nhường lượt');
+  assert.equal(c.view(now).current?.nickname, 'Bạn 1', 'phòng trống: xem lại là được gọi lên ngay');
+  // phòng có người: bạn 2 đang được xem, bạn 1 vào lại thì xếp hàng chờ sau như người mới
+  const c2 = new TarotRoom(t0, rand);
+  c2.newSession(t0);
+  now = serve(c2, 1, 'tình yêu', t0);
+  chat(c2, 2, 'công việc', now); // bạn 2 được gọi lên (phòng vừa trống)
+  chat(c2, 1, 'tài chính', now + 10); // bạn 1 quay lại xin xem tiếp
+  const v2 = c2.view(now + 10);
+  assert.equal(v2.current?.nickname, 'Bạn 2', 'người đang được xem vẫn là bạn 2');
+  assert.ok(v2.queue.some((q) => q.nickname === 'Bạn 1'), 'phòng có người: bạn 1 xếp hàng chờ tới lượt như bình thường');
 }
 
 // ---------- chat thường không bị kéo vào phiên ----------

@@ -6,8 +6,6 @@ export const GAME = {
   revealSec: 15, // thời gian lá bài + lời giải hiện trên sân khấu (giảm 22 → 15 theo ý chủ kênh 2026-11-07 cho nhịp nhanh; đồng hồ vẫn bị giữ khi giọng đang đọc nên không cắt ngang câu)
   queueMax: 8, // hàng chờ (đã có chủ đề) tối đa
   choosingMax: 6, // số người đang ở bước chọn chủ đề tối đa cùng lúc
-  cooldownOthers: 2, // vừa xem xong phải nhường ít nhất 2 lượt của người khác mới được xem lại
-  cooldownMs: 300_000, // hoặc chờ đủ 5 phút thì hết khoá lượt (điều kiện nào tới trước)
   reversedChance: 0.3, // tỉ lệ lá ra chiều ngược
   idleLineEveryMs: 50_000, // phòng trống: bao lâu chủ phòng nhắc cách chơi 1 lần
   chatterMaxWaitMs: 60_000, // câu nói thêm chờ quá lâu thì bỏ

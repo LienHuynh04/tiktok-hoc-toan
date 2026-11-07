@@ -20,8 +20,9 @@
 - Chỉ phiên đang hoạt động (activeUser) mới chọn được lá; số 1/2/3 của người khác bị bỏ qua tuyệt đối.
 - Vào hàng chờ: gõ thẳng chủ đề (comment ≤4 từ có từ khoá chủ đề) hoặc TAROT/xem bài + chủ đề; gõ TAROT
   một mình thì vào WAITING_TOPIC. Câu chat dài tình cờ chứa từ khoá (vd "yêu") KHÔNG tạo phiên.
-- Chống chiếm lượt: sau COMPLETED, khoá tới khi có thêm ≥2 lượt của người khác HOẶC đủ 5 phút
-  (GAME.cooldownOthers/cooldownMs), nhắc nhường lượt tối đa 1 lần mỗi đợt khoá.
+- Xem lại: sau COMPLETED, người chơi gõ lại chủ đề là vào hàng chờ như người mới — phòng vắng
+  thì được xem tiếp ngay, phòng có người thì chờ tới lượt như bình thường (bỏ khoá nhường lượt
+  2 lượt/5 phút theo ý chủ kênh 2026-11-07; hàng chờ FIFO tự giữ công bằng).
 - Lời giải: readingText trong cards.ts ghép mở đầu + khung xuôi/ngược + TOPIC_LINES[lá][chủ đề] + lời khuyên
   theo chủ đề; tổng 35–55 token (kiểm bằng tarot.check.ts trên toàn bộ 22 lá × 6 chủ đề × 2 chiều).
   Sửa nội dung phải chạy lại check để giữ độ dài đọc 15–20 giây.

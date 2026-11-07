@@ -4,7 +4,7 @@
  * - WAITING_TOPIC: đã gõ TAROT (hoặc "xem bài") nhưng chưa chọn chủ đề, có 30 giây.
  * - WAITING_CARD: đã có chủ đề, nằm trong hàng chờ; người đầu hàng được gọi lên chọn 1 trong 3 lá úp (5 giây).
  * - READING: đã chọn lá, chủ phòng đang đọc lời giải theo đúng chủ đề của người đó.
- * - COMPLETED: đọc xong, phiên đóng; người chơi phải nhường ít nhất 2 lượt của người khác (hoặc chờ 5 phút) mới xem lại.
+ * - COMPLETED: đọc xong, phiên đóng; người chơi gõ lại chủ đề là vào hàng chờ lại như người mới — phòng vắng thì được xem tiếp ngay, phòng có người thì xếp hàng chờ tới lượt như bình thường (không khoá nhường lượt; chủ kênh chốt 2026-11-07).
  * Nhiều người ở các trạng thái khác nhau cùng lúc, nhưng chỉ 1 người được chọn lá/đọc tại một thời điểm (lần lượt).
  * Hàm thuần theo thời gian truyền vào (now), trả về các câu Say để useTarot đọc. Mọi câu đọc bắt đầu bằng "F: ".
  */
@@ -93,9 +93,6 @@ const LINES = {
   queueFull: [
     (n: string) => F(`Bạn ${n} ơi, hàng chờ đang đầy rồi. Bạn chờ một lát rồi gõ lại chủ đề giúp mình nhé.`),
   ],
-  cooldown: [
-    (n: string) => F(`Bạn ${n} vừa xem xong rồi, mình nhường lượt cho các bạn khác một chút nhé. Lát nữa bạn xem tiếp vẫn được.`),
-  ],
   called: [
     (n: string, topic: string) => F(`Mời bạn ${n} lên xem bài về chủ đề ${topic}.`),
     (n: string, topic: string) => F(`Tới lượt bạn ${n} rồi. Hôm nay mình xem cho bạn về ${topic} nhé.`),
@@ -136,8 +133,6 @@ export class TarotRoom {
   readings = 0;
   displayLines: string[] = [];
   lastDone: { nickname: string; topic: string; cardName: string } | null = null;
-  private lastCompletion = new Map<string, { at: number; readingsAt: number }>();
-  private cooldownTold = new Map<string, number>(); // username -> readingsAt đã nhắc
   private lastIdleAt = 0;
   private lastLineIdx = new Map<string, number>();
 
@@ -167,8 +162,6 @@ export class TarotRoom {
     this.readings = 0;
     this.displayLines = [];
     this.lastDone = null;
-    this.lastCompletion.clear();
-    this.cooldownTold.clear();
     this.lastIdleAt = now;
     return [
       { text: this.pick('welcome', LINES.welcome), main: true },
@@ -189,13 +182,6 @@ export class TarotRoom {
     const ahead = this.waitingCard().filter((q) => q.topicAt < s.topicAt).length;
     return ahead + (this.activeUser && this.activeUser !== s.username ? 1 : 0) + 1;
   }
-  private inCooldown(username: string, now: number): boolean {
-    const c = this.lastCompletion.get(username);
-    if (!c) return false;
-    if (now - c.at >= GAME.cooldownMs) return false;
-    return this.readings - c.readingsAt < GAME.cooldownOthers;
-  }
-
   chat(e: ChatIn, now: number): Say[] {
     const p = plain(e.comment);
     const trimmed = p.trim();
@@ -208,7 +194,7 @@ export class TarotRoom {
     const hasIntent = INTENT_KEYS.some((k) => p.includes(k));
     let existing = this.sessions.get(e.username);
     if (existing?.state === 'COMPLETED') {
-      // phiên đã đóng: comment mới được xử lý như ý định mới (vẫn chịu khoá nhường lượt ở dưới)
+      // phiên đã đóng: comment mới được xử lý như ý định mới (vào lại hàng chờ như người mới)
       this.sessions.delete(e.username);
       existing = undefined;
     }
@@ -217,15 +203,6 @@ export class TarotRoom {
       // BƯỚC 1 (tiếp): người đang chọn chủ đề gõ chủ đề -> vào hàng chờ
       if (existing.state === 'WAITING_TOPIC' && topic) return this.setTopic(existing, topic, now);
       return []; // đang chờ/đang đọc/đã xong: các comment khác không làm nhầm phiên
-    }
-
-    // chống chiếm lượt: vừa xem xong thì phải nhường
-    if (this.inCooldown(e.username, now)) {
-      if ((topic || hasIntent) && this.cooldownTold.get(e.username) !== this.lastCompletion.get(e.username)?.readingsAt) {
-        this.cooldownTold.set(e.username, this.lastCompletion.get(e.username)!.readingsAt);
-        return [{ text: this.pickFn('cooldown', LINES.cooldown, e.spoken), ttl: GAME.chatterMaxWaitMs }];
-      }
-      return [];
     }
 
     // BƯỚC 1: gõ thẳng chủ đề (comment ngắn) hoặc TAROT + chủ đề -> vào hàng chờ luôn
@@ -317,7 +294,6 @@ export class TarotRoom {
     if (!cur) return [];
     cur.state = 'COMPLETED';
     cur.stateEndsAt = now + 5000; // giữ 5 giây để sân khấu/trang điều khiển kịp hiện trạng thái hoàn thành
-    this.lastCompletion.set(cur.username, { at: now, readingsAt: this.readings });
     this.lastDone = { nickname: cur.nickname, topic: cur.topic ? TOPICS[cur.topic].label : '', cardName: cur.cardName };
     this.activeUser = null;
     this.displayLines = [];
