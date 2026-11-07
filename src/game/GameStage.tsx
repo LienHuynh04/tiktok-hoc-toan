@@ -1001,16 +1001,18 @@ function WishBar({ v }: { v: StageView }) {
     { icon: '🍀', label: 'Lên Bảng May Mắn', price: '10 xu', n: v.wishCounts.luck },
   ];
   return (
-    <div className="absolute bottom-[12px] left-1/2 z-30 flex w-[1024px] -translate-x-1/2 items-center gap-1.5 rounded-[18px] border-[3px] border-[#7a4a1d] bg-[#3b2410]/90 px-2 py-2 shadow-[0_8px_16px_rgba(0,0,0,0.35)]">
-      <div className="whitespace-nowrap px-0.5 text-[17px] font-extrabold uppercase tracking-wide text-[#ffe680]">Ý muốn</div>
+    <div className="absolute bottom-[96px] left-1/2 z-30 flex w-[1032px] -translate-x-1/2 items-center gap-2 rounded-[20px] border-[4px] border-[#7a4a1d] bg-[#3b2410]/90 px-3 py-3 shadow-[0_10px_20px_rgba(0,0,0,0.4)]">
+      <div className="whitespace-nowrap px-0.5 text-[19px] font-extrabold uppercase tracking-wide text-[#ffe680]">Ý muốn</div>
       {items.map((it) => (
-        <div key={it.label} className="flex min-w-0 flex-1 items-center gap-1.5 rounded-[12px] bg-[#fff8e1]/10 px-2 py-1">
-          <span className="text-[32px] leading-none">{it.icon}</span>
+        <div key={it.label} className="flex min-w-0 flex-1 items-center gap-2 rounded-[14px] bg-[#fff8e1]/10 px-2.5 py-1.5">
+          <span className="text-[40px] leading-none">{it.icon}</span>
           <div className="min-w-0 flex-1 leading-tight">
-            <div className="whitespace-nowrap text-[19px] font-bold text-[#fff8e1]">{it.label}</div>
-            <div className="text-[15px] font-semibold text-[#f0c96a]">{it.price}</div>
+            <div className="whitespace-nowrap text-[21px] font-bold text-[#fff8e1]">{it.label}</div>
+            <div className="mt-0.5 flex items-center gap-2">
+              <span className="text-[16px] font-semibold text-[#f0c96a]">{it.price}</span>
+              <span className={`rounded-full px-2 py-0 text-[17px] font-extrabold leading-[22px] ${it.n > 0 ? 'bg-[#f59e0b] text-white' : 'bg-black/40 text-[#d8c49a]'}`}>×{it.n}</span>
+            </div>
           </div>
-          <div className={`rounded-full px-2 py-[1px] text-[18px] font-extrabold ${it.n > 0 ? 'bg-[#f59e0b] text-white' : 'bg-black/40 text-[#d8c49a]'}`}>×{it.n}</div>
         </div>
       ))}
     </div>
@@ -1021,7 +1023,7 @@ function WishBar({ v }: { v: StageView }) {
 function LuckBoard({ v }: { v: StageView }) {
   if (!v.luckBoard.length) return null;
   return (
-    <div className="absolute bottom-[112px] right-[14px] z-20 w-[264px] rotate-1 rounded-[14px] border-[3px] border-[#4d9b4d] bg-[#f1fbe9]/95 px-3 pb-2 pt-3 text-[#1e4620] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
+    <div className="absolute bottom-[206px] right-[14px] z-20 w-[264px] rotate-1 rounded-[14px] border-[3px] border-[#4d9b4d] bg-[#f1fbe9]/95 px-3 pb-2 pt-3 text-[#1e4620] shadow-[0_6px_10px_rgba(0,0,0,0.3)]">
       <div className="absolute -top-[18px] left-1/2 -translate-x-1/2 text-[30px]">🍀</div>
       <div className="text-center text-[21px] font-extrabold leading-tight text-[#2e7d32]">BẢNG MAY MẮN</div>
       <div className="mt-1 space-y-[2px]">

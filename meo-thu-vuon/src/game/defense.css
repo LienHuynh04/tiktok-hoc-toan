@@ -1,0 +1,35 @@
+/* Hiệu ứng riêng của Mèo Thủ Vườn */
+@keyframes rat-bob {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50% { transform: translateY(-7px) rotate(1.5deg); }
+}
+@keyframes def-sway {
+  0%, 100% { transform: rotate(-1.2deg); }
+  50% { transform: rotate(1.2deg); }
+}
+@keyframes sparkle-fall {
+  0% { transform: translateY(-30px) rotate(0deg); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translateY(760px) rotate(300deg); opacity: 0.15; }
+}
+@keyframes field-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-9px, 4px); }
+  40% { transform: translate(8px, -5px); }
+  60% { transform: translate(-6px, -3px); }
+  80% { transform: translate(5px, 3px); }
+}
+@keyframes boss-pulse {
+  0%, 100% { box-shadow: inset 0 0 60px rgba(220, 38, 38, 0); }
+  50% { box-shadow: inset 0 0 110px rgba(220, 38, 38, 0.45); }
+}
+@keyframes pop-in {
+  0% { transform: scale(0.4); opacity: 0; }
+  70% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.rat-bob { animation: rat-bob 0.55s ease-in-out infinite; }
+.def-sway { animation: def-sway 2.6s ease-in-out infinite; transform-origin: 50% 90%; }
+.field-shake { animation: field-shake 0.45s ease-in-out; }
+.boss-pulse { animation: boss-pulse 1.6s ease-in-out infinite; }
+.pop-in { animation: pop-in 0.35s ease-out; }
