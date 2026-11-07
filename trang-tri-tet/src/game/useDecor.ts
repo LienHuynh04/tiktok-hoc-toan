@@ -1,0 +1,155 @@
+import { useEffect, useRef, useState } from 'react';
+import { useLiveEvents } from '../live/useLiveEvents';
+import type { GiftEvent, LiveStatus } from '../live/types';
+import { voice, speakableName } from '../live/voice';
+import { containsBanned } from '../live/bannedWords';
+import { GiftThanker, OncePerPerson } from '../live/chatter';
+import { IS_STAGE } from '../live/page';
+import { music } from '../live/music';
+import { GAME } from './config';
+import { DecorRoom, type DecorView, type Say } from './decor';
+
+// ?view=stage&mute=1: xem thử trang stage không phát tiếng
+const MUTED = new URLSearchParams(window.location.search).get('mute') === '1';
+
+export type StageView = DecorView;
+
+/**
+ * Trang stage chạy engine trang trí thật (lõi ở decor.ts) và gửi ảnh chụp trạng thái lên server.
+ * Trang điều khiển không tự chạy, chỉ vẽ lại ảnh chụp đó nên xem trước khớp với live.
+ */
+export function useDecor() {
+  const [status, setStatus] = useState<LiveStatus | null>(null);
+  const [view, setView] = useState<StageView | null>(null);
+  const [lastGift, setLastGift] = useState<(GiftEvent & { at: number }) | null>(null);
+  const [stageCount, setStageCount] = useState(0);
+  const [channelName, setChannelName] = useState(GAME.defaultChannelName);
+  const [musicOn, setMusicOn] = useState(true);
+
+  const roomRef = useRef<DecorRoom | null>(null);
+  const dirty = useRef(true);
+  const musicOnRef = useRef(true);
+
+  const [talk] = useState(() => ({
+    gifts: new GiftThanker(GAME.giftThanksCooldownMs, GAME.bigGiftCoins),
+    follows: new OncePerPerson(),
+  }));
+
+  const chatter = useRef<{ text: string; priority: boolean; until: number }[]>([]);
+  const mainSpeaking = useRef(0);
+  function say(lines: Say[]) {
+    const now = Date.now();
+    for (const l of lines) {
+      if (l.main) {
+        mainSpeaking.current++;
+        voice.say(l.text, true, () => mainSpeaking.current--);
+      } else {
+        const ttl = l.ttl ?? (l.priority ? GAME.giftLineMaxWaitMs : GAME.chatterMaxWaitMs);
+        chatter.current.push({ text: l.text, priority: !!l.priority, until: now + ttl });
+      }
+    }
+    dirty.current = true;
+  }
+  function flushChatter(room: DecorRoom, now: number) {
+    chatter.current = chatter.current.filter((c) => c.until > now);
+    if (voice.busy || mainSpeaking.current > 0 || !room.chatterWindow()) return;
+    const i = Math.max(0, chatter.current.findIndex((c) => c.priority));
+    const next = chatter.current.splice(i, 1)[0];
+    if (next) voice.say(next.text);
+  }
+
+  const person = (e: { nickname: string; username: string; avatar: string }) => {
+    const nickname = containsBanned(e.nickname) ? e.username : e.nickname;
+    return { username: e.username, nickname, spoken: speakableName(nickname), avatar: e.avatar };
+  };
+
+  useLiveEvents({
+    onStatus: setStatus,
+    onSpeaker: (d) => setStageCount(d.count),
+    onGameState: (s) => {
+      if (!IS_STAGE) setView(s as StageView);
+    },
+    onChat: (e) => {
+      const room = roomRef.current;
+      if (!room) return;
+      say(room.chat({ ...person(e), comment: e.comment, safe: !containsBanned(e.comment) }, Date.now()));
+    },
+    onLike: (e) => {
+      const room = roomRef.current;
+      if (!room) return;
+      say(room.like(e.likeCount, Date.now()));
+    },
+    onGift: (e) => {
+      const room = roomRef.current;
+      if (!room) return;
+      const p = person(e);
+      const coins = e.diamondCount * e.repeatCount;
+      setLastGift({ ...e, nickname: p.nickname, at: Date.now() });
+      if (talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length)) say(room.thank(p, e.giftName));
+    },
+    onFollow: (e) => {
+      const room = roomRef.current;
+      if (room && talk.follows.first(e.username)) say(room.follow(person(e), Date.now()));
+    },
+    onControl: (c) => {
+      if (c.action === 'setName' && c.text) setChannelName(c.text);
+      const room = roomRef.current;
+      if (!room) return;
+      if (c.action === 'speak' && c.text) voice.say(`F: ${c.text}`, true);
+      if (c.action === 'setRate' && c.text) voice.rate = Number(c.text) || 1;
+      if (c.action === 'reset') {
+        voice.stop();
+        chatter.current = [];
+        say(room.newSession(Date.now()));
+      }
+      if (c.action === 'custom' && c.text === 'music') {
+        musicOnRef.current = !musicOnRef.current;
+        setMusicOn(musicOnRef.current);
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (!IS_STAGE) return;
+    if (MUTED) {
+      voice.volume = 0;
+      musicOnRef.current = false;
+      setMusicOn(false);
+    }
+    // Nhạc Tết tự chạy; luật trình duyệt cần 1 lần chạm vào sân khấu (Interact trong LIVE Studio) mới có tiếng
+    music.setEnabled(musicOnRef.current);
+    const unlock = () => music.resume();
+    window.addEventListener('pointerdown', unlock);
+    let stop = false;
+    const room = new DecorRoom(Date.now());
+    roomRef.current = room;
+    say(room.newSession(Date.now()));
+    let lastSent = 0;
+    const timer = setInterval(() => {
+      if (stop) return;
+      const now = Date.now();
+      say(room.tick(now));
+      flushChatter(room, now);
+      music.setEnabled(musicOnRef.current);
+      music.setDucked(voice.busy);
+      if (!dirty.current && now - lastSent < 1000) return;
+      dirty.current = false;
+      setView(room.view(now));
+      if (now - lastSent >= 400) {
+        lastSent = now;
+        fetch('/api/game/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(room.view(now)) }).catch(() => {});
+      }
+    }, 200);
+    return () => {
+      stop = true;
+      clearInterval(timer);
+      window.removeEventListener('pointerdown', unlock);
+      music.setEnabled(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return { status, view, lastGift, stageCount, channelName, musicOn };
+}
+
+export type DecorState = ReturnType<typeof useDecor>;

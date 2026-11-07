@@ -1,0 +1,62 @@
+/* Trang Trí Tết — hiệu ứng sân khấu */
+.font-display {
+  font-family: 'Dancing Script', 'Be Vietnam Pro', cursive;
+}
+
+/* Hoa mai/đào rơi */
+@keyframes decor-petal-fall {
+  0% { transform: translate3d(0, -40px, 0) rotate(0deg); opacity: 0; }
+  8% { opacity: 0.85; }
+  100% { transform: translate3d(-70px, 1960px, 0) rotate(300deg); opacity: 0.7; }
+}
+.decor-petal {
+  top: -30px;
+  animation-name: decor-petal-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  pointer-events: none;
+}
+
+/* Bé An: nhún nhẹ khi đứng chờ */
+@keyframes decor-idle-sway {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.decor-idle { animation: decor-idle-sway 2.6s ease-in-out infinite; }
+
+/* Bé An: bước đi (nhún nhanh) */
+@keyframes decor-bob-step {
+  0%, 100% { transform: translateY(0) rotate(-1.2deg); }
+  50% { transform: translateY(-11px) rotate(1.2deg); }
+}
+.decor-bob { animation: decor-bob-step 0.36s ease-in-out infinite; }
+
+/* Bé An: nhảy ăn mừng */
+@keyframes decor-cheer-jump {
+  0%, 100% { transform: translateY(0); }
+  35% { transform: translateY(-26px); }
+  70% { transform: translateY(-6px); }
+}
+.decor-cheer { animation: decor-cheer-jump 0.55s ease-in-out infinite; }
+
+/* Món đồ hiện lên khi được treo */
+@keyframes decor-pop-in {
+  0% { scale: 0.2; opacity: 0; }
+  60% { scale: 1.12; opacity: 1; }
+  100% { scale: 1; opacity: 1; }
+}
+.decor-pop { animation: decor-pop-in 0.45s ease-out; }
+
+/* Tia sáng/pháo hoa nhấp nháy */
+@keyframes decor-spark-blink {
+  0%, 100% { transform: scale(0.6) rotate(0deg); opacity: 0.4; }
+  50% { transform: scale(1.25) rotate(24deg); opacity: 1; }
+}
+.decor-spark { animation: decor-spark-blink 0.9s ease-in-out infinite; }
+
+/* Thông báo quà */
+@keyframes decor-toast-in {
+  from { transform: translateY(-18px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.decor-toast { animation: decor-toast-in 0.3s ease-out; }
