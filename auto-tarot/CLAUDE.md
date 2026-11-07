@@ -30,4 +30,4 @@
 - Cổng 3021, HMR dev 24690. Giọng mọi Say bắt đầu "F: " (nữ HoaiMy); displayLines là bản bỏ tiền tố.
 - Kiểm chứng: `npm run check` (tarot.check.ts), `npm run lint`, `npm run build`, smoke server PORT=3021.
 
-- Mặt ngửa ưu tiên ảnh Rider–Waite thật ở `public/assets/cards/<id>.jpg` (cắt từ tấm ghép chủ kênh up, bản gốc ở `src/anh/`); onError → fallback mặt vẽ CSS. Lá ngược: xoay ảnh 180° + nhãn NGƯỢC. Stage preload cả 22 ảnh lúc mở.
+- Mặt ngửa + mặt úp dùng ảnh Rider–Waite thật ở `public/assets/cards/<id>.jpg` + `back.jpg` (scan 720×1200 bộ gốc 1909 do Steve P. phục chế, nguồn repo mixvlad/TarotCards, public domain — thay cho bản cắt từ tấm ghép hôm 2026-11-07); onError → fallback mặt vẽ CSS. Lá ngược: xoay ảnh 180° + nhãn NGƯỢC. Stage preload cả 22 ảnh + back lúc mở.

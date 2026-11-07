@@ -4,13 +4,15 @@ import type { TarotView } from './tarot';
 import { CARDS } from './cards';
 import './tarot.css';
 
-// Tải trước ảnh 22 lá để lúc lật bài không bị chờ (thiếu file thì bỏ qua, sân khấu dùng mặt vẽ CSS)
+// Tải trước ảnh 22 lá + mặt sau để lúc lật bài không bị chờ (thiếu file thì bỏ qua, sân khấu dùng mặt vẽ CSS)
 function usePreloadCards() {
   useEffect(() => {
     for (const c of CARDS) {
       const im = new Image();
       im.src = `/assets/cards/${c.id}.jpg`;
     }
+    const back = new Image();
+    back.src = '/assets/cards/back.jpg';
   }, []);
 }
 
@@ -166,16 +168,29 @@ function CardSlot({ c, index, phase, picked }: { c: CardV; index: number; phase:
   const isPicked = phase === 'reveal' && picked === index;
   const dimmed = phase === 'reveal' && picked !== index;
   const [imgErr, setImgErr] = useState(false);
+  const [backErr, setBackErr] = useState(false);
   return (
     <div className={`w-[290px] transition-all duration-700 ${dimmed ? 'scale-[0.82] opacity-35' : ''} ${isPicked ? 'z-10 scale-[1.22]' : ''}`}>
       <div className={`tcard h-[440px] w-[290px] ${isPicked ? 'flipped' : ''} ${phase === 'offer' ? 'tcard-float' : ''}`} style={{ animationDelay: `${index * 0.5}s` }}>
         <div className={`tcard-inner ${isPicked ? 'tcard-picked' : ''}`}>
-          {/* Mặt úp */}
+          {/* Mặt úp: hoạ tiết lưng bài Rider-Waite cổ điển (back.jpg), lỗi file thì dùng nền CSS trăng sao */}
           <div className="tcard-face tcard-back flex flex-col items-center justify-center">
-            <div className="text-[110px] leading-none">🌙</div>
-            <div className="mt-2 text-[44px] text-amber-200">✦ ✦ ✦</div>
-            <div className="mt-6 flex h-[74px] w-[74px] items-center justify-center rounded-full bg-amber-300/90 text-[40px] font-extrabold text-indigo-950">{index + 1}</div>
-            <div className="mt-3 text-[24px] text-fuchsia-100/80">Gõ {index + 1} để chọn lá này</div>
+            {!backErr && (
+              <>
+                <img
+                  src="/assets/cards/back.jpg"
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                  onError={() => setBackErr(true)}
+                  draggable={false}
+                />
+                <div className="absolute inset-0 bg-indigo-950/45" />
+              </>
+            )}
+            <div className="relative text-[110px] leading-none" style={{ textShadow: '0 3px 14px rgba(0,0,0,.65)' }}>🌙</div>
+            <div className="relative mt-2 text-[44px] text-amber-200" style={{ textShadow: '0 2px 10px rgba(0,0,0,.7)' }}>✦ ✦ ✦</div>
+            <div className="relative mt-6 flex h-[74px] w-[74px] items-center justify-center rounded-full bg-amber-300/90 text-[40px] font-extrabold text-indigo-950">{index + 1}</div>
+            <div className="relative mt-3 text-[24px] font-semibold text-white" style={{ textShadow: '0 2px 10px rgba(0,0,0,.85)' }}>Gõ {index + 1} để chọn lá này</div>
           </div>
           {/* Mặt ngửa: ưu tiên ảnh bộ bài thật (Rider-Waite) ở public/assets/cards; thiếu/lỗi file thì dùng mặt vẽ CSS */}
           {!imgErr ? (
@@ -184,7 +199,7 @@ function CardSlot({ c, index, phase, picked }: { c: CardV; index: number; phase:
                 src={c.img}
                 alt={c.name}
                 className="h-full w-full object-cover"
-                style={c.reversed ? { transform: 'rotate(180deg)' } : undefined}
+                style={{ objectPosition: '50% 18%', ...(c.reversed ? { transform: 'rotate(180deg)' } : {}) }}
                 onError={() => setImgErr(true)}
                 draggable={false}
               />

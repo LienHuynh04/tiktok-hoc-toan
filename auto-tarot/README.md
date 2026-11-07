@@ -4,7 +4,7 @@ Game tarot TỰ ĐỘNG cho TikTok LIVE, phát triển từ Phòng Tarot trong c
 
 ## Ảnh lá bài
 
-Mặt ngửa dùng **ảnh bộ Rider–Waite cổ điển** (bộ bài cộng đồng tarot dùng phổ biến nhất) tại `public/assets/cards/<mã lá>.jpg` — 22 lá Ẩn Chính cắt từ tấm ghép chủ kênh tải lên (bản gốc ở `src/anh/`). Thiếu file nào, sân khấu tự dùng mặt bài vẽ CSS cho lá đó. Muốn ảnh nét hơn: chép đè file cùng tên vào đúng thư mục, không cần sửa code.
+Mặt ngửa dùng **ảnh bộ Rider–Waite cổ điển** (bộ bài cộng đồng tarot dùng phổ biến nhất) tại `public/assets/cards/<mã lá>.jpg` — bản scan 720×1200 của bộ gốc 1909 (Pam-A) do Steve P. phục chế, lấy từ repo mixvlad/TarotCards (SOURCES.md ghi rõ: tranh hết bản quyền — public domain); `back.jpg` là hoạ tiết lưng bài cổ điển của chính bộ này. Thiếu file nào, sân khấu tự dùng mặt bài vẽ CSS cho lá đó. Muốn đổi ảnh: chép đè file cùng tên vào đúng thư mục, không cần sửa code.
 
 ## Quy trình 3 bước cho từng người chơi
 
