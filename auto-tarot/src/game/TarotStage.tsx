@@ -116,7 +116,7 @@ export function TarotStage({ game }: { game: TarotState }) {
 
           {/* Lời giải hiện chữ */}
           {v.displayLines.length > 0 && (
-            <div className="absolute inset-x-[70px] top-[1180px] rounded-3xl bg-black/45 px-8 py-6 ring-1 ring-amber-200/25 backdrop-blur-sm">
+            <div className="absolute inset-x-[70px] top-[1090px] rounded-3xl bg-black/45 px-8 py-6 ring-1 ring-amber-200/25 backdrop-blur-sm">
               {v.displayLines.slice(-3).map((l, i, arr) => (
                 <p key={i} className={`text-[31px] leading-relaxed ${i === arr.length - 1 ? 'font-semibold text-amber-100' : 'text-white/75'}`}>
                   {l}
@@ -127,6 +127,25 @@ export function TarotStage({ game }: { game: TarotState }) {
 
           {/* Hàng chờ + thống kê */}
           <div className="absolute inset-x-[70px] bottom-[64px]">
+            {/* Bảng vinh danh quà (chỉ vinh danh, thứ tự xem bài vẫn theo lượt bình luận) */}
+            <div className="mb-3 rounded-2xl bg-gradient-to-r from-fuchsia-900/60 to-indigo-900/60 px-5 py-3 ring-1 ring-amber-200/30">
+              <div className="flex items-center justify-between">
+                <span className="text-[27px] font-bold text-amber-200">🎁 Vinh danh buổi live</span>
+                {game.honour.totalCoins > 0 && <span className="text-[25px] text-white/70">Tổng ủng hộ: {game.honour.totalCoins} xu</span>}
+              </div>
+              {game.honour.top.length > 0 ? (
+                <>
+                  <div className="mt-1.5 truncate text-[26px] text-white/85">
+                    {game.honour.top.map((t, i) => `${['🥇', '🥈', '🥉'][i]} ${t.nickname} (${t.coins} xu)`).join('   ·   ')}
+                  </div>
+                  {game.honour.recent[0] && (
+                    <div className="mt-1 text-[24px] text-fuchsia-200/75">Mới nhất: {game.honour.recent[0].nickname} tặng {game.honour.recent[0].giftName}</div>
+                  )}
+                </>
+              ) : (
+                <div className="mt-1 text-[24px] text-white/50">Tên bạn tặng quà sẽ hiện ở bảng này. Thứ tự xem bài vẫn theo lượt bình luận.</div>
+              )}
+            </div>
             {v.choosing.length > 0 && (
               <div className="mb-3 rounded-2xl bg-indigo-700/50 px-5 py-3 text-[26px] text-indigo-100 ring-1 ring-indigo-300/30">
                 ✍️ Đang chọn chủ đề: {v.choosing.map((c) => `${c.nickname} (${c.secLeft}s)`).join(' · ')}
