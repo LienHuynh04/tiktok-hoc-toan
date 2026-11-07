@@ -123,7 +123,7 @@ function Header({ v, name }: { v: StageView; name: string }) {
 function Board({ v, now }: { v: StageView; now: number }) {
   const left = Math.max(0, Math.ceil((v.endsAt - now) / 1000));
   return (
-    <div className={`chalk absolute left-[300px] top-[250px] h-[375px] w-[620px] text-[#f4f1e6] ${v.golden && v.phase !== 'recess' ? 'golden-board' : ''}`}>
+    <div className={`chalk absolute left-[160px] top-[254px] h-[378px] w-[760px] pb-[14px] text-[#f4f1e6] ${v.golden && v.phase !== 'recess' ? 'golden-board' : ''}`}>
       {v.phase === 'intro' && v.round % 2 === 0 && v.weekTop.length > 0 && <WeekBoard v={v} left={left} />}
       {v.phase === 'intro' && !(v.round % 2 === 0 && v.weekTop.length > 0) && (
         <div className="flex h-full flex-col items-center justify-center text-center">
@@ -169,13 +169,14 @@ function Board({ v, now }: { v: StageView; now: number }) {
             // câu toán: đề (toán đố / dãy số) hiện chữ nhỏ, phép tính viết to bằng phấn, người xem gõ số
             <>
             {(v.category === 'Toán đố' || v.category === 'Dãy số' || v.category === 'Hình học' || v.category === 'Tìm số thiếu') && (
-              <div className="mt-1 line-clamp-3 shrink-0 text-center text-[30px] leading-[38px]">{v.clue}</div>
+              <div className="mt-1 line-clamp-3 shrink-0 text-center text-[29px] leading-[36px]">{v.clue}</div>
             )}
             <motion.div
               key={v.math}
               initial={{ scale: 0.6, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className={`mt-4 shrink-0 text-center text-[76px] font-extrabold leading-[96px] text-[#ffe680] ${v.phase === 'reveal' ? 'opacity-50' : ''}`}
+              className={`mt-3 shrink-0 text-center font-extrabold text-[#ffe680] ${v.phase === 'reveal' ? 'opacity-50' : ''}`}
+              style={{ fontSize: v.math.length <= 9 ? 76 : v.math.length <= 14 ? 66 : v.math.length <= 20 ? 56 : 48, lineHeight: 1.18 }}
             >
               {v.math}
             </motion.div>
@@ -188,7 +189,7 @@ function Board({ v, now }: { v: StageView; now: number }) {
             </>
           )}
           {v.boardShown && <Slots slots={v.slots} reveal={v.phase === 'reveal'} />}
-          {v.boardShown && v.math && v.phase !== 'reveal' && <div className="mt-2 text-center text-[28px] opacity-80">Gõ số vào bình luận</div>}
+          {v.boardShown && v.math && v.phase !== 'reveal' && <div className="mt-1 text-center text-[28px] opacity-80">Gõ số vào bình luận</div>}
           {v.phase === 'bonus' && (
             <div className="mt-auto text-center text-[28px] text-[#ffe680]">{v.math ? 'Thêm 10 giây, nhẩm lẹ lên!' : 'Cô mở thêm 1 chữ, thêm 10 giây!'}</div>
           )}
@@ -295,7 +296,7 @@ function Figure({ fig }: { fig: FigSpec }) {
   const caption = fig.what.startsWith('cạnh') || fig.what.startsWith('độ dài') ? `Tìm ${fig.what}` : `Tính ${fig.what}`;
   return (
     <div className="mt-1 shrink-0 text-center">
-      <svg viewBox="0 0 380 250" className="mx-auto h-[248px] w-[378px]">
+      <svg viewBox="0 0 380 250" className="mx-auto h-[205px] w-[316px]">
         {body}
       </svg>
       <div className="-mt-2 text-[26px] font-semibold text-[#ffe680]/90">{caption}</div>
@@ -342,7 +343,7 @@ function Slots({ slots, reveal }: { slots: (string | null)[]; reveal: boolean })
   const n = slots.length || 1;
   const size = Math.min(56, Math.floor((555 - 6 * (n - 1)) / n));
   return (
-    <div className="mt-4 flex justify-center gap-[6px]">
+    <div className="mt-3 flex justify-center gap-[6px]">
       {slots.map((ch, i) =>
         ch === ' ' ? (
           <div key={i} style={{ width: size * 0.5 }} />
@@ -650,7 +651,7 @@ function Teacher({ v, now }: { v: StageView; now: number }) {
 function Podium({ v }: { v: StageView }) {
   if (v.phase !== 'question' && v.phase !== 'bonus' && v.phase !== 'reveal') return null;
   return (
-    <div className="absolute left-[400px] top-[680px] w-[420px]">
+    <div className="absolute left-[330px] top-[680px] w-[420px]">
       <div className="flex items-center justify-between rounded-t-[14px] bg-[#7a2e0e] px-3 py-[1px] text-[19px] font-bold text-[#ffe9b8]">
         <span>⚡ Nhanh nhất</span>
         <span>{v.correctCount} bạn đã đúng</span>
@@ -684,7 +685,7 @@ const SEAT_HINTS = ['⭐ Tính nhanh, điểm cao được vào lớp ngồi!', 
 function SeatHint({ now }: { now: number }) {
   const i = Math.floor(now / 8000) % SEAT_HINTS.length;
   return (
-    <div className="pointer-events-none absolute left-[380px] top-[772px] z-[9] flex w-[460px] justify-center">
+    <div className="pointer-events-none absolute left-[310px] top-[772px] z-[9] flex w-[460px] justify-center">
       <AnimatePresence mode="wait">
         <motion.div
           key={i}
