@@ -1,9 +1,21 @@
-// Kiểm tra lõi game Lớp Toán: npx tsx src/game/quiz.check.ts
-// Câu hỏi do math.ts tự sinh (bank rỗng); kiểm chứng độc lập của đáp án nằm ở math.check.ts.
+// Kiểm tra lõi game Lớp Học: npx tsx src/game/quiz.check.ts
+// Toán do math.ts tự sinh; các môn khác lấy từ ngân hàng cau-hoi/ (parseBank đọc trực tiếp
+// file .txt ở đây vì import.meta.glob chỉ chạy trong bản build Vite).
 import assert from 'node:assert/strict';
 import { Classroom, LineBag, compactVi, dayPeriod, plain, scramble, topicName, wishKind } from './quiz';
 import type { Question } from './questions';
 import { GAME } from './config';
+import { parseBank } from './questions';
+import { readFileSync, readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const bankDir = join(dirname(fileURLToPath(import.meta.url)), 'cau-hoi');
+const bankFiles: Record<string, string> = {};
+for (const f of readdirSync(bankDir).filter((x) => x.endsWith('.txt'))) bankFiles[f] = readFileSync(join(bankDir, f), 'utf-8');
+const bankErrors: string[] = [];
+const BANK = parseBank(bankFiles, bankErrors);
+const SUBJECTS = ['Tiếng Anh', 'Ngữ Văn', 'Địa Lí', 'Đoán Chữ', 'Nối Từ', 'Câu Đố'];
 import { makeMath } from './math';
 import { LINES, PICK_TOPICS, POLLS } from './loi-thoai';
 
@@ -160,20 +172,34 @@ for (let i = 0; i < 200; i++) {
   assert.equal(g.flowers, 20);
 }
 
-// ---------- tiết thật: 20 câu đều là toán, đúng roundPlan; câu 20 nhân đôi; chuỗi 3 câu ----------
+// ---------- ngân hàng câu hỏi đa môn: đúng cú pháp, đủ 6 môn ----------
+assert.deepEqual(bankErrors, [], 'file cau-hoi sai cú pháp: ' + bankErrors.join('; '));
+assert.ok(BANK.length >= 150, `ngân hàng phải có ít nhất 150 câu, đang có ${BANK.length}`);
+for (const sub of SUBJECTS) assert.ok(BANK.filter((q) => q.category === sub).length >= 25, `môn ${sub} phải có ít nhất 25 câu`);
+assert.ok(BANK.every((q) => q.answer.trim() && q.clue.trim()), 'câu chữ nào cũng phải có đáp án và gợi ý');
+
+// ---------- tiết thật: 20 câu đúng roundPlan đa môn; câu 20 nhân đôi; chuỗi 3 câu ----------
 {
-  const c = new Classroom([], t);
+  const c = new Classroom(BANK, t);
   c.newRound(t);
   c.tick((t += GAME.introSec * 1000));
   const plan: string[] = [];
   for (let k = 0; k < GAME.questionsPerRound; k++) {
     assert.equal(c.phase, 'question');
     const q = c.q!;
-    assert.ok(q.math, `câu ${k + 1} phải là câu toán`);
-    plan.push(GAME.roundPlan[k]);
-    assert.match(q.answer, /^\d+$/, 'câu toán: đáp án là số');
-    assert.equal(c.tiles.length, 0, 'câu toán không xáo chữ');
-    assert.ok(c.view(t).math.length > 0, 'bảng phải hiện phép tính / đề');
+    const token = GAME.roundPlan[k];
+    plan.push(token);
+    if (token === 'math' || token === 'geo') {
+      assert.ok(q.math, `câu ${k + 1} (${token}) phải là câu toán tự sinh`);
+      assert.match(q.answer, /^\d+$/, 'câu toán: đáp án là số');
+      assert.equal(c.tiles.length, 0, 'câu toán không xáo chữ');
+      assert.ok(c.view(t).math.length > 0, 'bảng phải hiện phép tính / đề');
+    } else {
+      assert.ok(!q.math, `câu ${k + 1} (${token}) phải là câu chữ từ ngân hàng`);
+      assert.ok(SUBJECTS.includes(q.category), `câu ${k + 1}: môn lạ "${q.category}"`);
+      assert.equal(q.difficulty, token, `câu ${k + 1}: độ khó phải khớp token ${token}`);
+      assert.equal(c.view(t).category, q.category, 'bảng phải hiện nhãn môn của câu chữ');
+    }
     if (k === GAME.questionsPerRound - 1) assert.ok(c.golden, 'câu 20 là câu hỏi vàng');
     else assert.ok(!c.golden);
     chat(c, 1, q.answer, t, t);
@@ -190,13 +216,13 @@ for (let i = 0; i < 200; i++) {
   assert.ok(c.students.get('u1')!.desk.length >= 3, 'quà điểm danh đặt lên bàn');
   assert.ok(c.students.get('u1')!.desk.length <= GAME.deskGifts);
   assert.deepEqual(plan, [...GAME.roundPlan]);
-  assert.ok(GAME.roundPlan.every((d) => d.startsWith('math') || d === 'geo'), 'roundPlan của Lớp Toán: 100% câu toán (gồm câu hình học)');
-  assert.ok(GAME.roundPlan.filter((d) => d.startsWith('math')).length >= 12, 'tiết chính phần lớn là câu toán tự sinh (lớp bốc theo tỉ lệ)');
-  assert.ok(GAME.roundPlan.filter((d) => d === 'geo').length >= 3, 'mỗi tiết có ít nhất 3 câu hình học vẽ hình');
+  assert.equal(GAME.roundPlan.filter((d) => d === 'math').length, 7, 'mỗi tiết 7 câu toán tự sinh');
+  assert.equal(GAME.roundPlan.filter((d) => d === 'geo').length, 2, 'mỗi tiết 2 câu hình học vẽ hình');
+  assert.equal(GAME.roundPlan.filter((d) => d === 'easy' || d === 'medium' || d === 'hard').length, 11, 'mỗi tiết 11 câu chữ đa môn từ ngân hàng');
   // 19 câu x 10 + câu vàng 20 + 6 lần chuỗi (câu 3, 6, ..., 18) x 5
   assert.equal(c.students.get('u1')!.score, 19 * 10 + 20 + 6 * GAME.streakBonus);
   assert.equal(c.phase, 'results');
-  assert.equal(c.usedLog.length, 0, 'câu toán tự sinh không ghi vào sổ lớp');
+  assert.equal(c.usedLog.length, 11, '11 câu chữ ngân hàng ghi vào sổ lớp; câu toán tự sinh thì không');
 }
 
 // ---------- sinh câu toán: mọi cấp đều cho đáp án số nguyên dương ----------
@@ -227,6 +253,28 @@ for (const lv of [1, 2, 3, 4, 5, 6] as const) {
   assert.equal(warn.filter((l) => l.warn).length, 1);
   assert.ok(!warn.some((l) => l.warn && l.main), 'nhắc giờ không dừng đồng hồ');
   assert.ok(!c.tick((t += 200)).some((l) => l.warn), 'chỉ nhắc 1 lần');
+}
+
+// ---------- phân bố môn: qua 4 tiết phải gặp đủ cả 6 môn chữ ----------
+{
+  const seen = new Set<string>();
+  const c = new Classroom(BANK, t);
+  for (let r = 0; r < 4; r++) {
+    c.newRound(t);
+    c.tick((t += GAME.introSec * 1000));
+    for (let k = 0; k < GAME.questionsPerRound; k++) {
+      assert.equal(c.phase, 'question');
+      const q = c.q!;
+      if (!q.math) seen.add(q.category);
+      chat(c, 1, q.answer, t, t);
+      for (let j = 0; j < 6 && (c.phase as string) !== 'reveal'; j++) c.tick((t = c.phaseEndsAt));
+      c.tick((t = c.phaseEndsAt));
+      if ((k + 1) % GAME.praiseEvery === 0 && k + 1 < GAME.questionsPerRound) c.tick((t += GAME.praiseSec * 1000));
+    }
+    // hết tiết -> kết quả -> ra chơi: nhảy thẳng qua các pha chờ về điểm danh tiết sau
+    for (let j = 0; j < 40 && (c.phase as string) !== 'intro'; j++) c.tick((t = c.phaseEndsAt + 1000));
+  }
+  for (const sub of SUBJECTS) assert.ok(seen.has(sub), `qua 4 tiết phải gặp môn ${sub}`);
 }
 
 // ---------- giờ ra chơi ----------
@@ -345,16 +393,17 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
 
 // ---------- lớp vắng: tiết gắn nhãn ôn bài, có bạn vào thì hết ôn ----------
 {
-  const c = new Classroom([], t);
+  const c = new Classroom(BANK, t);
   c.newRound(t);
   assert.ok(!c.review);
   t += GAME.emptyRoomMs + 1000;
   const said = c.newRound(t);
   assert.ok(c.review, 'lớp vắng: tiết ôn bài');
   assert.ok(said.some((l) => LINES.reviewIntro.includes(l.text.slice(3))));
-  assert.equal(c.usedLog.length, 0, 'câu toán không ghi sổ');
+  assert.equal(c.usedLog.length, 11, 'câu chữ ghi sổ; câu toán tự sinh không ghi sổ');
   const qs = (c as unknown as { roundQs: Question[] }).roundQs;
-  assert.ok(qs.every((q) => !!q.math), 'tiết ôn bài của Lớp Toán vẫn toàn câu toán mới');
+  assert.equal(qs.length, 20, 'tiết ôn bài vẫn đủ 20 câu như tiết thường');
+  assert.equal(qs.filter((q) => !!q.math).length, 9, 'tiết ôn bài: 9 câu toán/hình tự sinh, còn lại là câu chữ bốc mới (chưa có câu cũ để ôn)');
   c.tick((t += GAME.introSec * 1000));
   chat(c, 1, 'cô ơi', t, t);
   for (let k = 0; k < 10 && c.qNo < 2; k++) c.tick((t = c.phaseEndsAt));

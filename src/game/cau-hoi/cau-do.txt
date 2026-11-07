@@ -1,0 +1,32 @@
+# Câu Đố
+> Câu đố nè. Suy nghĩ một chút rồi gõ đáp án nhé!
+mặt trời|Cái gì sáng rực cả ban ngày, chiều đến lại lặn xuống sau núi?|1|ông mặt trời
+mặt trăng|Cái gì chỉ xuất hiện vào ban đêm, đến ngày rằm thì tròn xoe?|1|trăng
+cầu vồng|Sau cơn mưa trời lại nắng, bảy màu cong cong bắc ngang bầu trời là gì?|1|
+gió|Thứ gì không nhìn thấy được, chỉ nghe tiếng thổi và thấy lá cây rung?|1|
+mây|Thứ gì trắng xốp, trôi lững lờ trên trời, có lúc che kín mặt trời?|1|đám mây
+quả trứng|Thứ gì vỏ trắng tròn tròn, đập vỡ ra có lòng đỏ và lòng trắng?|1|trứng
+con ong|Con gì chăm chỉ bay đi hút mật hoa từ sáng sớm?|1|ong
+con kiến|Con gì nhỏ xíu mà tha được miếng mồi to hơn cả mình?|1|kiến
+con cá|Con gì sống dưới nước, thở bằng mang, bơi bằng vây?|1|cá
+đồng hồ|Thứ gì treo trên tường, chạy mãi không có chân mà ai cũng nhìn để biết giờ?|1|
+cái ô|Thứ gì mưa thì mở ra che đầu, nắng lên lại gập cất đi?|1|ô,dù
+đôi đũa|Hai que nhỏ dài bằng nhau, gắp cơm gắp thức ăn rất khéo, là gì?|1|đũa
+ngôi sao|Thứ gì nhỏ xíu, lấp lánh đầy trời vào những đêm quang mây?|1|sao
+bầu trời|Cái gì cao xa không ai chạm tới, ban ngày xanh biếc, ban đêm đầy sao?|1|
+tuyết|Thứ gì trắng như bông, rơi vào mùa đông ở xứ lạnh, cầm vào tay là tan ngay?|1|bông tuyết
+cái bóng|Thứ gì luôn đi theo bạn, nắng càng to càng thấy rõ, vào chỗ tối thì biến mất?|2|bóng
+lửa|Thứ gì càng cho thêm củi càng cháy lớn, nấu chín được cơm mà không ai cầm được?|2|ngọn lửa
+tiếng vang|Bạn gọi to, nó trả lời y hệt, mà tìm mãi chẳng thấy nó đâu. Là gì?|2|
+gương|Thứ gì soi vào thì thấy chính mình, rơi vỡ ra thì không gắn lại được?|2|cái gương
+cái lược|Cái gì có rất nhiều răng mà không ăn được cơm?|2|lược
+cái cưa|Cái gì cũng có răng, chuyên dùng để "ăn" gỗ?|2|cưa
+ốc sên|Con gì mang cả ngôi nhà trên lưng, bò chậm nhất trong làng?|2|con ốc sên
+con nhện|Con gì có 8 chân, giăng lưới để bắt mồi?|2|nhện
+dấu hỏi|Dấu gì trong chữ viết cong cong như một cái móc câu?|2|
+con tem|Thứ gì nhỏ xíu dán ở góc phong thư, đi khắp thế giới mà không cần chân?|3|tem
+kim đồng hồ|Cái gì chạy suốt ngày đêm quanh một vòng tròn mà không bao giờ biết mệt?|3|
+cái gối|Thứ gì mềm mềm, mỗi tối bạn kê đầu lên để ngủ?|1|gối
+sông|Thứ gì uốn lượn chảy từ núi ra biển, hai bên là bờ?|1|con sông
+biển|Nơi nào rộng mênh mông, nước mặn, sóng vỗ ngày đêm vào bờ cát?|1|
+mưa|Thứ gì từ trên trời rơi xuống thành từng hạt, làm ướt hết đường đi?|1|

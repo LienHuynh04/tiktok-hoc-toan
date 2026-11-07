@@ -4,7 +4,7 @@
 
 export const GAME = {
   // Tên lớp mặc định (hiện trên bảng hiệu). Chủ kênh đổi ở ô "Tên lớp" trang điều khiển.
-  defaultChannelName: 'Lớp Toán',
+  defaultChannelName: 'Lớp Học',
 
   // ---------- Một tiết học ----------
   questionsPerRound: 20,
@@ -16,11 +16,15 @@ export const GAME = {
   // bình chọn khối Lớp 4-6 ở giờ ra chơi.
   // Tiết học CHỈ gồm toán cấp 3 (chủ kênh chốt 2026-11-04): lớp 10-12 + hình học khó.
   // Hình học giữ từ lớp 9 (lượng giác) vì hình học lớp 10 chỉ có vectơ, để 10 thuần sẽ lặp.
+  // LỚP HỌC ĐA MÔN (chủ kênh chốt 2026-11-07): không chỉ Toán. Token 'easy'/'medium'/'hard'
+  // = câu chữ từ ngân hàng cau-hoi/ (Tiếng Anh, Ngữ Văn, Địa Lí, Đoán Chữ, Nối Từ, Câu Đố —
+  // pickOne tự tránh lặp môn liền nhau và không quá 2 câu/môn mỗi tiết). Mỗi tiết 20 câu:
+  // 7 toán tự sinh + 2 hình học + 11 câu chữ rải đều xen kẽ. Câu 20 là câu hỏi vàng nhân đôi.
   roundPlan: [
-    'math', 'math', 'geo', 'math', 'math',
-    'math', 'math', 'geo', 'math', 'math',
-    'math', 'math', 'geo', 'math', 'math',
-    'math', 'math', 'geo', 'math', 'math',
+    'math', 'easy', 'math', 'medium', 'geo',
+    'easy', 'math', 'medium', 'math', 'easy',
+    'geo', 'medium', 'math', 'easy', 'math',
+    'hard', 'easy', 'math', 'medium', 'easy',
   ] as const,
   // Tỉ lệ câu của tiết (chủ kênh chốt 2026-11-05): 20% câu KHÓ thật sự (dạng nâng cao gắn nhãn hard trong math.ts),
   // còn lại 50% tổng số câu thuộc lớp 1-9 và 30% thuộc lớp 10-12 thường. Lớp của từng câu bốc ngẫu nhiên lúc vào tiết

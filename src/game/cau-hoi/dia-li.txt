@@ -1,0 +1,32 @@
+# Địa Lí
+> Môn Địa Lí nè. Nhớ bản đồ cho kỹ nhé!
+Paris|Thủ đô của nước Pháp là thành phố nào?|1|
+Hà Nội|Thủ đô của Việt Nam là thành phố nào?|1|
+sông Hồng|Con sông lớn chảy qua Hà Nội có tên là gì?|1|Hồng Hà
+Thái Bình Dương|Đại dương lớn nhất trên Trái Đất tên là gì?|1|
+Everest|Đỉnh núi cao nhất thế giới tên là gì?|1|đỉnh Everest
+Fansipan|Đỉnh núi cao nhất Việt Nam là đỉnh nào?|1|Phan Xi Păng
+Nhật Bản|Nước nào được gọi là "xứ sở mặt trời mọc"?|1|
+Đà Nẵng|Thành phố ở miền Trung có cầu Rồng phun lửa là thành phố nào?|1|
+Nga|Nước nào có diện tích lớn nhất thế giới?|1|
+London|Thủ đô của nước Anh là thành phố nào?|1|Luân Đôn
+Hàn Quốc|Nước nào có thủ đô là Seoul?|1|Hàn
+Cà Mau|Tỉnh nào nằm ở cực Nam của nước ta?|1|
+Vịnh Hạ Long|Vịnh biển nổi tiếng thế giới của tỉnh Quảng Ninh tên là gì?|1|Hạ Long
+Mặt Trăng|Vệ tinh tự nhiên duy nhất của Trái Đất là gì?|1|
+Mặt Trời|Ngôi sao ở gần Trái Đất nhất là gì?|1|
+Huế|Kinh đô xưa của triều Nguyễn, nay ở miền Trung nước ta, là thành phố nào?|1|
+365|Trái Đất quay quanh Mặt Trời một vòng hết bao nhiêu ngày? (gõ số)|1|
+sông Nin|Con sông dài nhất thế giới chảy qua châu Phi là sông nào?|2|Nile,sông Nile
+Sahara|Sa mạc nóng lớn nhất thế giới tên là gì?|2|
+Trung Quốc|Nước láng giềng ở phía bắc nước ta, có Vạn Lý Trường Thành, là nước nào?|2|
+Cần Thơ|Thành phố lớn nhất vùng đồng bằng sông Cửu Long là thành phố nào?|2|
+sông Mê Kông|Con sông lớn chảy qua nhiều nước Đông Nam Á rồi vào nước ta thành sông Cửu Long là sông nào?|2|Mê Kông
+châu Đại Dương|Châu lục nhỏ nhất trong các châu lục có người ở là châu nào?|2|châu Úc
+xích đạo|Đường tròn tưởng tượng chia Trái Đất thành hai nửa cầu Bắc và Nam gọi là gì?|2|
+Lào|Nước láng giềng phía tây nước ta, là nước duy nhất ở Đông Nam Á không giáp biển, là nước nào?|2|
+Washington|Thủ đô của nước Mỹ là thành phố nào?|2|Oa-sinh-tơn
+Bangkok|Thủ đô của Thái Lan là thành phố nào?|2|Băng Cốc
+Nam Cực|Châu lục lạnh nhất, phủ đầy băng tuyết quanh năm là châu nào?|2|châu Nam Cực
+Trường Sa|Quần đảo thuộc tỉnh Khánh Hòa của nước ta ở Biển Đông là quần đảo nào?|2|
+Ấn Độ Dương|Đại dương nằm giữa châu Á, châu Phi và châu Úc tên là gì?|3|

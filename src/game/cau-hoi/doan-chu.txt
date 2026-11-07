@@ -1,0 +1,32 @@
+# Đoán Chữ
+> Đoán chữ nè. Nhìn gợi ý rồi đoán từ cho đúng nhé!
+học|Xếp các chữ cái H, C, O thành một từ chỉ việc đến trường học bài|1|
+mèo|Xếp các chữ cái E, O, M thành tên con vật hay kêu "meo meo"|1|
+sách|Xếp các chữ cái A, C, H, S thành vật dùng để đọc và học bài|1|
+hoa|Xếp các chữ cái A, H, O thành thứ nở vào mùa xuân, hay cắm trong bình|1|
+bàn|Xếp các chữ cái A, B, N thành đồ dùng để kê sách vở lên học|1|
+con cá|Xếp các chữ cái A, C thành tên con vật sống dưới nước (gõ 2 từ)|1|cá
+mưa|Xếp các chữ cái A, M, Ư thành hiện tượng nước rơi từ mây xuống|1|
+gió|Xếp các chữ cái G, I, O thành thứ làm lá cây rung, không nhìn thấy được|1|
+đèn|Xếp các chữ cái Đ, E, N thành vật dùng để thắp sáng ban đêm|1|
+kẹo|Xếp các chữ cái E, K, O thành đồ ăn ngọt mà trẻ con rất thích|1|
+học sinh|Điền chữ còn thiếu: H_C S_NH (người đang đi học)|1|
+cô giáo|Điền chữ còn thiếu: C_ GI_O (người dạy học ở trường)|1|
+bóng đá|Điền chữ còn thiếu: B_NG Đ_ (môn thể thao được gọi là môn thể thao vua)|1|
+bút|Điền chữ còn thiếu: B_T (dụng cụ dùng để viết)|1|
+vở|Điền chữ còn thiếu: V_ (quyển dùng để ghi bài)|1|
+ghế|Điền chữ còn thiếu: GH_ (đồ dùng để ngồi)|1|
+cửa|Điền chữ còn thiếu: C_A (chỗ để ra vào nhà)|1|
+máy tính|Điền chữ còn thiếu: M_Y T_NH (thiết bị có màn hình, bàn phím và con chuột)|2|
+điện thoại|Điền chữ còn thiếu: ĐI_N THO_I (thứ dùng để gọi điện và nhắn tin)|2|
+thước|Điền chữ còn thiếu: TH__C (dụng cụ dùng để kẻ và đo)|2|
+trăng|Từ nào có 5 chữ cái, chỉ vật tròn sáng trên bầu trời đêm rằm?|1|
+nắng|Thời tiết có mặt trời chiếu sáng, trái với mưa, gọi là gì?|1|
+tàu|Xếp các chữ cái A, T, U thành phương tiện chạy trên đường ray hoặc đi trên biển|2|
+bảng|Điền chữ còn thiếu: B_NG (thứ cô giáo viết phấn lên trong lớp)|1|
+cặp sách|Điền chữ còn thiếu: C_P S_CH (thứ học sinh đeo sau lưng đựng sách vở)|2|cặp
+áo|Điền chữ còn thiếu: _O (thứ mặc trên người, có tay và cổ)|1|
+quạt|Điền chữ còn thiếu: QU_T (thứ tạo gió cho mát vào mùa hè)|1|
+nồi|Điền chữ còn thiếu: N_I (dụng cụ dùng để nấu cơm, nấu canh)|1|
+biển|Xếp các chữ cái B, I, Ê, N thành nơi có sóng, cát trắng và nước mặn|2|
+vườn|Xếp các chữ cái Ư, N, O, V thành nơi trồng cây, trồng hoa quanh nhà|2|

@@ -1,0 +1,32 @@
+# Nối Từ
+> Nối từ nè. Nghe từ đầu rồi nối tiếp cho thành từ quen thuộc nhé!
+sinh|Nối từ: "học" + ? thành từ chỉ người đang đi học|1|
+tính|Nối từ: "máy" + ? thành tên thiết bị điện tử dùng để học và làm việc|1|
+thoại|Nối từ: "điện" + ? thành tên thứ dùng để liên lạc từ xa|1|
+đá|Nối từ: "bóng" + ? thành tên môn thể thao vua|1|
+ghế|Nối từ: "bàn" + ? thành bộ đôi đồ dùng trong lớp học|1|
+ảnh|Nối từ: "chụp" + ? thành việc lưu lại hình bằng máy ảnh|1|
+bay|Nối từ: "máy" + ? thành phương tiện bay trên bầu trời|1|
+đỏ|Nối từ: "cờ" + ? thành màu của lá cờ Tổ quốc|1|
+chưng|Nối từ: "bánh" + ? thành tên loại bánh truyền thống ngày Tết|1|
+đông|Nối từ: "mùa" + ? thành mùa lạnh nhất trong năm|1|
+xuân|Nối từ: "mùa" + ? thành mùa đầu tiên trong năm, có Tết|1|
+mai|Nối từ: "hoa" + ? thành tên loài hoa vàng nở dịp Tết ở miền Nam|2|
+đào|Nối từ: "hoa" + ? thành tên loài hoa hồng phấn nở dịp Tết ở miền Bắc|2|
+hình|Nối từ: "truyền" + ? thành từ chỉ việc phát sóng trên tivi|2|
+nguồn|Nối tiếp câu tục ngữ: "Uống nước nhớ ___"|2|
+cây|Nối tiếp câu tục ngữ: "Ăn quả nhớ kẻ trồng ___"|2|
+thầy|Nối tiếp câu tục ngữ: "Không ___ đố mày làm nên"|2|
+bạn|Nối tiếp câu tục ngữ: "Học thầy không tày học ___"|2|
+sáng|Nối tiếp câu tục ngữ: "Gần mực thì đen, gần đèn thì ___"|1|
+Thái|Nối tiếp câu ca dao: "Công cha như núi ___ Sơn"|2|
+lạnh|Gõ từ trái nghĩa với từ "nóng"|1|
+dài|Gõ từ trái nghĩa với từ "ngắn"|1|
+cao|Gõ từ trái nghĩa với từ "thấp"|1|
+tối|Gõ từ trái nghĩa với từ "sáng" (nói về bầu trời)|1|
+nhanh|Gõ từ trái nghĩa với từ "chậm"|1|
+khỏe|Gõ từ trái nghĩa với từ "yếu"|1|
+xa|Gõ từ trái nghĩa với từ "gần"|1|
+vào|Gõ từ trái nghĩa với từ "ra" (hướng di chuyển)|1|
+ngày|Gõ từ trái nghĩa với từ "đêm"|1|
+cười|Gõ từ trái nghĩa với từ "khóc"|1|

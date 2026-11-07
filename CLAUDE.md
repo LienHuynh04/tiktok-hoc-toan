@@ -11,7 +11,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài ra phép tính trên bảng �
 ## Luật chơi
 
 - Comment bất kỳ là vào lớp (có tên trên đầu học sinh). Gõ `vào lớp` thì cô chào.
-- Mỗi tiết 20 câu, TẤT CẢ là toán tự sinh (`GAME.roundPlan` trong `src/game/config.ts`): `math` = câu toán tự sinh, `geo` = câu hình học. Bộ sinh ở math.ts phủ Lớp 1 đến Lớp 12 (mỗi lớp 3-5 dạng). Từ 2026-11-05, lớp của từng câu bốc theo TỈ LỆ chủ kênh chốt (rollQuestionBand trong math.ts, tỉ lệ ở GAME.hardQuestionChance/lowBandShare trong config.ts): 20% câu KHÓ (chỉ từ các dạng nâng cao gắn nhãn `hard: true` trong math.ts: Vi-ét, đạo hàm, tích phân, chỉnh hợp...), 50% lớp 1-9, 30% lớp 10-12 thường; kiểm tra miệng ra chơi dùng cùng tỉ lệ. Câu hình học tiết chính: makeGeometry minGrade 9, có `math.fig` (FigSpec) để sân khấu tự vẽ hình SVG kèm số đo. Không còn bình chọn: cô tự chọn dạng khó nhất (Lớp 12) rải 5 câu mỗi tiết. Mỗi câu 15 giây. Hết giờ chưa ai đúng: thêm 10 giây (pha bonus), KHÔNG mở số.
+- Từ 2026-11-07 game là LỚP HỌC ĐA MÔN (chủ kênh chốt): mỗi tiết 20 câu theo `GAME.roundPlan` (config.ts) = 7 `math` + 2 `geo` + 11 câu chữ (token `easy`/`medium`/`hard`) bốc từ ngân hàng `src/game/cau-hoi/*.txt` gồm 6 môn: Tiếng Anh, Ngữ Văn, Địa Lí, Đoán Chữ, Nối Từ, Câu Đố (mỗi môn 30 câu, định dạng parseBank `đáp án|gợi ý|mức|đáp án phụ`). pickOne tự tránh lặp môn liền nhau, tối đa ~2 câu/môn/tiết; bảng hiện nhãn môn qua `view.category` (GameStage đã có sẵn). Phần toán giữ nguyên: lớp của câu toán bốc theo TỈ LỆ (rollQuestionBand: 20% KHÓ / 50% lớp 1-9 / 30% lớp 10-12), hình học minGrade 9 có `math.fig`, cô tự chọn dạng Lớp 12 rải 5 câu/tiết cho phần toán. Mỗi câu 15 giây; hết giờ chưa ai đúng: thêm 10 giây (pha bonus). Tên lớp mặc định đổi thành "Lớp Học". Chấm câu chữ: phải gõ ĐỦ DẤU (requireDiacritics) và đúng độ dài mới tính là một lượt trả lời (isAttempt) — đáp án ngân hàng luôn ngắn 1-3 từ.
 - Cô đọc: "Câu 3. Câu toán nhẩm. 36 cộng 47 bằng mấy?" (toán đố / hình học: cô đọc cả bài toán bằng lời, bảng hiện đề + phép tính tóm tắt).
 - Sau mỗi tiết là giờ ra chơi 1 phút, bốc 1 trong 5 trò (không lặp trò vừa chơi): oẳn tù tì (+2), kiểm tra miệng bằng CÂU TOÁN gọi 1 bạn đang ngồi (+5), chọn phe (vui, không điểm), điểm danh "có mặt" (10 bạn đầu +3), thả tim 300 trong 30 giây (+1 cả lớp). Xong trò thì hiện "Học sinh giỏi hôm nay".
 - Sau giờ ra chơi: cả lớp bình chọn DẠNG TOÁN tiết sau (gõ 1 hoặc 2, 15 giây). Dạng thắng (`GAME.mathTopics`) chiếm 5 câu của tiết sau, rải cách 1 câu trong `pickRound`.
@@ -48,7 +48,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài ra phép tính trên bảng �
 ## Quyết định / ghi chú giữ từ bản chữ
 
 - 20 giây mỗi câu, luôn chạy đủ giờ ở phòng đông (`endAfterFirstSec: 0`); phòng dưới 5 bạn đang chơi thì có người đúng là 8 giây sau chốt câu.
-- Tên lớp đổi được ở ô "Tên lớp" trang điều khiển (mặc định "Lớp Toán").
+- Tên lớp đổi được ở ô "Tên lớp" trang điều khiển (mặc định "Lớp Học", trước 2026-11-07 là "Lớp Toán").
 - Cô gọi học sinh là "bạn nhỏ" / "các bạn nhỏ", không dùng em, con, mấy đứa.
 - Đọc đề xong cô hô "bắt đầu" (nhóm `go`), hô xong mới hiện phép tính và đếm giờ. Còn 5 giây cô nhắc "chuẩn bị hết giờ" (không dừng đồng hồ).
 - Cứ 5 câu (sau câu 5, 10, 15) cô dừng lại điểm danh 3 bạn nhỏ điểm cao nhất, tặng quà, chờ thêm 8 giây rồi mới ra câu tiếp.
