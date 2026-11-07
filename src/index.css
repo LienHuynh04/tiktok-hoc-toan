@@ -11,9 +11,10 @@ body,
   height: 100%;
 }
 
-/* Nền stage. Đổi ảnh: bỏ ảnh vào public/assets/bg/ rồi thay dòng background */
+/* Nền stage: ưu tiên lop2.webp (nền lớp học mới, chủ kênh đặt 2026-11-07); chưa có file đó
+   thì tự dùng lop.webp cũ ở lớp dưới. Đổi ảnh: bỏ file vào public/assets/bg/ */
 .stage-bg {
-  background: #c8642a url('/assets/bg/lop.webp') top center / 1080px auto no-repeat;
+  background: #c8642a url('/assets/bg/lop2.webp') top center / 1080px auto no-repeat, #c8642a url('/assets/bg/lop.webp') top center / 1080px auto no-repeat;
 }
 
 /* Hiệu ứng khi đủ tim */
