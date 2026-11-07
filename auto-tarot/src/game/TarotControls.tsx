@@ -71,6 +71,9 @@ export function TarotControls({ view, stageCount = 0 }: { view: StageView | null
           👥 4 bạn vào hàng chờ
         </Btn>
         <Btn onClick={() => emitTest('gift', { ...fake(3), giftName: 'Hoa hồng', giftId: 1, diamondCount: 1, repeatCount: 1 })}>🌹 Tặng hoa</Btn>
+        <Btn onClick={() => emitTest('gift', { ...fake(6), giftName: 'Finger Heart', giftId: 3, diamondCount: 5, repeatCount: 1 })}>🫰 Thả tim (ý muốn)</Btn>
+        <Btn onClick={() => emitTest('gift', { ...fake(7), giftName: 'Hoa hồng', giftId: 1, diamondCount: 1, repeatCount: 10 })}>🌹×10 Lên Bảng Sao (ý muốn)</Btn>
+        <Btn onClick={() => emitTest('gift', { ...fake(8), giftName: 'Cỏ bốn lá', giftId: 4, diamondCount: 10, repeatCount: 1 })}>🍀 Cỏ bốn lá (ý muốn)</Btn>
         <Btn onClick={() => emitTest('gift', { ...fake(4), giftName: 'Mũ kỳ diệu', giftId: 2, diamondCount: 99, repeatCount: 1 })}>🎁 Quà to</Btn>
         <Btn onClick={() => emitTest('follow', fake(5))}>➕ Follow</Btn>
       </div>

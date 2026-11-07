@@ -37,6 +37,15 @@
   border: 3px solid rgba(250, 204, 21, 0.65);
   box-shadow: inset 0 0 0 8px rgba(0, 0, 0, 0.22), inset 0 0 50px rgba(0, 0, 0, 0.35);
 }
+/* Mưa hiệu ứng ý muốn (tim / sao) rơi từ trên xuống */
+@keyframes wish-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  8% { opacity: 1; }
+  100% { transform: translateY(1150px) rotate(320deg); opacity: 0.85; }
+}
+.wish-drop {
+  animation: wish-fall 4.8s ease-in forwards;
+}
 @keyframes tarot-glow {
   0%, 100% { box-shadow: 0 0 42px 6px rgba(250, 204, 21, 0.35); }
   50% { box-shadow: 0 0 74px 16px rgba(250, 204, 21, 0.6); }

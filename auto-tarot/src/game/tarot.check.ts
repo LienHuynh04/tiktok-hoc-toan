@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { TarotRoom, type ChatIn } from './tarot';
 import { CARDS, TOPICS, TOPIC_LINES, detectTopic, readingText, countWords, DISCLAIMER, type TopicKey } from './cards';
 import { GAME } from './config';
+import { WISHES, matchWish } from './wishes';
 import { plain } from '../live/chatter';
 
 // rand xác định để test lặp lại được
@@ -35,6 +36,17 @@ for (const c of CARDS) {
 }
 assert.equal(GAME.pickSec, 5, 'mỗi người có 5 giây chọn lá');
 assert.equal(GAME.revealSec, 15, 'mỗi lượt xem bài hiện 15 giây trên sân khấu');
+
+// ---------- ý muốn của người xem: khớp quà đúng ý muốn ----------
+assert.equal(matchWish('Rose', 1), 'greet', 'hoa hồng 1 xu = gửi lời chào');
+assert.equal(matchWish('Hoa hồng', 1), 'greet', 'tên quà tiếng Việt cũng khớp');
+assert.equal(matchWish('Rose', 10), 'star', 'hoa hồng 10 xu (combo) = lên Bảng Sao Đêm');
+assert.equal(matchWish('Finger Heart', 5), 'heart', 'finger heart = cử chỉ thả tim');
+assert.equal(matchWish('Cử chỉ thả tim', 5), 'heart', 'tên tiếng Việt của thả tim cũng khớp');
+assert.equal(matchWish('Four-leaf clover', 10), 'luck', 'cỏ bốn lá = mưa sao may mắn');
+assert.equal(matchWish('Cỏ bốn lá', 10), 'luck', 'tên tiếng Việt của cỏ bốn lá cũng khớp');
+assert.equal(matchWish('Mũ kỳ diệu', 99), null, 'quà lạ không khớp ý muốn nào');
+assert.equal(WISHES.length, 4, 'đủ 4 ý muốn');
 assert.equal(GAME.topicSec, 30, 'chọn chủ đề trong 30 giây');
 
 // ---------- nhận diện chủ đề ----------

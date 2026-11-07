@@ -7,6 +7,15 @@ import { GiftThanker, OncePerPerson } from '../live/chatter';
 import { IS_STAGE } from '../live/page';
 import { GAME } from './config';
 import { TarotRoom, type Say, type TarotView } from './tarot';
+import { matchWish, type WishKey } from './wishes';
+
+// Câu MC đọc khi game thực hiện một ý muốn (xướng tên người tặng — vinh danh bằng giọng nói)
+const WISH_LINES: Record<WishKey, (spoken: string) => string> = {
+  greet: (n) => `Chào bạn ${n} ghé phòng nè, cảm ơn bạn đã gửi lời chào. Chúc bạn một buổi tối thật vui nha.`,
+  heart: (n) => `Cảm ơn bạn ${n} thả tim cho cả phòng, tim đang bay đầy sân khấu rồi nè.`,
+  star: (n) => `Bạn ${n} đã lên Bảng Sao Đêm của buổi hôm nay rồi đó, cảm ơn bạn nhiều lắm nha.`,
+  luck: (n) => `Bạn ${n} mang mưa sao may mắn tới cho cả phòng rồi nè, cảm ơn bạn nhiều nha.`,
+};
 
 // ?view=stage&mute=1: xem thử trang stage không phát tiếng
 const MUTED = new URLSearchParams(window.location.search).get('mute') === '1';
@@ -17,20 +26,18 @@ export type StageView = TarotView;
  * Trang stage chạy engine tarot thật (lõi ở tarot.ts) và gửi ảnh chụp trạng thái lên server.
  * Trang điều khiển không tự chạy, chỉ vẽ lại ảnh chụp đó nên xem trước khớp với live.
  */
-// Bảng vinh danh quà: CHỈ ghi nhận + hiển thị, tuyệt đối không đổi thứ tự lượt xem (luật nhà)
-export interface GiftHonour {
-  top: { nickname: string; coins: number; gifts: number }[];
-  recent: { nickname: string; giftName: string }[];
-  totalCoins: number;
+// Ý muốn của người xem: đếm số lần đã thực hiện thật + Bảng Sao Đêm + hiệu ứng đang chạy (chỉ vinh danh/hiệu ứng)
+export interface WishState {
+  counts: Record<WishKey, number>;
+  starNames: string[];
+  fx: { kind: 'heart' | 'luck'; at: number } | null;
 }
 
 export function useTarot() {
   const [status, setStatus] = useState<LiveStatus | null>(null);
   const [view, setView] = useState<StageView | null>(null);
   const [lastGift, setLastGift] = useState<(GiftEvent & { at: number }) | null>(null);
-  const [honour, setHonour] = useState<GiftHonour>({ top: [], recent: [], totalCoins: 0 });
-  const honourMap = useRef(new Map<string, { nickname: string; coins: number; gifts: number }>());
-  const honourTotal = useRef(0);
+  const [wish, setWish] = useState<WishState>({ counts: { greet: 0, heart: 0, star: 0, luck: 0 }, starNames: [], fx: null });
   const [stageCount, setStageCount] = useState(0);
   const [channelName, setChannelName] = useState(GAME.defaultChannelName);
 
@@ -88,18 +95,17 @@ export function useTarot() {
       const p = person(e);
       const coins = e.diamondCount * e.repeatCount;
       setLastGift({ ...e, nickname: p.nickname, at: Date.now() });
-      // Vinh danh: cộng dồn theo người tặng, hiện top 3 + quà mới nhất (không đụng hàng chờ)
-      const rec = honourMap.current.get(e.username) ?? { nickname: p.nickname, coins: 0, gifts: 0 };
-      rec.nickname = p.nickname;
-      rec.coins += coins;
-      rec.gifts += 1;
-      honourMap.current.set(e.username, rec);
-      honourTotal.current += coins;
-      setHonour({
-        top: [...honourMap.current.values()].sort((a, b) => b.coins - a.coins).slice(0, 3),
-        recent: [{ nickname: p.nickname, giftName: e.giftName }],
-        totalCoins: honourTotal.current,
-      });
+      const wishKey = matchWish(e.giftName, coins);
+      if (wishKey) {
+        // Quà khớp ý muốn: game tự thực hiện ý muốn (thay cho câu cảm ơn thường), không đụng hàng chờ
+        setWish((w) => ({
+          counts: { ...w.counts, [wishKey]: w.counts[wishKey] + 1 },
+          starNames: wishKey === 'star' ? [p.nickname, ...w.starNames.filter((n) => n !== p.nickname)].slice(0, 6) : w.starNames,
+          fx: wishKey === 'heart' || wishKey === 'luck' ? { kind: wishKey, at: Date.now() } : w.fx,
+        }));
+        say([{ text: `F: ${WISH_LINES[wishKey](p.spoken)}`, priority: true, ttl: GAME.giftLineMaxWaitMs }]);
+        return;
+      }
       if (talk.gifts.shouldThank(e.username, coins, chatter.current.filter((c) => c.priority).length)) say(room.thank(p, e.giftName));
     },
     onFollow: (e) => {
@@ -155,7 +161,7 @@ export function useTarot() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { status, view, lastGift, stageCount, channelName, honour };
+  return { status, view, lastGift, stageCount, channelName, wish };
 }
 
 export type TarotState = ReturnType<typeof useTarot>;

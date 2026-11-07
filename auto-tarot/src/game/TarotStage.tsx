@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { TarotState } from './useTarot';
 import type { TarotView } from './tarot';
 import { CARDS } from './cards';
+import { WISHES } from './wishes';
 import './tarot.css';
 
 // Tải trước ảnh 22 lá + mặt sau để lúc lật bài không bị chờ (thiếu file thì bỏ qua, sân khấu dùng mặt vẽ CSS)
@@ -43,6 +44,8 @@ export function TarotStage({ game }: { game: TarotState }) {
       {stars.map((s, i) => (
         <div key={i} className="tarot-star absolute rounded-full bg-amber-100" style={{ left: s.left, top: s.top, width: s.size, height: s.size, animationDelay: `${s.delay}s` }} />
       ))}
+      {/* Hiệu ứng ý muốn: mưa tim / mưa sao may mắn (~5 giây) */}
+      {game.wish.fx && Date.now() - game.wish.fx.at < 5200 && <WishFx key={game.wish.fx.at} kind={game.wish.fx.kind} />}
       <div className="absolute left-1/2 top-[330px] text-[300px] opacity-[0.07]" style={{ transform: 'translateX(-50%)' }}>🌙</div>
 
       {/* Đầu trang: câu mời chọn chủ đề (thay tên phòng theo ý chủ kênh 2026-11-07) + lưu ý giải trí */}
@@ -127,23 +130,23 @@ export function TarotStage({ game }: { game: TarotState }) {
 
           {/* Hàng chờ + thống kê */}
           <div className="absolute inset-x-[70px] bottom-[64px]">
-            {/* Bảng vinh danh quà (chỉ vinh danh, thứ tự xem bài vẫn theo lượt bình luận) */}
+            {/* Thanh Ý MUỐN của người xem: game tự thực hiện khi quà tới (chỉ vinh danh/hiệu ứng, không đổi thứ tự lượt) */}
             <div className="mb-3 rounded-2xl bg-gradient-to-r from-fuchsia-900/60 to-indigo-900/60 px-5 py-3 ring-1 ring-amber-200/30">
-              <div className="flex items-center justify-between">
-                <span className="text-[27px] font-bold text-amber-200">🎁 Vinh danh buổi live</span>
-                {game.honour.totalCoins > 0 && <span className="text-[25px] text-white/70">Tổng ủng hộ: {game.honour.totalCoins} xu</span>}
-              </div>
-              {game.honour.top.length > 0 ? (
-                <>
-                  <div className="mt-1.5 truncate text-[26px] text-white/85">
-                    {game.honour.top.map((t, i) => `${['🥇', '🥈', '🥉'][i]} ${t.nickname} (${t.coins} xu)`).join('   ·   ')}
+              <div className="text-[24px] font-bold uppercase tracking-[0.2em] text-amber-200/90">✨ Ý muốn của người xem</div>
+              <div className="mt-2 flex gap-2.5">
+                {WISHES.map((w) => (
+                  <div key={w.key} className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-xl bg-black/30 px-3 py-2 ring-1 ring-white/10">
+                    <span className="text-[30px] leading-none">{w.icon}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[20px] font-semibold leading-tight text-white/90">{w.label}</span>
+                      <span className="block text-[19px] leading-tight text-white/50">{w.price} xu</span>
+                    </span>
+                    <span className={`text-[26px] font-extrabold ${game.wish.counts[w.key] > 0 ? 'text-amber-300' : 'text-white/30'}`}>×{game.wish.counts[w.key]}</span>
                   </div>
-                  {game.honour.recent[0] && (
-                    <div className="mt-1 text-[24px] text-fuchsia-200/75">Mới nhất: {game.honour.recent[0].nickname} tặng {game.honour.recent[0].giftName}</div>
-                  )}
-                </>
-              ) : (
-                <div className="mt-1 text-[24px] text-white/50">Tên bạn tặng quà sẽ hiện ở bảng này. Thứ tự xem bài vẫn theo lượt bình luận.</div>
+                ))}
+              </div>
+              {game.wish.starNames.length > 0 && (
+                <div className="mt-2 truncate text-[24px] text-amber-100/85">🌟 Bảng Sao Đêm: {game.wish.starNames.join(' · ')}</div>
               )}
             </div>
             {v.choosing.length > 0 && (
@@ -179,6 +182,29 @@ export function TarotStage({ game }: { game: TarotState }) {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// Mưa hiệu ứng khi ý muốn thả tim / cỏ bốn lá được thực hiện
+function WishFx({ kind }: { kind: 'heart' | 'luck' }) {
+  const drops = useMemo(
+    () =>
+      Array.from({ length: 16 }, (_, i) => ({
+        left: `${(i * 61) % 96}%`,
+        delay: `${(i % 8) * 0.35}s`,
+        size: 34 + ((i * 37) % 30),
+        emoji: kind === 'heart' ? '💖' : i % 3 === 0 ? '🍀' : '⭐',
+      })),
+    [kind],
+  );
+  return (
+    <div className="pointer-events-none absolute inset-0 z-40 overflow-hidden">
+      {drops.map((d, i) => (
+        <span key={i} className="wish-drop absolute -top-[70px]" style={{ left: d.left, fontSize: d.size, animationDelay: d.delay }}>
+          {d.emoji}
+        </span>
+      ))}
     </div>
   );
 }
