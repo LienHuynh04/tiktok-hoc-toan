@@ -2,7 +2,7 @@
  * Lõi Auto Tarot Live: mỗi người chơi có 1 PHIÊN RIÊNG với máy trạng thái
  * WAITING_TOPIC → WAITING_CARD → READING → COMPLETED.
  * - WAITING_TOPIC: đã gõ TAROT (hoặc "xem bài") nhưng chưa chọn chủ đề, có 30 giây.
- * - WAITING_CARD: đã có chủ đề, nằm trong hàng chờ; người đầu hàng được gọi lên chọn 1 trong 3 lá úp (20 giây).
+ * - WAITING_CARD: đã có chủ đề, nằm trong hàng chờ; người đầu hàng được gọi lên chọn 1 trong 3 lá úp (5 giây).
  * - READING: đã chọn lá, chủ phòng đang đọc lời giải theo đúng chủ đề của người đó.
  * - COMPLETED: đọc xong, phiên đóng; người chơi phải nhường ít nhất 2 lượt của người khác (hoặc chờ 5 phút) mới xem lại.
  * Nhiều người ở các trạng thái khác nhau cùng lúc, nhưng chỉ 1 người được chọn lá/đọc tại một thời điểm (lần lượt).
@@ -101,11 +101,11 @@ const LINES = {
     (n: string, topic: string) => F(`Tới lượt bạn ${n} rồi. Hôm nay mình xem cho bạn về ${topic} nhé.`),
   ],
   pickPrompt: [
-    F('Trước mặt bạn là 3 lá bài úp. Bạn gõ số 1, 2 hoặc 3 để chọn 1 lá. Bạn có 20 giây, cứ từ từ cảm nhận nhé.'),
-    F('Ba lá bài đang úp trước mặt bạn đây. Gõ 1, 2 hoặc 3 để chọn lá dành cho mình, bạn có 20 giây nhé.'),
+    F('Trước mặt bạn là 3 lá bài úp. Bạn gõ số 1, 2 hoặc 3 để chọn 1 lá. Mình chờ bạn 5 giây thôi, chọn nhanh tay nhé.'),
+    F('Ba lá bài đang úp trước mặt bạn đây. Gõ 1, 2 hoặc 3 để chọn lá dành cho mình, nhanh tay trong 5 giây nhé.'),
   ],
   autoPick: [
-    (n: string) => F(`Hết 20 giây mà bạn ${n} chưa chọn nên mình tự chọn lá ở giữa cho bạn nhé.`),
+    (n: string) => F(`Hết 5 giây mà bạn ${n} chưa chọn nên mình tự chọn lá ở giữa cho bạn nhé.`),
   ],
   revealIntro: [
     (n: string) => F(`Lá bài của bạn ${n} đây.`),

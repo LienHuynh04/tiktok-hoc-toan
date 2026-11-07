@@ -16,7 +16,7 @@
 ## Thiết kế phiên (đừng phá vỡ)
 
 - Máy trạng thái mỗi nickname: WAITING_TOPIC (30s chọn chủ đề, quá hạn huỷ) → WAITING_CARD (hàng chờ;
-  người đầu hàng được gọi, 20s gõ 1/2/3, quá hạn tự chọn lá giữa) → READING (đọc lời giải) → COMPLETED.
+  người đầu hàng được gọi, 5s gõ 1/2/3, quá hạn tự chọn lá giữa) → READING (đọc lời giải) → COMPLETED.
 - Chỉ phiên đang hoạt động (activeUser) mới chọn được lá; số 1/2/3 của người khác bị bỏ qua tuyệt đối.
 - Vào hàng chờ: gõ thẳng chủ đề (comment ≤4 từ có từ khoá chủ đề) hoặc TAROT/xem bài + chủ đề; gõ TAROT
   một mình thì vào WAITING_TOPIC. Câu chat dài tình cờ chứa từ khoá (vd "yêu") KHÔNG tạo phiên.

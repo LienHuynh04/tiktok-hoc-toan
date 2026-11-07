@@ -5,7 +5,7 @@ Game tarot TỰ ĐỘNG cho TikTok LIVE, phát triển từ Phòng Tarot trong c
 ## Quy trình 3 bước cho từng người chơi
 
 1. **Chọn chủ đề**: người xem gõ thẳng một chủ đề: `tình yêu`, `người cũ`, `công việc`, `tài chính`, `tương lai`, `thông điệp vũ trụ` → vào hàng chờ ngay. Gõ `TAROT` hoặc `xem bài` trước cũng được, hệ thống nhắc chọn chủ đề (có 30 giây, quá hạn phiên tự huỷ).
-2. **Chọn lá bài**: tới lượt, sân khấu bày 3 lá úp, chỉ đúng người đó gõ `1`, `2` hoặc `3` trong 20 giây để chọn (người khác gõ số không ảnh hưởng; hết giờ hệ thống tự chọn lá giữa).
+2. **Chọn lá bài**: tới lượt, sân khấu bày 3 lá úp, chỉ đúng người đó gõ `1`, `2` hoặc `3` trong 5 giây để chọn (người khác gõ số không ảnh hưởng; hết giờ hệ thống tự chọn lá giữa).
 3. **Giải bài**: giọng nữ chủ phòng đọc lời giải ghép riêng cho người đó: tên người chơi, chủ đề, tên lá (xuôi/ngược), ý nghĩa lá theo đúng chủ đề đã chọn và lời khuyên — tổng 35–55 từ, đọc khoảng 15–20 giây. Một số lá ra chiều ngược (30%), lời giải đổi sắc thái.
 
 ## Quản lý người chơi (máy trạng thái từng người)
