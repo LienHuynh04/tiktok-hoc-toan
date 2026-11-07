@@ -45,12 +45,12 @@ export function TarotStage({ game }: { game: TarotState }) {
       ))}
       <div className="absolute left-1/2 top-[330px] text-[300px] opacity-[0.07]" style={{ transform: 'translateX(-50%)' }}>🌙</div>
 
-      {/* Đầu trang: tên phòng + lưu ý giải trí */}
+      {/* Đầu trang: câu mời chọn chủ đề (thay tên phòng theo ý chủ kênh 2026-11-07) + lưu ý giải trí */}
       <div className="absolute inset-x-0 top-[46px] text-center">
-        <div className="font-['Dancing_Script'] text-[92px] leading-none text-amber-300" style={{ textShadow: '0 4px 30px rgba(250,204,21,.45)' }}>
-          {game.channelName}
+        <div className="font-['Dancing_Script'] text-[76px] leading-tight text-amber-300" style={{ textShadow: '0 4px 30px rgba(250,204,21,.45)' }}>
+          Hãy chọn vấn đề bạn muốn xem
         </div>
-        <div className="mt-2 text-[30px] font-semibold uppercase tracking-[0.35em] text-fuchsia-200/90">✦ Xem bài Ẩn Chính ✦</div>
+        <div className="mt-2 text-[27px] font-semibold text-fuchsia-200/90">✦ Tình yêu · Người cũ · Công việc · Tài chính · Tương lai · Thông điệp vũ trụ ✦</div>
         <div className="mx-auto mt-4 w-fit rounded-full bg-white/10 px-5 py-1.5 text-[24px] text-amber-100/90 ring-1 ring-amber-200/30">
           Chỉ mang tính giải trí, tham khảo cho vui
         </div>

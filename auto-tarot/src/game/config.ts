@@ -1,6 +1,6 @@
 // Cấu hình Auto Tarot Live. Mọi con số chỉnh ở đây, engine (tarot.ts) chỉ đọc.
 export const GAME = {
-  defaultChannelName: 'Auto Tarot Live',
+  defaultChannelName: 'Phòng Tarot', // tên nội bộ/trang điều khiển; sân khấu không hiện tên phòng nữa mà hiện câu mời chọn chủ đề
   topicSec: 30, // người chơi gõ TAROT mà chưa kèm chủ đề: có 30 giây để chọn chủ đề, quá hạn tự huỷ phiên
   pickSec: 5, // người đang được xem có 5 giây gõ 1/2/3 chọn lá (nhịp nhanh như Phòng Tarot, chủ kênh chốt 2026-11-07), quá hạn tự chọn lá giữa
   revealSec: 15, // thời gian lá bài + lời giải hiện trên sân khấu (giảm 22 → 15 theo ý chủ kênh 2026-11-07 cho nhịp nhanh; đồng hồ vẫn bị giữ khi giọng đang đọc nên không cắt ngang câu)

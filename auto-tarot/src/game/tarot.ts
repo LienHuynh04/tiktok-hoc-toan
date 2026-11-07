@@ -72,8 +72,8 @@ export interface TarotView {
 const F = (s: string) => `F: ${s}`;
 const LINES = {
   welcome: [
-    F('Xin chào cả nhà đã ghé Auto Tarot Live. Ở đây mình xem bài Ẩn Chính chỉ để giải trí và tham khảo cho vui thôi nhé.'),
-    F('Chào mừng cả nhà đến với Auto Tarot Live. Ai muốn xem bài thì cứ chọn một chủ đề, mình đọc lần lượt từng bạn một.'),
+    F('Xin chào cả nhà đã ghé phòng xem bài đêm nay. Ở đây mình xem bài Ẩn Chính chỉ để giải trí và tham khảo cho vui thôi nhé.'),
+    F('Chào mừng cả nhà ghé xem bài. Ai muốn xem thì cứ chọn một chủ đề mình đang quan tâm, mình đọc lần lượt từng bạn một.'),
   ],
   howto: [
     F('Cách xem bài rất dễ: bạn gõ thẳng chủ đề muốn xem, ví dụ tình yêu, người cũ, công việc, tài chính, tương lai hoặc thông điệp vũ trụ. Tới lượt của bạn, mình bày 3 lá úp, bạn gõ số 1, 2 hoặc 3 để chọn lá.'),
