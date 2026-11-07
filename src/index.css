@@ -12,9 +12,14 @@ body,
 }
 
 /* Nền stage: ưu tiên lop2.webp (nền lớp học mới, chủ kênh đặt 2026-11-07); chưa có file đó
-   thì tự dùng lop.webp cũ ở lớp dưới. Đổi ảnh: bỏ file vào public/assets/bg/ */
+   thì lớp dưới tự dùng lop.webp cũ. Viết tách property như bản gốc: bản shorthand 2 lớp kèm
+   màu ở lớp đầu là CSS KHÔNG hợp lệ (màu chỉ được ở lớp cuối) khiến trình duyệt bỏ cả nền. */
 .stage-bg {
-  background: #c8642a url('/assets/bg/lop2.webp') top center / 1080px auto no-repeat, #c8642a url('/assets/bg/lop.webp') top center / 1080px auto no-repeat;
+  background-color: #c8642a;
+  background-image: url('/assets/bg/lop2.webp'), url('/assets/bg/lop.webp');
+  background-position: top center, top center;
+  background-size: 1080px auto, 1080px auto;
+  background-repeat: no-repeat, no-repeat;
 }
 
 /* Hiệu ứng khi đủ tim */
