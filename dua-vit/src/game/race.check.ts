@@ -3,7 +3,7 @@
 // sóng lớn từ tim, đua tới bục vinh quang và tính vô địch. Thêm: sảnh chờ đủ 100 tim
 // thì xuất phát ngay dù chưa đủ 6 người; bao nhiêu người vào thì bấy nhiêu vịt hiện;
 // phòng ít người thật thì vịt demo lấp hồ (hồ luôn sôi động) nhưng không nhận giải.
-import { RaceRoom, artFor, type Person } from './race';
+import { RaceRoom, artFor, BOT_NAMES, type Person } from './race';
 
 let fails = 0;
 function ok(cond: boolean, label: string) {
@@ -135,12 +135,16 @@ ok(artFor('abc') === artFor('abc') && artFor('abc') >= 0 && artFor('abc') <= 9, 
   step(300);
   let v = r.view(now);
   ok(v.racerCount === 8 && v.racers.some((x) => x.demo), 'phòng trống: vịt demo tự xuống hồ lấp đủ 8 làn');
+  ok(
+    v.racers.filter((x) => x.demo).every((x) => BOT_NAMES.includes(x.nickname)),
+    'vịt demo mang tên hài hước kiểu người dùng thật (vd: tôi là công chúa)',
+  );
   step(11000);
   ok(r.view(now).phase === 'race', 'không có người xem nào: chặng demo vẫn xuất phát, hồ luôn động');
   let guard = 0;
   while (r.view(now).phase !== 'podium' && guard++ < 600) step(250);
   v = r.view(now);
-  ok(v.phase === 'podium' && v.podium!.top.every((t) => !t.nickname.includes('demo')), 'bục vinh quang: vịt demo không được nhận vị trí nào');
+  ok(v.phase === 'podium' && v.podium!.top.every((t) => !BOT_NAMES.includes(t.nickname)), 'bục vinh quang: vịt demo không được nhận vị trí nào');
   step(9000);
   ok(r.view(now).phase === 'lobby', 'hết chặng demo: về sảnh chờ, vòng lặp sôi động tiếp tục');
   for (let i = 0; i < 4; i++) r.chat({ ...P('that' + i, 'Bạn Thật ' + i), comment: 'đua' }, now);

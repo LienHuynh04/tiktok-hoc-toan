@@ -3,9 +3,9 @@
 // (BƠI / QUẠT / ĐẠP...): ai gõ đúng khẩu lệnh trong 5 giây thì vịt của mình bốc tốc 4 giây.
 // Ở sảnh chờ: đủ 100 tim -> XUẤT PHÁT NGAY dù chưa đủ 6 tay đua (chỉ cần >= 2 người thật).
 // Đủ 150 tim -> SÓNG LỚN đẩy cả đoàn tăng tốc (nhịp chơi chung của cả phòng).
-// HỒ LUÔN SÔI ĐỘNG: phòng ít người thật thì vịt demo (tên ghi rõ "Vịt demo") tự xuống bơi
-// lấp làn để màn hình không bao giờ trống; đủ người thật thì demo rút. Demo không nhận
-// bục vinh quang, không tính Vua Vịt — phần thắng chỉ dành cho người thật.
+// HỒ LUÔN SÔI ĐỘNG: phòng ít người thật thì vịt demo (tên hài hước kiểu người dùng thật,
+// sân khấu gắn dấu 🤖 trước tên) tự xuống bơi lấp làn để màn hình không bao giờ trống;
+// đủ người thật thì demo rút. Demo không nhận bục vinh quang, không tính Vua Vịt.
 // Về nhất được vinh danh trên bục; quà chỉ được cảm ơn, không mua được tốc độ.
 
 import { GAME } from './config';
@@ -79,6 +79,34 @@ export const plain = (s: string) =>
     .trim();
 
 export const EVENT_WORDS = ['BƠI', 'QUẠT', 'ĐẠP', 'LẶN', 'VỊT', 'TĂNG TỐC'];
+// Tên của vịt demo: đặt kiểu tên người dùng thật hay dùng cho vui (sân khấu vẫn gắn
+// dấu 🤖 trước tên để ai cũng biết đây là vịt máy lấp hồ, không phải người xem thật)
+export const BOT_NAMES = [
+  'tôi là công chúa',
+  'công chúa bong bóng',
+  'đại gia chân đất',
+  'thánh lầy đây rồi',
+  'mèo lười chính hiệu',
+  'anh hùng bàn phím',
+  'nữ hoàng thả thính',
+  'ông hoàng tốc độ',
+  'bà hàng xóm nhiều chuyện',
+  'đẹp trai nhất xóm',
+  'chị đại về làng',
+  'hoàng tử ngủ gật',
+  'tiểu thư thất lạc',
+  'dân chơi hệ giàu',
+  'không tên cũng nổi',
+  'ăn hại nhưng vui',
+  'vịt nhà người ta',
+  'bé heo ham ăn',
+  'thánh soi đây nè',
+  'cô nàng hậu đậu',
+  'trùm cuối xóm tôi',
+  'fan cứng của Bug',
+  'người qua đường 2077',
+  'sen của mèo Bug',
+];
 const IDLE_LINES = [
   'Cả nhà bình luận bất cứ chữ gì là có vịt đua mang tên mình nhé, đua hoàn toàn miễn phí!',
   'Khi màn hình hiện khẩu lệnh to, gõ đúng khẩu lệnh đó là vịt của mình bốc tốc ngay!',
@@ -106,7 +134,7 @@ export class RaceRoom {
   private tailwindUntil = 0;
   private likeMeter = 0;
   private lobbyLikes = 0; // tim ở sảnh chờ/bục: đủ lobbyLikeGoal -> xuất phát sớm
-  private botSeq = 0; // số thứ tự vịt demo (đặt tên Vịt demo 1, 2, 3...)
+  private botSeq = 0; // số thứ tự vịt demo (tên lấy vòng quanh kho tên BOT_NAMES)
   private realFinishOpened = false; // cửa sổ cán đích đã mở bởi tay đua thật chưa
   private finishCount = 0;
   private podiumInfo: RaceView['podium'] = null;
@@ -167,7 +195,8 @@ export class RaceRoom {
     for (let i = want; i < bots.length; i++) this.racers.delete(bots[i].p.username);
     for (let i = bots.length; i < want; i++) {
       const seq = this.botSeq++;
-      const p: Person = { username: '__bot' + seq, nickname: 'Vịt demo ' + (seq + 1), spoken: 'Vịt demo', avatar: '' };
+      const name = BOT_NAMES[seq % BOT_NAMES.length];
+      const p: Person = { username: '__bot' + seq, nickname: name, spoken: name, avatar: '' };
       this.racers.set(p.username, {
         p,
         art: artFor(p.username),

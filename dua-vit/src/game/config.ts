@@ -17,7 +17,7 @@ export const GAME = {
   podiumSec: 7, // hiện bục vinh quang
   raceMaxSec: 90, // đua tối đa 1 phút rưỡi, hết giờ xếp hạng theo quãng đường
   maxRacers: 60, // bao nhiêu người vào thì bấy nhiêu vịt trên hồ (sân khấu co giãn làn theo số vịt)
-  attractField: 8, // hồ luôn sôi động: phòng ít người thật thì vịt demo (ghi rõ tên "Vịt demo") lấp hồ tới chừng này con
+  attractField: 8, // hồ luôn sôi động: phòng ít người thật thì vịt demo (tên hài hước + dấu 🤖 trên thẻ) lấp hồ tới chừng này con
   attractRealMax: 4, // đủ chừng này tay đua thật trở lên thì vịt demo rút hết, hồ toàn người thật
   idleLineEveryMs: 60_000,
   chatterMaxWaitMs: 60_000,

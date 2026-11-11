@@ -12,7 +12,7 @@ Game live TikTok: mỗi người xem là một tay đua vịt, cả phòng đua 
 - Vịt về nhất mở thêm 10 giây cho các bạn khác cán đích; hết giờ thì xếp hạng theo quãng đường. Bảng **Vua Vịt** ghi số lần vô địch cả buổi.
 - **Quà**: chỉ cảm ơn bằng giọng đọc + thông báo, không mua được tốc độ (luật chung của kênh).
 - Bao nhiêu người vào thì bấy nhiêu vịt trên hồ (tối đa 60): sân khấu tự co chiều cao làn để mọi vịt đều hiện kín màn hình, đông quá thì thẻ tên nằm cố định ở đầu làn.
-- **Hồ luôn sôi động**: phòng có ít hơn 4 tay đua thật thì vịt demo (thẻ tên ghi rõ "🤖 Vịt demo") tự xuống bơi lấp hồ tới 8 con và đua liên tục kể cả khi chưa có người xem nào — mở live lên là thấy đua đang diễn ra, không bao giờ có cảnh hồ trống. Đủ 4 người thật thì demo rút hết. Vịt demo không được lên bục vinh quang, không tính Vua Vịt.
+- **Hồ luôn sôi động**: phòng có ít hơn 4 tay đua thật thì vịt demo tự xuống bơi lấp hồ tới 8 con và đua liên tục kể cả khi chưa có người xem nào — mở live lên là thấy đua đang diễn ra, không bao giờ có cảnh hồ trống. Vịt demo mang tên hài hước kiểu người dùng thật hay đặt ("tôi là công chúa", "đại gia chân đất", "thánh lầy đây rồi"...) và có dấu 🤖 trên thẻ tên để phân biệt với người xem thật. Đủ 4 người thật thì demo rút hết. Vịt demo không được lên bục vinh quang, không tính Vua Vịt.
 
 ## Chạy trên máy
 
