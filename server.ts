@@ -369,7 +369,7 @@ const TEST_EVENTS = ['chat', 'gift', 'member', 'follow', 'share', 'like'];
 app.post('/api/test/emit', (req, res) => {
   const { type, data } = req.body || {};
   if (!TEST_EVENTS.includes(type)) return res.status(400).json({ success: false, error: 'Loại sự kiện không hợp lệ' });
-  const event = { timestamp: Date.now(), avatar: '', ...(data || {}) };
+  const event = { timestamp: Date.now(), avatar: '', ...(data || {}), test: true }; // gắn cờ giả lập: game không ưu tiên ghế bạn mới cho khách test
   if (type === 'like') {
     liveStats.totalLikes += Number(event.likeCount) || 1;
     event.totalLikes = liveStats.totalLikes;

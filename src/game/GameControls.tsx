@@ -4,10 +4,10 @@ import type { StageView } from './useGame';
 import { GAME } from './config';
 
 // Nút riêng của Lớp Toán ở trang điều khiển: điều khiển ván + giả lập phòng đông để thử bot
-const HO = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Vũ', 'Đặng', 'Bùi'];
-const TEN = ['Lan Anh', 'Minh Tuấn', 'Thu Trang', 'Quốc Bảo', 'Ngọc Hân', 'Gia Huy', 'Khánh Linh', 'Hải Yến', 'Đức Anh', 'Bảo Ngọc', 'Thanh Hà', 'Văn Toàn'];
+const TEN = ['lananh', 'minhtuan', 'bena', 'hoanglong', 'thutrang', 'quocbao99', 'duyanh', 'ngocanh', 'giahuy', 'khanhlinh', 'haiyen', 'ducanh'];
 const CHAT = ['khó quá cô ơi', 'tính sao vậy trời', 'hay quá', 'vào lớp', 'cô xinh quá', 'ủa là mấy', '???', 'hihi'];
-const fake = (i: number) => ({ username: `hs${i}`, nickname: `${HO[i % HO.length]} ${TEN[i % TEN.length]}`, avatar: '' });
+// Tên khách giả lập đặt theo dạng username (không ghi họ tên); quá 12 bạn thì thêm số sau cho khỏi trùng hẳn
+const fake = (i: number) => ({ username: `hs${i}`, nickname: `${TEN[i % TEN.length]}${i >= TEN.length ? Math.floor(i / TEN.length) : ''}`, avatar: '' });
 const shuffleWord = (w: string) => [...w].sort(() => Math.random() - 0.5).join('');
 
 export function GameControls({ view, stageCount = 0 }: { view: StageView | null; stageCount?: number }) {

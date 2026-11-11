@@ -110,6 +110,8 @@ export const GAME = {
   seats: 30, // 4 dãy bàn dài trên cùng (7, 7, 8, 8 bạn); dãy cuối nằm dưới giao diện TikTok nên để trống
   rowSeats: [7, 7, 8, 8], // số bạn mỗi dãy, cộng lại = seats (chủ kênh chốt 2026-11-04: bàn dài, các bạn nhỏ lại)
   standing: 60, // hết ghế: chen chúc đứng 2 bên ngoài cửa lớp hóng (30 mỗi bên), vẫn tính điểm
+  newStudentSeats: 5, // tối đa 5 bạn THẬT mới vào được ưu tiên ngồi vào bàn ngay khi vừa vào lớp (đẩy bạn cuối bảng ghế xuống hàng đứng)
+  newStudentGraceMs: 120_000, // ân hạn bạn mới: 2 phút đầu chưa kịp ghi điểm vẫn giữ ghế ưu tiên; quá hạn thì xếp ghế theo điểm như thường
   joinKeywords: ['vaolop'],
 
   // ---------- Quà / tim ----------

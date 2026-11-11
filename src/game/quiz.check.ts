@@ -615,4 +615,31 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.deepEqual(w.view(t + 7000).wishCounts, { rose: 1, front: 1, luck: 10 }, 'thanh Ý MUỐN đếm số lần đã thực hiện thật');
 }
 
+// ---------- bạn THẬT mới vào được ngồi vào bàn ngay (ưu tiên tối đa 5 ghế) ----------
+{
+  const c = new Classroom([], t);
+  c.newRound(t);
+  c.tick((t += GAME.introSec * 1000));
+  assert.equal(c.phase, 'question');
+  const answer = c.q!.answer;
+  // 100 khách GIẢ LẬP trả lời đúng: chiếm hết ghế theo điểm như thường
+  for (let i = 0; i < 100; i++) c.chat({ ...who(1000 + i), comment: answer, createTime: t + i, test: true }, t + 10);
+  const vw0 = c.view(t + 20);
+  assert.equal(vw0.seats.length, GAME.seats);
+  assert.ok(vw0.seats.every((x) => x.username.startsWith('u1')), 'chưa có bạn thật: ghế toàn khách giả lập có điểm');
+  // 6 bạn THẬT mới vào, chỉ chào chưa kịp ghi điểm: 5 bạn có ghế ngay, bạn thứ 6 đứng đầu hàng đứng
+  for (let i = 0; i < 6; i++) c.chat({ ...who(2000 + i), comment: 'em chào cô', createTime: t + 30 + i }, t + 30 + i);
+  const vw = c.view(t + 100);
+  const seatNames = vw.seats.map((x) => x.username);
+  for (let i = 0; i < 5; i++) assert.ok(seatNames.includes(`u${2000 + i}`), `bạn thật thứ ${i + 1} có ghế ngay khi vừa vào lớp`);
+  assert.ok(!seatNames.includes('u2005'), 'bạn thật thứ 6 chưa tới lượt ghế ưu tiên');
+  assert.equal(vw.standing[0].username, 'u2005', 'bạn thật thứ 6 đứng đầu hàng đứng ngoài cửa, không bị chìm dưới khách giả lập');
+  // khách giả lập mới vào thì KHÔNG được ưu tiên (vẫn xếp theo điểm)
+  c.chat({ ...who(3000), comment: 'em chào cô', createTime: t + 40, test: true }, t + 40);
+  assert.ok(!c.view(t + 110).seats.some((x) => x.username === 'u3000'), 'khách giả lập mới vào không chiếm ghế ưu tiên');
+  // quá ân hạn mà chưa ghi điểm: ghế ưu tiên trả lại theo điểm như thường
+  const vw2 = c.view(t + GAME.newStudentGraceMs + 1000);
+  assert.ok(vw2.seats.every((x) => x.username.startsWith('u1')), 'hết ân hạn: ghế quay về cho bạn có điểm');
+}
+
 console.log('quiz.check: tất cả đều đúng');

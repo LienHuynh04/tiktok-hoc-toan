@@ -93,10 +93,12 @@ export function useGame() {
     if (next) voice.say(next.text);
   }
 
-  // Tên an toàn để hiện/đọc: tên có từ cấm thì dùng username
-  const person = (e: { nickname: string; username: string; avatar: string }) => {
-    const nickname = containsBanned(e.nickname) ? e.username : e.nickname;
-    return { username: e.username, nickname, spoken: speakableName(nickname), avatar: e.avatar };
+  // Tên hiện trên sân khấu + cô đọc: dùng USERNAME của người xem (dạng tên
+  // đăng nhập), không dùng họ tên (nickname) — chủ kênh chốt 2026-11-11.
+  // Username có từ cấm thì hiện "bạn"; bản đọc qua speakableName đã tự xử lý.
+  const person = (e: { nickname: string; username: string; avatar: string; test?: boolean }) => {
+    const nickname = containsBanned(e.username) ? 'bạn' : e.username;
+    return { username: e.username, nickname, spoken: speakableName(e.username), avatar: e.avatar, test: e.test === true };
   };
 
   useLiveEvents({

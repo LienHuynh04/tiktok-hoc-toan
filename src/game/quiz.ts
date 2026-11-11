@@ -40,6 +40,7 @@ export interface Student {
   days: number; // chuyên cần: số ngày đi học liền (server báo về, 0 = chưa biết)
   bubble?: { text: string; at: number }; // bình luận gần nhất hiện thành bong bóng trên đầu
   standUntil: number; // bị cô phạt lên bục đứng (học sinh cá biệt) tới lúc này
+  bot: boolean; // khách giả lập (sự kiện test từ trang điều khiển): không được ưu tiên ghế bạn mới
 }
 
 export interface DeskGift {
@@ -78,9 +79,11 @@ export interface ChatIn {
   createTime: number;
   /** false: bình luận có từ cấm, không hiện bong bóng */
   safe?: boolean;
+  /** true: sự kiện giả lập từ trang điều khiển (không phải người xem thật) */
+  test?: boolean;
 }
 
-type Person = Pick<ChatIn, 'username' | 'nickname' | 'spoken' | 'avatar'>;
+type Person = Pick<ChatIn, 'username' | 'nickname' | 'spoken' | 'avatar' | 'test'>;
 
 // Dấu thanh kiểu cũ/mới ("hóa"/"hoá", "thủy"/"thuỷ") coi là một: đưa về kiểu mới (dấu trên chữ sau) ở cuối từ
 const OLD_OA = /o([̣̀́̃̉])([ae])(?!\p{L})/gu;
@@ -307,12 +310,13 @@ export class Classroom {
     this.clock = Math.max(this.clock, now);
     let s = this.students.get(e.username);
     if (!s) {
-      s = { ...e, girl: hash(e.username) % 2 === 0, score: 0, session: 0, reachedAt: 0, streak: 0, lastActive: now, joinedAt: now, desk: [], days: 0, standUntil: 0 };
+      s = { ...e, girl: hash(e.username) % 2 === 0, score: 0, session: 0, reachedAt: 0, streak: 0, lastActive: now, joinedAt: now, desk: [], days: 0, standUntil: 0, bot: !!e.test };
       this.students.set(e.username, s);
     } else {
       s.nickname = e.nickname;
       s.spoken = e.spoken;
       if (e.avatar) s.avatar = e.avatar;
+      if (!e.test) s.bot = false; // gặp sự kiện thật thì không còn là khách giả lập
       s.lastActive = now;
     }
     return s;
@@ -1133,7 +1137,28 @@ export class Classroom {
   view(now: number) {
     const showAnswer = this.phase === 'reveal';
     const asking = this.phase === 'question' || this.phase === 'bonus' || this.phase === 'reveal';
-    const seated = this.seats(GAME.seats + GAME.standing);
+    let seated = this.seats(GAME.seats + GAME.standing);
+    // Bạn THẬT mới vào lớp được ngồi vào bàn ngay: tối đa 5 bạn đang trong ân
+    // hạn (vừa vào, còn đang tương tác) mà chưa lọt vào ghế thì chiếm các ghế
+    // cuối, đẩy bạn cuối bảng ghế xuống hàng đứng; bạn thật mới còn lại đứng
+    // đầu hàng đứng ngoài cửa. Khách giả lập không được ưu tiên — tránh cảnh
+    // mở giả lập 1.000 bạn là người thật vào lớp mà không thấy mình đâu.
+    const freshReal = [...this.students.values()]
+      .filter((s) => !s.bot && now - s.joinedAt <= GAME.newStudentGraceMs && now - s.lastActive <= GAME.newStudentGraceMs)
+      .sort((a, b) => a.joinedAt - b.joinedAt);
+    const seatZone = new Set(seated.slice(0, GAME.seats).map((s) => s.username));
+    const freshOut = freshReal.filter((s) => !seatZone.has(s.username));
+    if (freshOut.length) {
+      const promoted = freshOut.slice(0, GAME.newStudentSeats);
+      const doorFirst = freshOut.slice(GAME.newStudentSeats);
+      const rest = seated.filter((s) => !freshOut.includes(s));
+      seated = [
+        ...rest.slice(0, GAME.seats - promoted.length),
+        ...promoted,
+        ...doorFirst,
+        ...rest.slice(GAME.seats - promoted.length),
+      ].slice(0, GAME.seats + GAME.standing);
+    }
     // bạn ngồi bàn đầu được xếp ghế đầu tiên để cả lớp nhìn thấy (kể cả khi điểm chưa đủ lọt vào ghế)
     if (this.frontDesk) {
       const i = seated.findIndex((s) => s.username === this.frontDesk);

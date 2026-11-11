@@ -17,6 +17,7 @@ export interface ChatEvent {
   avatar: string;
   timestamp: number;
   createTime?: number; // giờ TikTok gắn (ms)
+  test?: boolean; // true: sự kiện giả lập từ trang điều khiển
 }
 
 export interface GiftEvent {
@@ -28,6 +29,7 @@ export interface GiftEvent {
   repeatCount: number; // số món MỚI trong lần này (server đã trừ phần combo cũ)
   avatar: string;
   timestamp: number;
+  test?: boolean; // true: sự kiện giả lập từ trang điều khiển
 }
 
 export interface UserEvent {
@@ -35,6 +37,7 @@ export interface UserEvent {
   nickname: string;
   avatar: string;
   timestamp: number;
+  test?: boolean; // true: sự kiện giả lập từ trang điều khiển
 }
 
 export interface LikeEvent {
