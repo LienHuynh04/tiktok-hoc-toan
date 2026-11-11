@@ -9,6 +9,7 @@ Game live TikTok: mỗi người xem là một tay đua vịt, cả phòng đua 
 - **Khẩu lệnh tăng tốc**: cứ ~11 giây màn hình hiện 1 khẩu lệnh to (BƠI / QUẠT / ĐẠP / LẶN / VỊT / TĂNG TỐC). Ai gõ đúng trong 5 giây, vịt của người đó bốc tốc x1,85 trong 4 giây.
 - **Xuất phát sớm bằng tim**: ở sảnh chờ, cả phòng thả đủ 100 tim -> chặng đua xuất phát ngay dù chưa đủ 6 tay đua (chỉ cần tối thiểu 2). Thanh tim hiện ngay trong banner sảnh chờ.
 - **Sóng lớn**: cả phòng thả đủ 150 tim -> sóng đẩy cả đoàn tăng tốc 25% trong 10 giây (nhịp chung, không ai được lợi riêng).
+- **Tim tăng tốc cho vịt của mình** (ngoại lệ riêng của Đua Vịt, chủ kênh chốt 2026-11-11, cùng kiểu ngoại lệ ở Đua Xe Kart): giữa chặng, người xem thả tim thì vịt của chính họ +10% tốc mỗi lượt (1 sự kiện tính tối đa 3 lượt, trần +50%), giữ 4 giây một lượt, thả tiếp là cộng dồn và gia hạn. Trên đầu vịt đang được tăng tốc hiện huy hiệu ❤️+%, dòng hướng dẫn dưới sân khấu và MC lúc xuất phát đều nói rõ luật này. Quà vẫn chỉ được cảm ơn, không mua tốc độ.
 - Vịt về nhất mở thêm 10 giây cho các bạn khác cán đích; hết giờ thì xếp hạng theo quãng đường. Bảng **Vua Vịt** ghi số lần vô địch cả buổi.
 - **Quà**: chỉ cảm ơn bằng giọng đọc + thông báo, không mua được tốc độ (luật chung của kênh).
 - Bao nhiêu người vào thì bấy nhiêu vịt trên hồ (tối đa 60): sân khấu tự co chiều cao làn để mọi vịt đều hiện kín màn hình, đông quá thì thẻ tên nằm cố định ở đầu làn.

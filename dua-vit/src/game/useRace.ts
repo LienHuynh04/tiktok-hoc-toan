@@ -94,7 +94,7 @@ export function useRace() {
     onLike: (e) => {
       const room = roomRef.current;
       if (!room) return;
-      say(room.like(e.likeCount || 1, Date.now()));
+      say(room.like(person({ nickname: e.nickname, username: e.username, avatar: '' }), e.likeCount || 1, Date.now())); // sự kiện tim không có avatar
     },
     onControl: (c) => {
       if (c.action === 'setName' && c.text) setChannelName(c.text);

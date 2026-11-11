@@ -135,6 +135,11 @@ export function RaceStage({ game }: { game: RaceState }) {
                       💨
                     </div>
                   )}
+                  {r.likeBoost > 0 && (
+                    <div className="race-pop absolute rounded-full bg-rose-500 px-2 py-[1px] font-extrabold text-white shadow" style={{ left: -Math.round(duckW * 0.16), top: -Math.round(duckH * 0.24), fontSize: dense ? 13 : 19 }}>
+                      ❤️+{Math.round(r.likeBoost * 100)}%
+                    </div>
+                  )}
                   {r.place > 0 && (
                     <div className="race-pop absolute rounded-full bg-amber-400 px-2 py-[1px] font-extrabold text-amber-950 shadow" style={{ right: -Math.round(duckW * 0.27), top: -Math.round(duckH * 0.21), fontSize: dense ? 15 : 22 }}>
                       {r.place === 1 ? '🥇' : r.place === 2 ? '🥈' : r.place === 3 ? '🥉' : `#${r.place}`}
@@ -215,7 +220,7 @@ export function RaceStage({ game }: { game: RaceState }) {
           </div>
         )}
         <div className="rounded-2xl bg-black/50 px-5 py-3 text-center text-[27px] font-medium text-white/90 ring-1 ring-amber-200/25">
-          💬 Bình luận là có vịt đua · thấy khẩu lệnh to thì gõ đúng chữ đó để vịt bốc tốc · sảnh chờ đủ 100 tim là xuất phát ngay · đủ 150 tim giữa chặng là có sóng lớn
+          💬 Bình luận là có vịt đua · thấy khẩu lệnh to thì gõ đúng chữ đó để vịt bốc tốc · ❤️ thả tim là vịt của BẠN bơi nhanh hơn · sảnh chờ đủ 100 tim là xuất phát ngay · đủ 150 tim giữa chặng là có sóng lớn
         </div>
       </div>
 

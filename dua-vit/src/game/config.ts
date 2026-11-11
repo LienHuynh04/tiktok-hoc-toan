@@ -13,6 +13,13 @@ export const GAME = {
   tailwindGoal: 150, // đủ 150 tim -> SÓNG LỚN: cả đoàn tăng tốc (nhịp chơi chung)
   tailwindSec: 10,
   tailwindMult: 1.25,
+  // NGOẠI LỆ riêng của Đua Vịt (chủ kênh chốt 2026-11-11, cùng kiểu ngoại lệ ở
+  // Đua Xe Kart): người xem thả tim thì vịt của CHÍNH người đó bơi nhanh hơn.
+  // Quà vẫn chỉ được cảm ơn, không mua tốc độ — ngoại lệ này chỉ dành cho tim.
+  likeBoostStep: 0.1, // mỗi lượt thả tim: +10% tốc cho vịt của người thả
+  likeBoostMaxPerEvent: 3, // 1 sự kiện tim tính tối đa 3 lượt (chạm dồn dập cũng có trần)
+  likeBoostMax: 0.5, // trần tăng tốc cá nhân: +50%
+  likeBoostSec: 4, // tăng tốc giữ 4 giây mỗi lượt, thả tiếp thì cộng dồn và gia hạn
   finishSec: 6, // có vịt về nhất: chờ thêm 6 giây cho các bạn khác cán đích
   podiumSec: 7, // hiện bục vinh quang
   raceMaxSec: 90, // đua tối đa 1 phút rưỡi, hết giờ xếp hạng theo quãng đường

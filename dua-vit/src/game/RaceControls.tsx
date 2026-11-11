@@ -51,11 +51,13 @@ export function RaceControls({ view, stageCount }: { view: RaceView | null; stag
           đủ <b className="text-slate-100">100 tim</b> là chặng xuất phát ngay dù chưa đủ 6 tay đua. Cứ ~11 giây màn hình
           hiện 1 <b className="text-slate-100">khẩu lệnh</b> (BƠI, QUẠT, ĐẠP...), ai gõ đúng trong 5 giây thì vịt của mình{' '}
           <b className="text-slate-100">bốc tốc 4 giây</b>. Giữa chặng đủ 150 tim thì <b className="text-slate-100">sóng lớn</b>{' '}
-          đẩy cả đoàn tăng tốc 10 giây. Ai về đích trước là vô địch chặng, được lên bục vinh quang và tính vào bảng Vua Vịt.
+          đẩy cả đoàn tăng tốc 10 giây. Còn ai <b className="text-slate-100">thả tim</b> thì vịt của chính người đó cũng nhanh
+          hơn: +10% mỗi lượt thả (trần +50%), giữ 4 giây một lượt, trên đầu vịt hiện huy hiệu ❤️+%. Ai về đích trước là vô
+          địch chặng, được lên bục vinh quang và tính vào bảng Vua Vịt.
         </p>
         <p className="mt-2">
-          Quà tặng chỉ được cảm ơn, <b className="text-slate-100">không mua được tốc độ</b> — thắng thua do gõ nhanh và may
-          mắn của từng chặng. Phòng có ít hơn 4 tay đua thật thì <b className="text-slate-100">vịt demo</b> (mang tên hài hước
+          Quà tặng chỉ được cảm ơn, <b className="text-slate-100">không mua được tốc độ</b> — thắng thua do gõ nhanh, thả
+          tim cho vịt của mình và may mắn của từng chặng. Phòng có ít hơn 4 tay đua thật thì <b className="text-slate-100">vịt demo</b> (mang tên hài hước
           kiểu người dùng thật như "tôi là công chúa", có dấu 🤖 trên thẻ tên) tự bơi lấp hồ để màn hình luôn sôi động;
           vịt demo không được tính giải. Nhạc tự phát khi mở stage;
           nếu chưa nghe tiếng, bấm Interact 1 lần vào cửa sổ stage trong LIVE Studio.

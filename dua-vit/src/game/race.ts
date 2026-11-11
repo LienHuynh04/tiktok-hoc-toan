@@ -33,6 +33,8 @@ interface Racer {
   base: number;
   boostUntil: number;
   boostFrom: number; // bốc tốc bắt đầu từ lúc này (vịt demo bốc tốc trễ một chút cho tự nhiên)
+  likeBoostUntil: number; // tăng tốc cá nhân từ tim của chính chủ vịt: hết hiệu lực lúc này
+  likeBoostPct: number; // mức tăng tốc cá nhân đang dồn (0.1 = +10%)
   place: number; // 0 = chưa về đích
   wins: number; // vô địch chặng này... (reset mỗi buổi theo session)
   totalWins: number; // vô địch cả buổi (bảng Vua Tốc Độ)
@@ -52,6 +54,7 @@ export interface RaceView {
     art: number;
     distPct: number;
     boosting: boolean;
+    likeBoost: number; // mức tăng tốc cá nhân từ tim đang còn hiệu lực (0 = không có)
     place: number;
     wins: number;
     demo: boolean;
@@ -204,6 +207,8 @@ export class RaceRoom {
         base: GAME.baseMin + this.rng() * GAME.baseVar,
         boostUntil: 0,
         boostFrom: 0,
+        likeBoostUntil: 0,
+        likeBoostPct: 0,
         place: 0,
         wins: 0,
         totalWins: 0,
@@ -230,6 +235,8 @@ export class RaceRoom {
       base: GAME.baseMin + this.rng() * GAME.baseVar,
       boostUntil: 0,
       boostFrom: 0,
+      likeBoostUntil: 0,
+      likeBoostPct: 0,
       place: 0,
       wins: 0,
       totalWins: 0,
@@ -258,7 +265,16 @@ export class RaceRoom {
     return [{ priority: true, text: M(`Cảm ơn ${p.spoken} đã tặng ${giftName}! Chúc vịt đua của bạn bơi thật bốc!`) }];
   }
 
-  like(count: number, now: number): Say[] {
+  like(p: Person, count: number, now: number): Say[] {
+    // Vịt của chính người thả tim bơi nhanh hơn (ngoại lệ tim-cá nhân riêng của
+    // Đua Vịt, chủ kênh chốt 2026-11-11): chỉ giữa chặng, chỉ vịt người thật
+    // chưa về đích. Tim vẫn dồn vào mốc chung (xuất phát sớm / sóng lớn) như cũ.
+    const mine = this.racers.get(p.username);
+    if (mine && !mine.bot && mine.inRace && mine.place === 0 && (this.phase === 'race' || this.phase === 'finish')) {
+      const add = GAME.likeBoostStep * Math.min(Math.max(count, 1), GAME.likeBoostMaxPerEvent);
+      mine.likeBoostPct = Math.min(GAME.likeBoostMax, (now < mine.likeBoostUntil ? mine.likeBoostPct : 0) + add);
+      mine.likeBoostUntil = now + GAME.likeBoostSec * 1000;
+    }
     // Sảnh chờ / bục vinh quang: tim dồn vào mốc xuất phát sớm (100 tim), không dồn sóng lớn
     if (this.phase === 'lobby' || this.phase === 'podium') {
       const before = this.lobbyLikes;
@@ -287,6 +303,7 @@ export class RaceRoom {
     for (const r of this.racers.values()) {
       if (r.boostUntil > 0) r.boostUntil += ms;
       if (r.boostFrom > 0) r.boostFrom += ms;
+      if (r.likeBoostUntil > 0) r.likeBoostUntil += ms;
     }
     this.lastTickAt += ms;
   }
@@ -340,13 +357,15 @@ export class RaceRoom {
       r.place = 0;
       r.boostUntil = 0;
       r.boostFrom = 0;
+      r.likeBoostUntil = 0;
+      r.likeBoostPct = 0;
       r.base = GAME.baseMin + this.rng() * GAME.baseVar;
       r.inRace = true;
     }
     this.phase = 'race';
     this.phaseEndsAt = now + GAME.raceMaxSec * 1000;
     const n = this.racers.size;
-    return [{ main: true, text: M(`Chặng ${this.raceNo} xuất phát! ${n} tay đua vịt cùng lao xuống nước, ai về đích đầu tiên đây? Nhớ gõ đúng khẩu lệnh trên màn hình để bốc tốc nhé!`) }];
+    return [{ main: true, text: M(`Chặng ${this.raceNo} xuất phát! ${n} tay đua vịt cùng lao xuống nước, ai về đích đầu tiên đây? Nhớ gõ đúng khẩu lệnh trên màn hình để bốc tốc nhé! Ai thả tim thì vịt của mình bơi nhanh hơn nữa đó!`) }];
   }
 
   private toPodium(now: number): Say[] {
@@ -425,6 +444,7 @@ export class RaceRoom {
       const wobble = 0.9 + this.rng() * 0.2;
       let mult = now >= r.boostFrom && now < r.boostUntil ? GAME.boostMult : 1;
       if (tailwind) mult *= GAME.tailwindMult;
+      if (now < r.likeBoostUntil) mult *= 1 + r.likeBoostPct;
       r.dist += r.base * wobble * mult * dt;
       if (r.dist >= GAME.trackM) {
         r.dist = GAME.trackM;
@@ -490,6 +510,7 @@ export class RaceRoom {
         art: r.art,
         distPct: Math.min(100, (r.dist / GAME.trackM) * 100),
         boosting: now >= r.boostFrom && now < r.boostUntil,
+        likeBoost: now < r.likeBoostUntil ? r.likeBoostPct : 0,
         place: r.bot ? 0 : (dispPlace.get(r.p.username) ?? 0),
         wins: r.totalWins,
         demo: r.bot,

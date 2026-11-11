@@ -4,6 +4,7 @@
 // thì xuất phát ngay dù chưa đủ 6 người; bao nhiêu người vào thì bấy nhiêu vịt hiện;
 // phòng ít người thật thì vịt demo lấp hồ (hồ luôn sôi động) nhưng không nhận giải.
 import { RaceRoom, artFor, BOT_NAMES, type Person } from './race';
+import { GAME } from './config';
 
 let fails = 0;
 function ok(cond: boolean, label: string) {
@@ -59,7 +60,7 @@ ok(artFor('abc') === artFor('abc') && artFor('abc') >= 0 && artFor('abc') <= 9, 
   ok(before.distPct >= 0, 'dữ liệu tay đua hợp lệ');
 
   // sóng lớn
-  const lines = r.like(150, now);
+  const lines = r.like(P('khan-gia', 'Khán Giả'), 150, now);
   ok(r.view(now).tailwind.active && lines.some((l) => l.text.includes('Sóng lớn')), 'đủ 150 tim giữa chặng: sóng lớn thổi');
 
   // đua tới khi lên bục
@@ -89,10 +90,10 @@ ok(artFor('abc') === artFor('abc') && artFor('abc') >= 0 && artFor('abc') <= 9, 
   r.chat({ ...P('a1', 'Bạn An'), comment: 'đua' }, now);
   r.chat({ ...P('a2', 'Bạn Bình'), comment: 'đua' }, now);
   r.chat({ ...P('a3', 'Bạn Chi'), comment: 'đua' }, now);
-  r.like(99, now);
+  r.like(P('khan-gia', 'Khán Giả'), 99, now);
   step(500);
   ok(r.view(now).phase === 'lobby' && r.view(now).lobbyLikes.meter === 99 && r.view(now).lobbyLikes.goal === 100, 'sảnh chờ: 99/100 tim, chưa xuất phát');
-  const lines = r.like(1, now);
+  const lines = r.like(P('khan-gia', 'Khán Giả'), 1, now);
   step(500);
   ok(r.view(now).phase === 'race', 'đủ 100 tim với 3 tay đua (chưa đủ 6): xuất phát ngay, không chờ hết giờ chờ');
   ok(lines.some((l) => l.text.includes('100 tim')), 'MC báo tin xuất phát sớm nhờ đủ 100 tim');
@@ -113,7 +114,7 @@ ok(artFor('abc') === artFor('abc') && artFor('abc') >= 0 && artFor('abc') <= 9, 
   r.newSession(t0);
   let now = t0;
   r.chat({ ...P('solo2', 'Một Mình'), comment: 'đua' }, now);
-  r.like(150, now);
+  r.like(P('khan-gia', 'Khán Giả'), 150, now);
   now += 500;
   r.tick(now);
   ok(r.view(now).phase === 'lobby', 'mới 1 tay đua: đủ 100 tim vẫn chưa xuất phát');
@@ -164,6 +165,41 @@ ok(artFor('abc') === artFor('abc') && artFor('abc') >= 0 && artFor('abc') <= 9, 
   d.newSession(t0);
   d.demoRace(t0);
   ok(d.view(t0).racerCount >= 20, 'đua thử: hồ đầy vịt (>= 20 con) cho kín màn hình');
+}
+
+// ---------- tim tăng tốc cho vịt của chính người thả (ngoại lệ riêng của Đua Vịt) ----------
+{
+  const r = new RaceRoom(t0, rng);
+  r.newSession(t0);
+  let now = t0;
+  const step = (ms: number) => {
+    now += ms;
+    return r.tick(now);
+  };
+  r.chat({ ...P('chu-vit', 'Chủ Vịt'), comment: 'đua' }, now);
+  r.chat({ ...P('ban-dua', 'Bạn Đua'), comment: 'đua' }, now);
+  step(18000);
+  ok(r.view(now).phase === 'race', 'like-boost: đã vào chặng đua');
+  const mine = () => r.view(now).racers.find((x) => x.username === 'chu-vit')!;
+  const other = () => r.view(now).racers.find((x) => x.username === 'ban-dua')!;
+  ok(mine().likeBoost === 0 && other().likeBoost === 0, 'like-boost: ban đầu chưa ai được tăng tốc');
+  r.like(P('chu-vit', 'Chủ Vịt'), 1, now);
+  ok(Math.abs(mine().likeBoost - GAME.likeBoostStep) < 1e-9, 'like-boost: thả 1 lượt tim, vịt của mình +10% tốc');
+  ok(other().likeBoost === 0, 'like-boost: vịt người khác không được tăng theo');
+  r.like(P('chu-vit', 'Chủ Vịt'), 10, now);
+  ok(Math.abs(mine().likeBoost - GAME.likeBoostStep * 4) < 1e-9, 'like-boost: 1 sự kiện dồn dập chỉ tính tối đa 3 lượt');
+  r.like(P('chu-vit', 'Chủ Vịt'), 3, now);
+  r.like(P('chu-vit', 'Chủ Vịt'), 3, now);
+  ok(Math.abs(mine().likeBoost - GAME.likeBoostMax) < 1e-9, 'like-boost: dồn thêm cũng dừng ở trần +50%');
+  r.like(P('khan-gia', 'Khán Giả'), 3, now);
+  ok(other().likeBoost === 0, 'like-boost: khán giả không có vịt thì không tăng cho ai');
+  ok(Math.abs(r.view(now + GAME.likeBoostSec * 1000 + 100).racers.find((x) => x.username === 'chu-vit')!.likeBoost) < 1e-9, 'like-boost: hết 4 giây là hết tăng tốc');
+  // ở sảnh chờ thì tim chỉ dồn mốc xuất phát sớm, không tạo tăng tốc cá nhân
+  const r2 = new RaceRoom(t0, rng);
+  r2.newSession(t0);
+  r2.chat({ ...P('som', 'Bạn Sớm'), comment: 'đua' }, t0);
+  r2.like(P('som', 'Bạn Sớm'), 5, t0);
+  ok(r2.view(t0).racers.find((x) => x.username === 'som')!.likeBoost === 0, 'like-boost: sảnh chờ không tăng tốc cá nhân');
 }
 
 if (fails) {
