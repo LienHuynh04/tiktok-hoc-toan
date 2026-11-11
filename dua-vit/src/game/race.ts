@@ -1,5 +1,5 @@
 // Engine Đua Vịt: MỖI người xem là 1 tay đua vịt, đua CÙNG LÚC trong hồ bơi 200m.
-// Bình luận bất cứ lúc nào là có vịt đua mang tên mình. Cứ ~13 giây có 1 đợt KHẨU LỆNH
+// Bình luận bất cứ lúc nào là có vịt đua mang tên mình. Cứ ~11 giây có 1 đợt KHẨU LỆNH
 // (BƠI / QUẠT / ĐẠP...): ai gõ đúng khẩu lệnh trong 5 giây thì vịt của mình bốc tốc 4 giây.
 // Ở sảnh chờ: đủ 100 tim -> XUẤT PHÁT NGAY dù chưa đủ 6 tay đua (chỉ cần >= 2).
 // Đủ 150 tim -> SÓNG LỚN đẩy cả đoàn tăng tốc (nhịp chơi chung của cả phòng).

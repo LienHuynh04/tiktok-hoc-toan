@@ -47,10 +47,11 @@ export function RaceControls({ view, stageCount }: { view: RaceView | null; stag
       <div className="rounded-xl bg-slate-800/60 p-4 leading-relaxed">
         <p>
           <b className="text-slate-100">Cách chơi:</b> người xem bình luận bất cứ chữ gì là có ngay 1 bé vịt đua mang tên mình
-          (mèo, thỏ, cáo, gấu trúc, chó hoặc gà — hệ thống tự chọn theo tài khoản). Cứ ~13 giây màn hình hiện 1{' '}
-          <b className="text-slate-100">khẩu lệnh</b> (BƠI, QUẠT, ĐẠP...), ai gõ đúng trong 5 giây thì vịt của mình{' '}
-          <b className="text-slate-100">bốc tốc 4 giây</b>. Đủ 150 tim thì <b className="text-slate-100">gió thuận</b> thổi cả
-          đoàn tăng tốc 10 giây. Ai về đích trước là vô địch chặng, được lên bục vinh quang và tính vào bảng Vua Tốc Độ.
+          (màu vịt cố định theo tài khoản, 10 màu; bao nhiêu người vào thì bấy nhiêu vịt trên hồ). Ở sảnh chờ, cả phòng thả
+          đủ <b className="text-slate-100">100 tim</b> là chặng xuất phát ngay dù chưa đủ 6 tay đua. Cứ ~11 giây màn hình
+          hiện 1 <b className="text-slate-100">khẩu lệnh</b> (BƠI, QUẠT, ĐẠP...), ai gõ đúng trong 5 giây thì vịt của mình{' '}
+          <b className="text-slate-100">bốc tốc 4 giây</b>. Giữa chặng đủ 150 tim thì <b className="text-slate-100">sóng lớn</b>{' '}
+          đẩy cả đoàn tăng tốc 10 giây. Ai về đích trước là vô địch chặng, được lên bục vinh quang và tính vào bảng Vua Vịt.
         </p>
         <p className="mt-2">
           Quà tặng chỉ được cảm ơn, <b className="text-slate-100">không mua được tốc độ</b> — thắng thua do gõ nhanh và may

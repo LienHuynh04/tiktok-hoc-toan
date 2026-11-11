@@ -96,6 +96,14 @@ ok(artFor('abc') === artFor('abc') && artFor('abc') >= 0 && artFor('abc') <= 9, 
   ok(r.view(now).phase === 'race', 'đủ 100 tim với 3 tay đua (chưa đủ 6): xuất phát ngay, không chờ hết giờ chờ');
   ok(lines.some((l) => l.text.includes('100 tim')), 'MC báo tin xuất phát sớm nhờ đủ 100 tim');
   ok(r.view(now).lobbyLikes.meter === 0, 'đã xuất phát: bộ đếm tim sảnh chờ về 0 cho chặng sau');
+
+  // nhịp nhanh: từ lúc xuất phát tới bục vinh quang không quá 80 giây giờ máy
+  let raceSteps = 0;
+  while (r.view(now).phase !== 'podium' && raceSteps < 400) {
+    step(250);
+    raceSteps++;
+  }
+  ok(r.view(now).phase === 'podium' && raceSteps * 0.25 <= 80, `chặng đua gọn trong ${raceSteps * 0.25}s giờ máy (mục tiêu <= 80s)`);
 }
 
 {
