@@ -4,8 +4,9 @@ import type { RaceState } from './useRace';
 import { GAME } from './config';
 import { duckSvg, DUCK_COLORS } from './duckArt';
 
-const MAX_ROWS = 13;
 const fmt = (n: number) => n.toFixed(1).replace('.', ',');
+// Khu vực làn bơi cao ~1228px: ít vịt thì làn cao 92px như cũ, đông vịt thì làn tự
+// co lại để TẤT CẢ vịt đều hiện trên màn hình (không cắt bớt con nào).
 
 export function RaceStage({ game }: { game: RaceState }) {
   const v = game.view;
@@ -19,8 +20,13 @@ export function RaceStage({ game }: { game: RaceState }) {
       })),
     [],
   );
-  const shown = (v?.racers ?? []).slice(0, MAX_ROWS);
+  const shown = v?.racers ?? [];
   const hidden = (v?.racerCount ?? 0) - shown.length;
+  const rowH = shown.length <= 13 ? 92 : Math.max(26, Math.floor(1228 / Math.max(1, shown.length)));
+  const duckH = Math.round(Math.min(76, rowH * 0.84));
+  const duckW = Math.round(duckH * 1.47);
+  const dense = rowH < 56; // chế độ đông: thẻ tên nằm cố định đầu làn thay vì bay trên đầu vịt
+  const tagFont = rowH >= 60 ? 20 : rowH >= 40 ? 17 : 15;
   const leader = v?.racers[0];
   const leaderM = leader ? (leader.distPct / 100) * GAME.trackM : 0;
   const remainM = Math.max(0, GAME.trackM - leaderM);
@@ -94,24 +100,43 @@ export function RaceStage({ game }: { game: RaceState }) {
           ))}
           {shown.length === 0 && <div className="py-[120px] text-center text-[34px] font-bold text-white/90">Chưa có vịt nào xuống hồ — bình luận để là người đầu tiên! 🦆</div>}
           {shown.map((r, i) => (
-            <div key={r.username} className="relative h-[92px]" style={{ background: i % 2 ? 'rgba(255,255,255,0.06)' : 'rgba(0,40,90,0.10)' }}>
+            <div key={r.username} className="relative" style={{ height: rowH, background: i % 2 ? 'rgba(255,255,255,0.06)' : 'rgba(0,40,90,0.10)' }}>
               {/* phao phân làn đỏ-trắng-xanh */}
-              <div className="absolute inset-x-0 bottom-0 h-[7px] opacity-80" style={{ background: 'repeating-linear-gradient(90deg,#e63950 0 16px,#ffffff 16px 32px,#2e9e5b 32px 48px,#ffffff 48px 64px)' }} />
-              <div className="absolute bottom-[10px] left-[10px] z-10 rounded bg-black/45 px-2 text-[21px] font-bold">#{i + 1}</div>
-              <div className="absolute top-[6px] z-10 transition-all duration-300 ease-linear" style={{ left: `calc(${Math.min(90, r.distPct * 0.9)}% - 6px)` }}>
+              <div className="absolute inset-x-0 bottom-0 opacity-80" style={{ height: dense ? 4 : 7, background: 'repeating-linear-gradient(90deg,#e63950 0 16px,#ffffff 16px 32px,#2e9e5b 32px 48px,#ffffff 48px 64px)' }} />
+              {!dense && <div className="absolute bottom-[10px] left-[10px] z-10 rounded bg-black/45 px-2 text-[21px] font-bold">#{i + 1}</div>}
+              {dense && (
+                <div className="absolute left-[8px] top-1/2 z-20 max-w-[320px] -translate-y-1/2 truncate rounded-full bg-slate-900/70 px-2 py-[1px] font-bold text-white" style={{ fontSize: tagFont }}>
+                  #{i + 1} {r.nickname}
+                  {r.wins > 0 ? ` · 👑${r.wins}` : ''}
+                </div>
+              )}
+              <div
+                className="absolute z-10 transition-all duration-300 ease-linear"
+                style={{
+                  top: Math.max(0, Math.round((rowH - duckH) / 2)),
+                  // chế độ đông: đường bơi bắt đầu SAU thẻ tên cố định ở đầu làn, vịt không bị thẻ che
+                  left: dense ? `calc(236px + (100% - 320px) * ${Math.min(90, r.distPct * 0.9) / 100})` : `calc(${Math.min(90, r.distPct * 0.9)}% - 6px)`,
+                }}
+              >
                 <div className="relative">
-                  <div className={`absolute -top-[25px] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-[10px] py-[1px] text-[20px] font-bold shadow ${r.place === 1 ? 'bg-amber-400 text-amber-950' : 'bg-slate-900/70 text-white'}`}>
-                    {r.nickname}
-                    {r.wins > 0 ? ` · 👑${r.wins}` : ''}
-                  </div>
+                  {!dense && (
+                    <div className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-[10px] py-[1px] font-bold shadow ${r.place === 1 ? 'bg-amber-400 text-amber-950' : 'bg-slate-900/70 text-white'}`} style={{ top: -Math.round(duckH * 0.33), fontSize: tagFont }}>
+                      {r.nickname}
+                      {r.wins > 0 ? ` · 👑${r.wins}` : ''}
+                    </div>
+                  )}
                   <div className={r.boosting ? 'race-bob' : 'duck-swim'}>
-                    <svg viewBox="-70 -45 140 95" className="h-[76px] w-[112px] overflow-visible drop-shadow-[0_3px_4px_rgba(0,30,60,0.4)]">
+                    <svg viewBox="-70 -45 140 95" className="overflow-visible drop-shadow-[0_3px_4px_rgba(0,30,60,0.4)]" style={{ height: duckH, width: duckW }}>
                       <g dangerouslySetInnerHTML={{ __html: duckSvg(r.art, r.boosting) }} />
                     </svg>
                   </div>
-                  {r.boosting && <div className="absolute -left-[38px] top-[22px] text-[26px]">💨</div>}
+                  {r.boosting && (
+                    <div className="absolute top-1/2 -translate-y-1/2" style={{ left: -Math.round(duckW * 0.34), fontSize: dense ? 17 : 26 }}>
+                      💨
+                    </div>
+                  )}
                   {r.place > 0 && (
-                    <div className="race-pop absolute -right-[30px] -top-[16px] rounded-full bg-amber-400 px-2 py-[1px] text-[22px] font-extrabold text-amber-950 shadow">
+                    <div className="race-pop absolute rounded-full bg-amber-400 px-2 py-[1px] font-extrabold text-amber-950 shadow" style={{ right: -Math.round(duckW * 0.27), top: -Math.round(duckH * 0.21), fontSize: dense ? 15 : 22 }}>
                       {r.place === 1 ? '🥇' : r.place === 2 ? '🥈' : r.place === 3 ? '🥉' : `#${r.place}`}
                     </div>
                   )}
@@ -168,17 +193,29 @@ export function RaceStage({ game }: { game: RaceState }) {
             👑 <b>Vua Vịt buổi live:</b> {v.top.map((t) => `${t.nickname} (${t.totalWins}🏆)`).join(' · ')}
           </div>
         )}
-        <div className="rounded-2xl bg-black/45 px-5 py-2.5 ring-1 ring-cyan-200/30">
-          <div className="flex justify-between text-[24px] font-bold text-cyan-100">
-            <span>🌊 Sóng lớn (cả phòng cùng đẩy)</span>
-            <span>{v?.tailwind.meter ?? 0}/{v?.tailwind.goal ?? GAME.tailwindGoal} tim</span>
+        {v && (v.phase === 'lobby' || v.phase === 'podium') ? (
+          <div className="rounded-2xl bg-black/45 px-5 py-2.5 ring-1 ring-rose-200/30">
+            <div className="flex justify-between text-[24px] font-bold text-rose-100">
+              <span>❤️ Tim sảnh chờ — đủ {v.lobbyLikes.goal} tim là xuất phát ngay, không cần chờ đủ 6 tay đua</span>
+              <span>{v.lobbyLikes.meter}/{v.lobbyLikes.goal} tim</span>
+            </div>
+            <div className="mt-1 h-[13px] overflow-hidden rounded-full bg-white/20">
+              <div className="h-full rounded-full bg-gradient-to-r from-rose-400 to-red-500 transition-all duration-500" style={{ width: `${(v.lobbyLikes.meter / v.lobbyLikes.goal) * 100}%` }} />
+            </div>
           </div>
-          <div className="mt-1 h-[13px] overflow-hidden rounded-full bg-white/20">
-            <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-sky-400 transition-all duration-500" style={{ width: `${((v?.tailwind.meter ?? 0) / (v?.tailwind.goal ?? GAME.tailwindGoal)) * 100}%` }} />
+        ) : (
+          <div className="rounded-2xl bg-black/45 px-5 py-2.5 ring-1 ring-cyan-200/30">
+            <div className="flex justify-between text-[24px] font-bold text-cyan-100">
+              <span>🌊 Sóng lớn (cả phòng cùng đẩy)</span>
+              <span>{v?.tailwind.meter ?? 0}/{v?.tailwind.goal ?? GAME.tailwindGoal} tim</span>
+            </div>
+            <div className="mt-1 h-[13px] overflow-hidden rounded-full bg-white/20">
+              <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-sky-400 transition-all duration-500" style={{ width: `${((v?.tailwind.meter ?? 0) / (v?.tailwind.goal ?? GAME.tailwindGoal)) * 100}%` }} />
+            </div>
           </div>
-        </div>
+        )}
         <div className="rounded-2xl bg-black/50 px-5 py-3 text-center text-[27px] font-medium text-white/90 ring-1 ring-amber-200/25">
-          💬 Bình luận là có vịt đua · thấy khẩu lệnh to thì gõ đúng chữ đó để vịt bốc tốc · đủ 150 tim cả phòng là có sóng lớn
+          💬 Bình luận là có vịt đua · thấy khẩu lệnh to thì gõ đúng chữ đó để vịt bốc tốc · sảnh chờ đủ 100 tim là xuất phát ngay · đủ 150 tim giữa chặng là có sóng lớn
         </div>
       </div>
 

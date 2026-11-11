@@ -1,6 +1,7 @@
 // Engine Đua Vịt: MỖI người xem là 1 tay đua vịt, đua CÙNG LÚC trong hồ bơi 200m.
 // Bình luận bất cứ lúc nào là có vịt đua mang tên mình. Cứ ~13 giây có 1 đợt KHẨU LỆNH
 // (BƠI / QUẠT / ĐẠP...): ai gõ đúng khẩu lệnh trong 5 giây thì vịt của mình bốc tốc 4 giây.
+// Ở sảnh chờ: đủ 100 tim -> XUẤT PHÁT NGAY dù chưa đủ 6 tay đua (chỉ cần >= 2).
 // Đủ 150 tim -> SÓNG LỚN đẩy cả đoàn tăng tốc (nhịp chơi chung của cả phòng).
 // Về nhất được vinh danh trên bục; quà chỉ được cảm ơn, không mua được tốc độ.
 
@@ -52,6 +53,7 @@ export interface RaceView {
   racerCount: number;
   event: { word: string; remainSec: number } | null;
   tailwind: { active: boolean; remainSec: number; meter: number; goal: number };
+  lobbyLikes: { meter: number; goal: number };
   podium: { top: { nickname: string; avatar: string; art: number; place: number }[] } | null;
   top: { nickname: string; avatar: string; totalWins: number }[];
   totals: { races: number };
@@ -75,6 +77,7 @@ const IDLE_LINES = [
   'Cả nhà bình luận bất cứ chữ gì là có vịt đua mang tên mình nhé, đua hoàn toàn miễn phí!',
   'Khi màn hình hiện khẩu lệnh to, gõ đúng khẩu lệnh đó là vịt của mình bốc tốc ngay!',
   'Đủ 150 tim là có sóng lớn đẩy cả đoàn vịt tăng tốc đấy cả nhà!',
+  'Ở sảnh chờ mà đủ 100 tim là chặng đua xuất phát ngay, không cần chờ đủ 6 tay đua đâu cả nhà!',
 ];
 
 export function artFor(username: string): number {
@@ -96,6 +99,7 @@ export class RaceRoom {
   private nextEventAt = 0;
   private tailwindUntil = 0;
   private likeMeter = 0;
+  private lobbyLikes = 0; // tim ở sảnh chờ/bục: đủ lobbyLikeGoal -> xuất phát sớm
   private finishCount = 0;
   private podiumInfo: RaceView['podium'] = null;
   private lastTickAt = 0;
@@ -120,6 +124,7 @@ export class RaceRoom {
     this.phaseEndsAt = now + GAME.lobbySec * 1000;
     this.event = null;
     this.likeMeter = 0;
+    this.lobbyLikes = 0;
     this.tailwindUntil = 0;
     this.lastTickAt = now;
     return [
@@ -153,6 +158,10 @@ export class RaceRoom {
       lastActive: now,
       inRace,
     });
+    // tim sảnh chờ đã đủ 100 mà giờ mới có tay đua thứ 2: xuất phát ngay, khỏi chờ hết giờ chờ
+    if (this.phase === 'lobby' && this.lobbyLikes >= GAME.lobbyLikeGoal && this.racers.size >= 2) {
+      this.phaseEndsAt = now;
+    }
     // vào giữa chặng: vẫn được đua tiếp từ vạch xuất phát (chặng sau tự cân bằng lại)
     if (this.phase === 'race' || this.phase === 'finish') {
       const r2 = this.racers.get(p.username)!;
@@ -170,6 +179,16 @@ export class RaceRoom {
   }
 
   like(count: number, now: number): Say[] {
+    // Sảnh chờ / bục vinh quang: tim dồn vào mốc xuất phát sớm (100 tim), không dồn sóng lớn
+    if (this.phase === 'lobby' || this.phase === 'podium') {
+      const before = this.lobbyLikes;
+      this.lobbyLikes = Math.min(GAME.lobbyLikeGoal, this.lobbyLikes + count);
+      if (this.phase === 'lobby' && before < GAME.lobbyLikeGoal && this.lobbyLikes >= GAME.lobbyLikeGoal && this.racers.size >= 2) {
+        this.phaseEndsAt = now; // tick kế tiếp sẽ xuất phát ngay
+        return [{ priority: true, text: M(`Cả phòng thả đủ ${GAME.lobbyLikeGoal} tim! Chưa đủ 6 tay đua vẫn xuất phát ngay đây, cả nhà sẵn sàng nhé!`) }];
+      }
+      return [];
+    }
     this.likeMeter += count;
     if (this.likeMeter >= GAME.tailwindGoal && (this.phase === 'race' || this.phase === 'finish')) {
       this.likeMeter = 0;
@@ -210,7 +229,11 @@ export class RaceRoom {
   }
 
   demoRace(now: number): Say[] {
-    const names = ['Bạn An', 'Bạn Bình', 'Bạn Chi', 'Bạn Dũng', 'Bạn Hà', 'Bạn Khoa'];
+    const names = [
+      'Bạn An', 'Bạn Bình', 'Bạn Chi', 'Bạn Dũng', 'Bạn Hà', 'Bạn Khoa', 'Bạn Lan', 'Bạn Minh',
+      'Bạn Ngọc', 'Bạn Phúc', 'Bạn Quỳnh', 'Bạn Sơn', 'Bạn Thảo', 'Bạn Trang', 'Bạn Tú', 'Bạn Vy',
+      'Bạn Đức', 'Bạn Hân', 'Bạn Khánh', 'Bạn Linh', 'Bạn Nam', 'Bạn Oanh', 'Bạn Phương', 'Bạn Quân',
+    ];
     names.forEach((n, i) => this.join({ username: '__demo' + i, nickname: n, spoken: n, avatar: '' }, now));
     if (this.phase === 'lobby') {
       this.phaseEndsAt = now; // xuất phát ngay
@@ -223,6 +246,7 @@ export class RaceRoom {
   private startRace(now: number): Say[] {
     this.raceNo++;
     this.totals.races++;
+    this.lobbyLikes = 0;
     this.finishCount = 0;
     this.event = null;
     this.nextEventAt = now + GAME.eventEverySec * 1000;
@@ -342,7 +366,6 @@ export class RaceRoom {
     const racers = [...this.racers.values()]
       .filter((r) => r.inRace)
       .sort((a, b) => (a.place || 99) - (b.place || 99) || b.dist - a.dist)
-      .slice(0, 24)
       .map((r) => ({
         username: r.p.username,
         nickname: r.p.nickname,
@@ -371,6 +394,7 @@ export class RaceRoom {
         meter: Math.min(this.likeMeter, GAME.tailwindGoal),
         goal: GAME.tailwindGoal,
       },
+      lobbyLikes: { meter: this.lobbyLikes, goal: GAME.lobbyLikeGoal },
       podium: this.phase === 'podium' ? this.podiumInfo : null,
       top,
       totals: { ...this.totals },

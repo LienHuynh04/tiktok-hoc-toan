@@ -1,6 +1,7 @@
-// Kiểm chứng engine Đua Thú Siêu Tốc — chạy: npm run check
+// Kiểm chứng engine Đua Vịt — chạy: npm run check
 // Vào đua bằng bình luận, chưa đủ 2 người thì chưa xuất phát, khẩu lệnh bốc tốc,
-// sóng lớn từ tim, đua tới bục vinh quang và tính vô địch.
+// sóng lớn từ tim, đua tới bục vinh quang và tính vô địch. Thêm: sảnh chờ đủ 100 tim
+// thì xuất phát ngay dù chưa đủ 6 người; bao nhiêu người vào thì bấy nhiêu vịt hiện.
 import { RaceRoom, artFor, type Person } from './race';
 
 let fails = 0;
@@ -73,6 +74,57 @@ ok(artFor('abc') === artFor('abc') && artFor('abc') >= 0 && artFor('abc') <= 9, 
   ok(r.view(now).phase === 'lobby', 'hết bục vinh quang: về chờ chặng tiếp theo');
   const v2 = r.view(now);
   ok(v2.musicOn === true && Math.abs(v2.musicVolume - 0.9) < 1e-9, 'nhạc bật mặc định, âm lượng 0.9');
+}
+
+{
+  // Sảnh chờ: 3 tay đua (chưa đủ 6) — 99 tim chưa xuất phát, tim thứ 100 xuất phát ngay
+  const r = new RaceRoom(t0, rng);
+  r.newSession(t0);
+  let now = t0;
+  const step = (ms: number) => {
+    now += ms;
+    return r.tick(now);
+  };
+  r.chat({ ...P('a1', 'Bạn An'), comment: 'đua' }, now);
+  r.chat({ ...P('a2', 'Bạn Bình'), comment: 'đua' }, now);
+  r.chat({ ...P('a3', 'Bạn Chi'), comment: 'đua' }, now);
+  r.like(99, now);
+  step(500);
+  ok(r.view(now).phase === 'lobby' && r.view(now).lobbyLikes.meter === 99 && r.view(now).lobbyLikes.goal === 100, 'sảnh chờ: 99/100 tim, chưa xuất phát');
+  const lines = r.like(1, now);
+  step(500);
+  ok(r.view(now).phase === 'race', 'đủ 100 tim với 3 tay đua (chưa đủ 6): xuất phát ngay, không chờ hết giờ chờ');
+  ok(lines.some((l) => l.text.includes('100 tim')), 'MC báo tin xuất phát sớm nhờ đủ 100 tim');
+  ok(r.view(now).lobbyLikes.meter === 0, 'đã xuất phát: bộ đếm tim sảnh chờ về 0 cho chặng sau');
+}
+
+{
+  // Mới 1 tay đua: tim đủ 100 vẫn phải chờ; người thứ 2 vừa vào là xuất phát ngay
+  const r = new RaceRoom(t0, rng);
+  r.newSession(t0);
+  let now = t0;
+  r.chat({ ...P('solo2', 'Một Mình'), comment: 'đua' }, now);
+  r.like(150, now);
+  now += 500;
+  r.tick(now);
+  ok(r.view(now).phase === 'lobby', 'mới 1 tay đua: đủ 100 tim vẫn chưa xuất phát');
+  r.chat({ ...P('hai2', 'Bạn Hai'), comment: 'đua' }, now);
+  now += 500;
+  r.tick(now);
+  ok(r.view(now).phase === 'race', 'người thứ 2 vào lúc tim đã đủ 100: xuất phát ngay');
+}
+
+{
+  // Bao nhiêu người vào thì bấy nhiêu vịt: 30 người -> view có đủ 30 (không cắt ở 24)
+  const r = new RaceRoom(t0, rng);
+  r.newSession(t0);
+  const now = t0;
+  for (let i = 0; i < 30; i++) r.chat({ ...P('u' + i, 'Bạn ' + i), comment: 'đua' }, now);
+  ok(r.view(now).racers.length === 30 && r.view(now).racerCount === 30, '30 người vào: sân khấu nhận đủ 30 vịt');
+  const d = new RaceRoom(t0, rng);
+  d.newSession(t0);
+  d.demoRace(t0);
+  ok(d.view(t0).racerCount >= 20, 'đua thử: hồ đầy vịt (>= 20 con) cho kín màn hình');
 }
 
 if (fails) {

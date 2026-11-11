@@ -2,6 +2,7 @@
 export const GAME = {
   defaultChannelName: 'Đua Vịt',
   lobbySec: 15, // thời gian chờ ở vạch xuất phát cho mọi người xuống hồ
+  lobbyLikeGoal: 100, // ở sảnh chờ: đủ 100 tim -> xuất phát ngay dù chưa đủ 6 tay đua (chỉ cần >= 2)
   trackM: 200, // hồ bơi dài 200m (như bản gốc người chơi quen thuộc)
   baseMin: 2.5, // tốc độ gốc của tay đua chậm nhất (m/giây) -> chặng đua ~60-80 giây
   baseVar: 1.2, // tay đua nhanh nhất hơn tay đua chậm nhất ngần này
@@ -15,7 +16,7 @@ export const GAME = {
   finishSec: 10, // có vịt về nhất: chờ thêm 10 giây cho các bạn khác cán đích
   podiumSec: 9, // hiện bục vinh quang
   raceMaxSec: 150, // đua tối đa 2 phút rưỡi, hết giờ xếp hạng theo quãng đường
-  maxRacers: 40,
+  maxRacers: 60, // bao nhiêu người vào thì bấy nhiêu vịt trên hồ (sân khấu co giãn làn theo số vịt)
   idleLineEveryMs: 60_000,
   chatterMaxWaitMs: 60_000,
   giftLineMaxWaitMs: 30_000,
