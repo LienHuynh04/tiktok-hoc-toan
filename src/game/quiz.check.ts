@@ -661,4 +661,32 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   assert.ok(vw2.seats.every((x) => x.username.startsWith('u1')), 'hết ân hạn: ghế quay về cho bạn có điểm');
 }
 
+// ---------- làm mới câu hỏi giữa tiết: người chơi không đổi chút nào ----------
+{
+  const c = new Classroom(BANK, t);
+  c.newRound(t);
+  c.tick((t += GAME.introSec * 1000));
+  assert.equal(c.phase, 'question');
+  const before = (c as unknown as { roundQs: Question[] }).roundQs.map((q) => q.id);
+  const curId = c.q!.id;
+  chat(c, 1, c.q!.answer, t, t); // u1 trả lời đúng câu đang hỏi
+  for (let j = 0; j < 6 && (c.phase as string) !== 'reveal'; j++) c.tick((t = c.phaseEndsAt));
+  assert.equal(c.phase, 'reveal'); // điểm chỉ chốt lúc công bố đáp án
+  const scoreBefore = c.students.get('u1')!.score;
+  const sessionBefore = c.students.get('u1')!.session;
+  assert.ok(scoreBefore > 0 && sessionBefore > 0);
+  const said = c.resetQuestions(t + 10);
+  assert.equal(said.length, 1, 'cô báo một câu khi làm mới bộ câu hỏi');
+  const after = (c as unknown as { roundQs: Question[] }).roundQs;
+  assert.equal(after.length, before.length, 'tiết vẫn đủ số câu');
+  assert.equal(after[c.qNo - 1].id, curId, 'câu đang hỏi giữ nguyên, không nhảy câu giữa chừng');
+  assert.equal(c.q!.id, curId);
+  assert.equal(c.students.get('u1')!.score, scoreBefore, 'điểm tiết giữ nguyên');
+  assert.equal(c.students.get('u1')!.session, sessionBefore, 'điểm buổi giữ nguyên');
+  assert.ok(c.students.has('u1'), 'học sinh còn nguyên trong lớp');
+  const hist = (c as unknown as { history: Record<string, number> }).history;
+  const afterIds = new Set(after.map((q) => q.id));
+  assert.ok(Object.keys(hist).every((id) => afterIds.has(id)), 'lịch sử đã hỏi cũ được xoá: chỉ còn dấu của bộ câu mới bốc');
+}
+
 console.log('quiz.check: tất cả đều đúng');

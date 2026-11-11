@@ -166,6 +166,7 @@ export function useGame() {
         say(room.newRound(Date.now()));
       }
       if (c.action === 'custom' && c.text === 'skip') say(room.skip(Date.now()));
+      if (c.action === 'custom' && c.text === 'resetQuestions') say(room.resetQuestions(Date.now()));
       if (c.action === 'custom' && c.text === 'ban') say(room.banCurrent(Date.now()));
       // chủ kênh tự bấm chúc sinh nhật: tên trùng bạn đang trong lớp thì bánh kem đặt lên bàn bạn đó
       if (c.action === 'custom' && c.text?.startsWith('birthday:')) {

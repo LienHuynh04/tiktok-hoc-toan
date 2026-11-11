@@ -977,6 +977,18 @@ export class Classroom {
     return this.mainOf([this.t(times > 1 ? this.line('championAgain', s.spoken, String(times)) : this.line('championBoard', s.spoken))]);
   }
 
+  /**
+   * Làm mới bộ câu hỏi GIỮA TIẾT (chủ kênh bấm ở trang điều khiển): quên lịch
+   * sử câu đã hỏi và bốc lại các câu còn lại của tiết; câu đang hỏi giữ nguyên.
+   * Học sinh, điểm tiết, điểm buổi, ghế ngồi: không đụng gì tới người chơi
+   * (khác newRound là xoá điểm tiết). Câu toán tự sinh thì bốc lại là ra câu mới.
+   */
+  resetQuestions(now: number): Say[] {
+    this.history = {};
+    if (this.roundQs.length) this.pickRound(now, this.qNo);
+    return [this.line0('resetQuestions')];
+  }
+
   newRound(now: number): Say[] {
     const voted: Say[] = [];
     if (!this.keepTopic) this.topic = '';

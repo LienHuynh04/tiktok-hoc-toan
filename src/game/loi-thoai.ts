@@ -158,6 +158,10 @@ export const LINES = {
     'Lớp đông lên rồi nè. Thôi ôn bài vậy đủ, giờ học bài mới.',
     'Có bạn rồi! Cô chuyển sang câu mới cho các bạn nhỏ nè.',
   ] as L0,
+  resetQuestions: [
+    'Cô vừa soạn lại bộ câu hỏi mới cho lớp mình nè. Từ câu sau là câu mới tinh đó!',
+    'Cô đổi sang bộ câu hỏi mới nhé. Điểm của các bạn giữ nguyên, cứ yên tâm học tiếp!',
+  ] as L0,
 
   // ---------- Chào theo giờ trong ngày (đọc đầu tiết) ----------
   timeMorning: [
