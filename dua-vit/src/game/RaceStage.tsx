@@ -106,7 +106,7 @@ export function RaceStage({ game }: { game: RaceState }) {
               {!dense && <div className="absolute bottom-[10px] left-[10px] z-10 rounded bg-black/45 px-2 text-[21px] font-bold">#{i + 1}</div>}
               {dense && (
                 <div className="absolute left-[8px] top-1/2 z-20 max-w-[320px] -translate-y-1/2 truncate rounded-full bg-slate-900/70 px-2 py-[1px] font-bold text-white" style={{ fontSize: tagFont }}>
-                  #{i + 1} {r.nickname}
+                  #{i + 1} {r.demo ? '🤖 ' : ''}{r.nickname}
                   {r.wins > 0 ? ` · 👑${r.wins}` : ''}
                 </div>
               )}
@@ -121,11 +121,11 @@ export function RaceStage({ game }: { game: RaceState }) {
                 <div className="relative">
                   {!dense && (
                     <div className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-[10px] py-[1px] font-bold shadow ${r.place === 1 ? 'bg-amber-400 text-amber-950' : 'bg-slate-900/70 text-white'}`} style={{ top: -Math.round(duckH * 0.33), fontSize: tagFont }}>
-                      {r.nickname}
+                      {r.demo ? '🤖 ' : ''}{r.nickname}
                       {r.wins > 0 ? ` · 👑${r.wins}` : ''}
                     </div>
                   )}
-                  <div className={r.boosting ? 'race-bob' : 'duck-swim'}>
+                  <div className={`${r.boosting ? 'race-bob' : 'duck-swim'}${r.demo ? ' opacity-75' : ''}`}>
                     <svg viewBox="-70 -45 140 95" className="overflow-visible drop-shadow-[0_3px_4px_rgba(0,30,60,0.4)]" style={{ height: duckH, width: duckW }}>
                       <g dangerouslySetInnerHTML={{ __html: duckSvg(r.art, r.boosting) }} />
                     </svg>

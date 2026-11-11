@@ -55,8 +55,9 @@ export function RaceControls({ view, stageCount }: { view: RaceView | null; stag
         </p>
         <p className="mt-2">
           Quà tặng chỉ được cảm ơn, <b className="text-slate-100">không mua được tốc độ</b> — thắng thua do gõ nhanh và may
-          mắn của từng chặng. Nhạc tự phát khi mở stage; nếu chưa nghe tiếng, bấm Interact 1 lần vào cửa sổ stage trong LIVE
-          Studio.
+          mắn của từng chặng. Phòng có ít hơn 4 tay đua thật thì <b className="text-slate-100">vịt demo</b> (thẻ tên ghi rõ
+          "🤖 Vịt demo") tự bơi lấp hồ để màn hình luôn sôi động; vịt demo không được tính giải. Nhạc tự phát khi mở stage;
+          nếu chưa nghe tiếng, bấm Interact 1 lần vào cửa sổ stage trong LIVE Studio.
         </p>
       </div>
     </div>

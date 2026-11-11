@@ -1,7 +1,8 @@
 // Kiểm chứng engine Đua Vịt — chạy: npm run check
 // Vào đua bằng bình luận, chưa đủ 2 người thì chưa xuất phát, khẩu lệnh bốc tốc,
 // sóng lớn từ tim, đua tới bục vinh quang và tính vô địch. Thêm: sảnh chờ đủ 100 tim
-// thì xuất phát ngay dù chưa đủ 6 người; bao nhiêu người vào thì bấy nhiêu vịt hiện.
+// thì xuất phát ngay dù chưa đủ 6 người; bao nhiêu người vào thì bấy nhiêu vịt hiện;
+// phòng ít người thật thì vịt demo lấp hồ (hồ luôn sôi động) nhưng không nhận giải.
 import { RaceRoom, artFor, type Person } from './race';
 
 let fails = 0;
@@ -33,12 +34,12 @@ ok(artFor('abc') === artFor('abc') && artFor('abc') >= 0 && artFor('abc') <= 9, 
 
   r.chat({ ...P('solo', 'Một Mình'), comment: 'xin đua' }, now);
   step(18000);
-  ok(r.view(now).phase === 'lobby', 'mới 1 tay đua: chưa xuất phát, vẫn chờ');
+  ok(r.view(now).phase === 'race' && r.view(now).racerCount === 8, 'mới 1 tay đua thật: vịt demo lấp hồ đủ 8 con, chặng vẫn chạy');
 
   r.chat({ ...P('hai', 'Bạn Hai'), comment: 'tôi nữa' }, now);
   step(18000);
   let v = r.view(now);
-  ok(v.phase === 'race' && v.raceNo === 1 && v.racerCount === 2, 'đủ 2 tay đua: chặng 1 xuất phát');
+  ok(v.phase === 'race' && v.raceNo === 1 && v.racerCount === 9, 'người thật thứ 2 vào giữa chặng: đua tiếp cùng đoàn demo');
 
   // chạy 10 giây: cả hai đều tiến lên
   for (let i = 0; i < 40; i++) step(250);
@@ -120,6 +121,32 @@ ok(artFor('abc') === artFor('abc') && artFor('abc') >= 0 && artFor('abc') <= 9, 
   now += 500;
   r.tick(now);
   ok(r.view(now).phase === 'race', 'người thứ 2 vào lúc tim đã đủ 100: xuất phát ngay');
+}
+
+{
+  // Hồ luôn sôi động: phòng trống vẫn có vịt demo đua nhau; đủ người thật thì demo rút
+  const r = new RaceRoom(t0, rng);
+  r.newSession(t0);
+  let now = t0;
+  const step = (ms: number) => {
+    now += ms;
+    return r.tick(now);
+  };
+  step(300);
+  let v = r.view(now);
+  ok(v.racerCount === 8 && v.racers.some((x) => x.demo), 'phòng trống: vịt demo tự xuống hồ lấp đủ 8 làn');
+  step(11000);
+  ok(r.view(now).phase === 'race', 'không có người xem nào: chặng demo vẫn xuất phát, hồ luôn động');
+  let guard = 0;
+  while (r.view(now).phase !== 'podium' && guard++ < 600) step(250);
+  v = r.view(now);
+  ok(v.phase === 'podium' && v.podium!.top.every((t) => !t.nickname.includes('demo')), 'bục vinh quang: vịt demo không được nhận vị trí nào');
+  step(9000);
+  ok(r.view(now).phase === 'lobby', 'hết chặng demo: về sảnh chờ, vòng lặp sôi động tiếp tục');
+  for (let i = 0; i < 4; i++) r.chat({ ...P('that' + i, 'Bạn Thật ' + i), comment: 'đua' }, now);
+  step(300);
+  v = r.view(now);
+  ok(v.racerCount === 4 && !v.racers.some((x) => x.demo), 'đủ 4 tay đua thật: vịt demo rút hết, hồ toàn người thật');
 }
 
 {

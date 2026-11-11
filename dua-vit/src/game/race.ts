@@ -1,8 +1,11 @@
 // Engine Đua Vịt: MỖI người xem là 1 tay đua vịt, đua CÙNG LÚC trong hồ bơi 200m.
 // Bình luận bất cứ lúc nào là có vịt đua mang tên mình. Cứ ~11 giây có 1 đợt KHẨU LỆNH
 // (BƠI / QUẠT / ĐẠP...): ai gõ đúng khẩu lệnh trong 5 giây thì vịt của mình bốc tốc 4 giây.
-// Ở sảnh chờ: đủ 100 tim -> XUẤT PHÁT NGAY dù chưa đủ 6 tay đua (chỉ cần >= 2).
+// Ở sảnh chờ: đủ 100 tim -> XUẤT PHÁT NGAY dù chưa đủ 6 tay đua (chỉ cần >= 2 người thật).
 // Đủ 150 tim -> SÓNG LỚN đẩy cả đoàn tăng tốc (nhịp chơi chung của cả phòng).
+// HỒ LUÔN SÔI ĐỘNG: phòng ít người thật thì vịt demo (tên ghi rõ "Vịt demo") tự xuống bơi
+// lấp làn để màn hình không bao giờ trống; đủ người thật thì demo rút. Demo không nhận
+// bục vinh quang, không tính Vua Vịt — phần thắng chỉ dành cho người thật.
 // Về nhất được vinh danh trên bục; quà chỉ được cảm ơn, không mua được tốc độ.
 
 import { GAME } from './config';
@@ -29,11 +32,13 @@ interface Racer {
   dist: number;
   base: number;
   boostUntil: number;
+  boostFrom: number; // bốc tốc bắt đầu từ lúc này (vịt demo bốc tốc trễ một chút cho tự nhiên)
   place: number; // 0 = chưa về đích
   wins: number; // vô địch chặng này... (reset mỗi buổi theo session)
   totalWins: number; // vô địch cả buổi (bảng Vua Tốc Độ)
   lastActive: number;
   inRace: boolean; // có mặt trong chặng hiện tại
+  bot: boolean; // vịt demo lấp hồ (chế độ hồ luôn sôi động) — không nhận giải
 }
 
 export interface RaceView {
@@ -49,6 +54,7 @@ export interface RaceView {
     boosting: boolean;
     place: number;
     wins: number;
+    demo: boolean;
   }[];
   racerCount: number;
   event: { word: string; remainSec: number } | null;
@@ -100,6 +106,8 @@ export class RaceRoom {
   private tailwindUntil = 0;
   private likeMeter = 0;
   private lobbyLikes = 0; // tim ở sảnh chờ/bục: đủ lobbyLikeGoal -> xuất phát sớm
+  private botSeq = 0; // số thứ tự vịt demo (đặt tên Vịt demo 1, 2, 3...)
+  private realFinishOpened = false; // cửa sổ cán đích đã mở bởi tay đua thật chưa
   private finishCount = 0;
   private podiumInfo: RaceView['podium'] = null;
   private lastTickAt = 0;
@@ -125,6 +133,8 @@ export class RaceRoom {
     this.event = null;
     this.likeMeter = 0;
     this.lobbyLikes = 0;
+    this.botSeq = 0;
+    this.realFinishOpened = false;
     this.tailwindUntil = 0;
     this.lastTickAt = now;
     return [
@@ -135,6 +145,44 @@ export class RaceRoom {
         ),
       },
     ];
+  }
+
+  private realCount(): number {
+    let n = 0;
+    for (const r of this.racers.values()) if (!r.bot) n++;
+    return n;
+  }
+
+  // Hồ luôn sôi động: ở sảnh chờ/bục, phòng ít người thật thì vịt demo xuống lấp hồ;
+  // đủ attractRealMax người thật thì demo rút hết. Chỉ gọi lúc chưa đua để không xáo trộn chặng.
+  private ensureBots(now: number) {
+    if (this.phase !== 'lobby' && this.phase !== 'podium') return;
+    const real = this.realCount();
+    if (real >= GAME.attractRealMax) {
+      for (const [u, r] of this.racers) if (r.bot) this.racers.delete(u);
+      return;
+    }
+    const want = Math.max(0, GAME.attractField - real);
+    const bots = [...this.racers.values()].filter((r) => r.bot);
+    for (let i = want; i < bots.length; i++) this.racers.delete(bots[i].p.username);
+    for (let i = bots.length; i < want; i++) {
+      const seq = this.botSeq++;
+      const p: Person = { username: '__bot' + seq, nickname: 'Vịt demo ' + (seq + 1), spoken: 'Vịt demo', avatar: '' };
+      this.racers.set(p.username, {
+        p,
+        art: artFor(p.username),
+        dist: 0,
+        base: GAME.baseMin + this.rng() * GAME.baseVar,
+        boostUntil: 0,
+        boostFrom: 0,
+        place: 0,
+        wins: 0,
+        totalWins: 0,
+        lastActive: now,
+        inRace: true,
+        bot: true,
+      });
+    }
   }
 
   join(p: Person, now: number) {
@@ -152,16 +200,19 @@ export class RaceRoom {
       dist: 0,
       base: GAME.baseMin + this.rng() * GAME.baseVar,
       boostUntil: 0,
+      boostFrom: 0,
       place: 0,
       wins: 0,
       totalWins: 0,
       lastActive: now,
       inRace,
+      bot: false,
     });
-    // tim sảnh chờ đã đủ 100 mà giờ mới có tay đua thứ 2: xuất phát ngay, khỏi chờ hết giờ chờ
-    if (this.phase === 'lobby' && this.lobbyLikes >= GAME.lobbyLikeGoal && this.racers.size >= 2) {
+    // tim sảnh chờ đã đủ 100 mà giờ mới có tay đua thật thứ 2: xuất phát ngay, khỏi chờ hết giờ chờ
+    if (this.phase === 'lobby' && this.lobbyLikes >= GAME.lobbyLikeGoal && this.realCount() >= 2) {
       this.phaseEndsAt = now;
     }
+    this.ensureBots(now);
     // vào giữa chặng: vẫn được đua tiếp từ vạch xuất phát (chặng sau tự cân bằng lại)
     if (this.phase === 'race' || this.phase === 'finish') {
       const r2 = this.racers.get(p.username)!;
@@ -183,7 +234,7 @@ export class RaceRoom {
     if (this.phase === 'lobby' || this.phase === 'podium') {
       const before = this.lobbyLikes;
       this.lobbyLikes = Math.min(GAME.lobbyLikeGoal, this.lobbyLikes + count);
-      if (this.phase === 'lobby' && before < GAME.lobbyLikeGoal && this.lobbyLikes >= GAME.lobbyLikeGoal && this.racers.size >= 2) {
+      if (this.phase === 'lobby' && before < GAME.lobbyLikeGoal && this.lobbyLikes >= GAME.lobbyLikeGoal && this.realCount() >= 2) {
         this.phaseEndsAt = now; // tick kế tiếp sẽ xuất phát ngay
         return [{ priority: true, text: M(`Cả phòng thả đủ ${GAME.lobbyLikeGoal} tim! Chưa đủ 6 tay đua vẫn xuất phát ngay đây, cả nhà sẵn sàng nhé!`) }];
       }
@@ -204,7 +255,10 @@ export class RaceRoom {
     if (this.event) this.event.endsAt += ms;
     this.nextEventAt += ms;
     if (this.tailwindUntil > 0) this.tailwindUntil += ms;
-    for (const r of this.racers.values()) if (r.boostUntil > 0) r.boostUntil += ms;
+    for (const r of this.racers.values()) {
+      if (r.boostUntil > 0) r.boostUntil += ms;
+      if (r.boostFrom > 0) r.boostFrom += ms;
+    }
     this.lastTickAt += ms;
   }
 
@@ -222,6 +276,7 @@ export class RaceRoom {
       const word = plain(this.event.word);
       if (c === word || c.split(' ')[0] === word || c.startsWith(word + ' ')) {
         this.event.usedBy.add(p.username);
+        r.boostFrom = now;
         r.boostUntil = now + GAME.boostSec * 1000;
       }
     }
@@ -248,12 +303,14 @@ export class RaceRoom {
     this.totals.races++;
     this.lobbyLikes = 0;
     this.finishCount = 0;
+    this.realFinishOpened = false;
     this.event = null;
     this.nextEventAt = now + GAME.eventEverySec * 1000;
     for (const r of this.racers.values()) {
       r.dist = 0;
       r.place = 0;
       r.boostUntil = 0;
+      r.boostFrom = 0;
       r.base = GAME.baseMin + this.rng() * GAME.baseVar;
       r.inRace = true;
     }
@@ -264,10 +321,16 @@ export class RaceRoom {
   }
 
   private toPodium(now: number): Say[] {
-    // xếp hạng những bạn chưa về đích theo quãng đường
-    const rest = [...this.racers.values()].filter((r) => r.inRace && r.place === 0).sort((a, b) => b.dist - a.dist);
-    for (const r of rest) r.place = ++this.finishCount;
-    const placed = [...this.racers.values()].filter((r) => r.inRace && r.place > 0).sort((a, b) => a.place - b.place);
+    // Bục vinh quang chỉ dành cho NGƯỜI THẬT: vịt demo đua cho hồ sôi động, không nhận hạng.
+    // Người thật đã về đích xếp theo thứ tự về đích, chưa về đích xếp theo quãng đường.
+    const reals = [...this.racers.values()].filter((r) => !r.bot && r.inRace);
+    const finished = reals.filter((r) => r.place > 0).sort((a, b) => a.place - b.place);
+    const rest = reals.filter((r) => r.place === 0).sort((a, b) => b.dist - a.dist);
+    const placed = [...finished, ...rest];
+    placed.forEach((r, i) => {
+      r.place = i + 1;
+    });
+    for (const r of this.racers.values()) if (r.bot) r.place = 0;
     const top = placed.slice(0, 3).map((r) => ({ nickname: r.p.nickname, avatar: r.p.avatar, art: r.art, place: r.place }));
     this.podiumInfo = { top };
     const winner = placed[0];
@@ -298,6 +361,7 @@ export class RaceRoom {
     this.lastTickAt = now;
 
     if (this.phase === 'lobby') {
+      this.ensureBots(now);
       if (now >= this.phaseEndsAt) {
         if (this.racers.size >= 2) {
           out.push(...this.startRace(now));
@@ -313,6 +377,7 @@ export class RaceRoom {
     }
 
     if (this.phase === 'podium') {
+      this.ensureBots(now);
       if (now >= this.phaseEndsAt) {
         this.phase = 'lobby';
         this.phaseEndsAt = now + GAME.lobbySec * 1000;
@@ -329,14 +394,25 @@ export class RaceRoom {
       if (!r.inRace || r.place > 0) continue;
       allFinished = false;
       const wobble = 0.9 + this.rng() * 0.2;
-      let mult = now < r.boostUntil ? GAME.boostMult : 1;
+      let mult = now >= r.boostFrom && now < r.boostUntil ? GAME.boostMult : 1;
       if (tailwind) mult *= GAME.tailwindMult;
       r.dist += r.base * wobble * mult * dt;
       if (r.dist >= GAME.trackM) {
         r.dist = GAME.trackM;
         r.place = ++this.finishCount;
-        if (this.finishCount === 1) {
-          out.push({ main: true, text: M(`Về đích đầu tiên là bé vịt của bạn ${r.p.spoken}! Mọi người còn ${GAME.finishSec} giây để cán đích!`) });
+        // Cửa sổ cán đích mở khi tay đua THẬT đầu tiên về đích; chặng toàn vịt demo
+        // (chưa có người xem nào) thì vịt demo về nhất cũng mở để vòng lặp chạy đều.
+        const hasReal = [...this.racers.values()].some((x) => !x.bot && x.inRace);
+        if (!this.realFinishOpened && (!r.bot || !hasReal)) {
+          this.realFinishOpened = true;
+          out.push({
+            main: true,
+            text: M(
+              r.bot
+                ? `Một bé vịt demo về đích đầu tiên! Các tay đua thật còn ${GAME.finishSec} giây để cán đích!`
+                : `Về đích đầu tiên là bé vịt của bạn ${r.p.spoken}! Mọi người còn ${GAME.finishSec} giây để cán đích!`,
+            ),
+          });
           this.phase = 'finish';
           this.phaseEndsAt = now + GAME.finishSec * 1000;
         }
@@ -350,6 +426,13 @@ export class RaceRoom {
         const word = this.pick(EVENT_WORDS);
         this.event = { word, endsAt: now + GAME.eventWindowSec * 1000, usedBy: new Set() };
         this.nextEventAt = now + GAME.eventEverySec * 1000;
+        // vịt demo thỉnh thoảng cũng bốc tốc theo khẩu lệnh (trễ một chút) cho hồ thêm sinh động
+        for (const r of this.racers.values()) {
+          if (r.bot && r.inRace && r.place === 0 && this.rng() < 0.45) {
+            r.boostFrom = now + Math.floor(this.rng() * 3200);
+            r.boostUntil = r.boostFrom + GAME.boostSec * 1000;
+          }
+        }
         out.push({ ttl: 6000, text: M(`Khẩu lệnh: ${word}! Gõ ${word} ngay để bốc tốc!`) });
       }
     }
@@ -363,6 +446,11 @@ export class RaceRoom {
   }
 
   view(now: number): RaceView {
+    // hạng hiển thị của người thật chỉ tính trong nhóm người thật (vịt demo không chiếm huy chương)
+    const finishedReals = [...this.racers.values()]
+      .filter((r) => !r.bot && r.inRace && r.place > 0)
+      .sort((a, b) => a.place - b.place);
+    const dispPlace = new Map(finishedReals.map((r, i) => [r.p.username, i + 1] as const));
     const racers = [...this.racers.values()]
       .filter((r) => r.inRace)
       .sort((a, b) => (a.place || 99) - (b.place || 99) || b.dist - a.dist)
@@ -372,9 +460,10 @@ export class RaceRoom {
         avatar: r.p.avatar,
         art: r.art,
         distPct: Math.min(100, (r.dist / GAME.trackM) * 100),
-        boosting: now < r.boostUntil,
-        place: r.place,
+        boosting: now >= r.boostFrom && now < r.boostUntil,
+        place: r.bot ? 0 : (dispPlace.get(r.p.username) ?? 0),
         wins: r.totalWins,
+        demo: r.bot,
       }));
     const top = [...this.racers.values()]
       .filter((r) => r.totalWins > 0)
