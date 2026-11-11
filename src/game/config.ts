@@ -15,29 +15,31 @@ export const GAME = {
   // hình học khó (token 'geo', hình lớp 6+ và có hình vẽ). Lớp 1-6 chỉ còn gặp khi cả lớp
   // bình chọn khối Lớp 4-6 ở giờ ra chơi.
   // Tiết học CHỈ gồm toán cấp 3 (chủ kênh chốt 2026-11-04): lớp 10-12 + hình học khó.
-  // Hình học giữ từ lớp 9 (lượng giác) vì hình học lớp 10 chỉ có vectơ, để 10 thuần sẽ lặp.
   // LỚP HỌC ĐA MÔN (chủ kênh chốt 2026-11-07): không chỉ Toán. Token 'easy'/'medium'/'hard'
   // = câu chữ từ ngân hàng cau-hoi/ (Tiếng Anh, Ngữ Văn, Địa Lí, Đoán Chữ, Nối Từ, Câu Đố —
   // pickOne tự tránh lặp môn liền nhau và không quá 2 câu/môn mỗi tiết). Mỗi tiết 20 câu:
   // 7 toán tự sinh + 2 hình học + 11 câu chữ rải đều xen kẽ. Câu 20 là câu hỏi vàng nhân đôi.
+  // CHỦ KÊNH CHỐT 2026-11-11: chỉ cấp 1,2 (lớp 1-9) và TOÀN CÂU DỄ — câu chữ lấy toàn mức
+  // easy, toán tự sinh không ra lớp 10-12 cũng không ra dạng khó (xem hardQuestionChance bên dưới).
   roundPlan: [
-    'math', 'easy', 'math', 'medium', 'geo',
-    'easy', 'math', 'medium', 'math', 'easy',
-    'geo', 'medium', 'math', 'easy', 'math',
-    'hard', 'easy', 'math', 'medium', 'easy',
+    'math', 'easy', 'math', 'easy', 'geo',
+    'easy', 'math', 'easy', 'math', 'easy',
+    'geo', 'easy', 'math', 'easy', 'math',
+    'easy', 'easy', 'math', 'easy', 'easy',
   ] as const,
-  // Tỉ lệ câu của tiết (chủ kênh chốt 2026-11-05): 20% câu KHÓ thật sự (dạng nâng cao gắn nhãn hard trong math.ts),
-  // còn lại 50% tổng số câu thuộc lớp 1-9 và 30% thuộc lớp 10-12 thường. Lớp của từng câu bốc ngẫu nhiên lúc vào tiết
-  // bằng rollQuestionBand (math.ts); kiểm tra miệng ra chơi dùng cùng tỉ lệ này.
-  hardQuestionChance: 0.2,
-  lowBandShare: 0.5,
+  // Tỉ lệ câu toán tự sinh (chủ kênh chốt lại 2026-11-11, thay tỉ lệ 2026-11-05): 0% câu khó,
+  // 100% thuộc lớp 1-9 (cấp 1,2). Lớp của từng câu bốc ngẫu nhiên lúc vào tiết bằng
+  // rollQuestionBand (math.ts); kiểm tra miệng ra chơi dùng cùng tỉ lệ này.
+  hardQuestionChance: 0,
+  lowBandShare: 1,
+  maxGrade: 9, // trần lớp cho mọi câu tự sinh (hình học cũng không vượt lớp này)
   // Các khối lớp cho tiết sau (sau giờ ra chơi): game TỰ CHỌN khối khó nhất (lớp cao nhất), không bình chọn. Khối được chọn chiếm
   // voteTopicQuestions câu trong tiết sau, rải cách 1 câu (xem pickRound trong quiz.ts).
   // 'Hình học' là chủ đề đặc biệt: bốc câu hình học mọi lớp (geo: true).
   mathTopics: [
-    { label: 'Lớp 12', levels: [12] },
-    { label: 'Lớp 11', levels: [11] },
-    { label: 'Lớp 10', levels: [10] },
+    { label: 'Lớp 9', levels: [9] },
+    { label: 'Lớp 8', levels: [8] },
+    { label: 'Lớp 7', levels: [7] },
     { label: 'Hình học', levels: [], geo: true },
   ] as { label: string; levels: number[]; geo?: boolean }[],
   introSec: 8, // cô giới thiệu đầu tiết

@@ -252,9 +252,9 @@ export function rollQuestionBand(
   return rand() < lowP ? { grade: 1 + Math.floor(rand() * 9) } : { grade: 10 + Math.floor(rand() * 3) };
 }
 
-/** Bốc 1 câu hình học (các lớp 3-10); minGrade lọc bỏ hình dễ khi cần câu khó */
-export function makeGeometry(rand = Math.random, minGrade = 1): Question {
-  const pool = GENS.filter((g) => g.geo && g.grade >= minGrade);
+/** Bốc 1 câu hình học (các lớp 3-10); minGrade lọc bỏ hình dễ khi cần câu khó, maxGrade chặn lớp cao */
+export function makeGeometry(rand = Math.random, minGrade = 1, maxGrade = 12): Question {
+  const pool = GENS.filter((g) => g.geo && g.grade >= minGrade && g.grade <= maxGrade);
   const def = pool[Math.floor(rand() * pool.length)];
   return wrap(def, def.fn(helpers(rand)));
 }

@@ -107,7 +107,7 @@ for (let i = 0; i < 200; i++) {
   assert.equal(c.phase, 'recess');
   for (let k = 0; k < 10 && c.phase !== 'intro'; k++) c.tick((t += 40_000));
   assert.equal(c.phase, 'intro', 'hết giờ ra chơi là vào thẳng tiết mới (không còn bình chọn)');
-  assert.equal(topicName(c.topic), 'Lớp 12', 'cô tự chọn dạng khó nhất cho tiết sau: Lớp 12');
+  assert.equal(topicName(c.topic), 'Lớp 9', 'cô tự chọn dạng khó nhất cho tiết sau: Lớp 9 (trần cấp 1,2)');
   assert.equal(c.students.get('u299')!.score, 0);
   assert.ok(c.students.get('u299')!.session >= 10);
 }
@@ -218,7 +218,7 @@ assert.ok(BANK.every((q) => q.answer.trim() && q.clue.trim()), 'câu chữ nào 
   assert.deepEqual(plan, [...GAME.roundPlan]);
   assert.equal(GAME.roundPlan.filter((d) => d === 'math').length, 7, 'mỗi tiết 7 câu toán tự sinh');
   assert.equal(GAME.roundPlan.filter((d) => d === 'geo').length, 2, 'mỗi tiết 2 câu hình học vẽ hình');
-  assert.equal(GAME.roundPlan.filter((d) => d === 'easy' || d === 'medium' || d === 'hard').length, 11, 'mỗi tiết 11 câu chữ đa môn từ ngân hàng');
+  assert.equal((GAME.roundPlan as readonly string[]).filter((d) => d === 'easy' || d === 'medium' || d === 'hard').length, 11, 'mỗi tiết 11 câu chữ đa môn từ ngân hàng');
   // 19 câu x 10 + câu vàng 20 + 6 lần chuỗi (câu 3, 6, ..., 18) x 5
   assert.equal(c.students.get('u1')!.score, 19 * 10 + 20 + 6 * GAME.streakBonus);
   assert.equal(c.phase, 'results');
@@ -549,7 +549,7 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   for (let k = 0; k < 300 && !(c.phase === 'intro' && c.round >= 2); k++) c.tick((t = c.phaseEndsAt));
   assert.equal(c.phase, 'intro');
   assert.equal(c.round, 2);
-  assert.equal(topicName(c.topic), 'Lớp 12', 'cô tự chọn dạng khó nhất: Lớp 12');
+  assert.equal(topicName(c.topic), 'Lớp 9', 'cô tự chọn dạng khó nhất: Lớp 9 (trần cấp 1,2)');
   const def = GAME.mathTopics.find((x) => x.label === c.topic)!;
   const qs = (c as unknown as { roundQs: Question[] }).roundQs;
   const inTopic = qs.filter((q) => def.levels.includes(q.math?.level ?? 0)).length;
@@ -557,7 +557,7 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   // gõ 1 / 2 không còn là phiếu bầu: chủ đề không đổi
   chat(c, 1, '2', t, t);
   chat(c, 2, '1', t, t);
-  assert.equal(topicName(c.topic), 'Lớp 12', 'không còn bình chọn: gõ 1/2 không đổi được dạng toán');
+  assert.equal(topicName(c.topic), 'Lớp 9', 'không còn bình chọn: gõ 1/2 không đổi được dạng toán');
 }
 
 // ---------- báo cáo ----------
@@ -613,6 +613,25 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   for (let i = 10; i < 17; i++) w.wish(who(i), 'luck', t + 6000 + i);
   assert.equal(w.luckBoard.length, 6, 'bảng tối đa 6 tên');
   assert.deepEqual(w.view(t + 7000).wishCounts, { rose: 1, front: 1, luck: 10 }, 'thanh Ý MUỐN đếm số lần đã thực hiện thật');
+}
+
+// ---------- chỉ cấp 1,2 + toàn câu dễ (chủ kênh chốt 2026-11-11) ----------
+{
+  assert.equal(GAME.hardQuestionChance, 0, 'không còn câu khó');
+  assert.equal(GAME.lowBandShare, 1, '100% câu toán thuộc lớp 1-9');
+  assert.ok(GAME.roundPlan.every((x) => x === 'math' || x === 'geo' || x === 'easy'), 'roundPlan: câu chữ toàn mức easy');
+  assert.ok(GAME.mathTopics.every((x) => x.geo || Math.max(...x.levels) <= GAME.maxGrade), 'chủ đề tự chọn không vượt trần lớp');
+  // bốc thử nhiều tiết (cả tiết có rải chủ đề Lớp 9): mọi câu tự sinh đều lớp <= 9, mọi câu chữ đều easy
+  const c = new Classroom(BANK, t);
+  for (let r = 0; r < 6; r++) {
+    c.newRound(t + r * 1000);
+    const qs = (c as unknown as { roundQs: Question[] }).roundQs;
+    assert.equal(qs.length, GAME.questionsPerRound, 'mỗi tiết vẫn đủ 20 câu');
+    for (const q of qs) {
+      if (q.math) assert.ok((q.math.level ?? 0) <= GAME.maxGrade, `câu tự sinh vượt cấp 1,2: lớp ${q.math.level} (${q.category})`);
+      else assert.equal(q.difficulty, 'easy', `câu chữ phải là câu dễ: ${q.category}/${q.difficulty}`);
+    }
+  }
 }
 
 // ---------- bạn THẬT mới vào được ngồi vào bàn ngay (ưu tiên tối đa 5 ghế) ----------

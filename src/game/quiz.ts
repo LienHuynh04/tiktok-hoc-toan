@@ -439,12 +439,12 @@ export class Classroom {
       // câu toán tự sinh. Dạng toán cô tự chọn cho tiết này (this.topic là nhãn trong GAME.mathTopics):
       // cách 1 câu lấy 1 câu thuộc dạng đó, tối đa GAME.voteTopicQuestions câu mỗi tiết.
       if (d === 'geo') {
-        q = makeGeometry(this.rand, 9); // câu hình học trong tiết chính: lớp 9 trở lên (lượng giác + vectơ lớp 10), có hình vẽ
+        q = makeGeometry(this.rand, 1, GAME.maxGrade); // câu hình học trong tiết chính: chỉ cấp 1,2 (chủ kênh chốt 2026-11-11), có hình vẽ
       } else if (d.startsWith('math')) {
         const topicDef = GAME.mathTopics.find((x) => x.label === this.topic);
         if (topicDef?.geo && fav < GAME.voteTopicQuestions && i % 2 === 0) {
-          // cả lớp chọn Hình học: bốc câu hình học bất kỳ lớp nào
-          q = makeGeometry(this.rand);
+          // cả lớp chọn Hình học: bốc câu hình học trong trần lớp của kênh
+          q = makeGeometry(this.rand, 1, GAME.maxGrade);
           fav++;
         } else if (topicDef && !topicDef.geo && fav < GAME.voteTopicQuestions && i % 2 === 0) {
           // câu thuộc dạng cô tự chọn cho tiết này (rải cách 1 câu): giữ nguyên lớp của dạng, nhưng không lấy dạng khó
