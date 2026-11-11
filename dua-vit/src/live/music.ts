@@ -1,38 +1,49 @@
-// Nhạc nền lớp học oẳn tù xì soạn bằng Web Audio ngay trong trang stage: giai điệu
-// vui tươi kiểu nhạc lớp học — đệm hợp âm sáng, tiếng gảy ngũ cung nhảy nhót, bass
-// nảy theo phách. Không dùng file nhạc ngoài (repo chỉ đẩy được file chữ) nên không
-// dính bản quyền. Nhạc tự nhỏ xuống (duck) trong lúc cô giáo đọc, cho tiếng nói rõ.
-// Trình duyệt bắt buộc có 1 tương tác đầu tiên mới cho phát tiếng: hook sẽ gọi
-// resume() liên tục (mọi sự kiện + watchdog) nên nhạc tự lên ngay khi được phép.
+// Nhạc nền Đua Vịt — bản remix gốc soạn bằng Web Audio ngay trong trang stage:
+// nhịp đua 132 BPM, trống kick 4 phách dồn dập, bass đuổi theo từng nốt móc kép,
+// hợp âm đâm (stab) lệch phách, giai điệu gốc thang A thứ chạy trên vòng Am–F–C–G.
+// Không dùng file nhạc ngoài (repo chỉ đẩy được file chữ) nên không dính bản quyền.
+// Nhạc tự nhỏ xuống (duck) khi MC đọc. Trình duyệt bắt buộc có 1 tương tác đầu tiên
+// mới cho phát tiếng: hook gọi resume() liên tục nên nhạc tự lên ngay khi được phép.
 
-const BPM = 104;
+const BPM = 132;
 const BEAT = 60 / BPM;
-const CHORD_SEC = BEAT * 4; // mỗi hợp âm 1 ô nhịp 4 phách
-const STEP_SEC = BEAT / 2; // giai điệu chạy theo nốt móc đơn
+const STEP = BEAT / 4; // lưới nốt tư (16th)
 
-// C – Am – F – G: vòng hợp âm tươi sáng kinh điển của nhạc vui
-const CHORDS: number[][] = [
-  [261.63, 329.63, 392.0, 523.25], // C4 E4 G4 C5 — C
-  [220.0, 261.63, 329.63, 440.0], // A3 C4 E4 A4 — Am
-  [174.61, 220.0, 261.63, 349.23], // F3 A3 C4 F4 — F
-  [196.0, 246.94, 293.66, 392.0], // G3 B3 D4 G4 — G
-];
-const BASS = [130.81, 110.0, 87.31, 98.0]; // C3 A2 F2 G2
-const PENTA = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5]; // ngũ cung C: C5 D5 E5 G5 A5 C6
-// 8 bước móc đơn cho 1 hợp âm; -1 = nghỉ. Hai biến tấu thay nhau cho khỏi nhàm.
-const PATTERN_A = [2, -1, 4, 3, 2, 1, 2, -1];
-const PATTERN_B = [4, 3, 2, 4, 5, 4, 3, 2];
-const BASE_LEVEL = 0.42;
+// Dữ liệu bản nhạc — xuất ra để bản render nghe thử (ngoài trình duyệt) dùng chung 1 nguồn
+export const TRACK = {
+  bpm: BPM,
+  // Am – F – C – G: vòng hợp âm dance/đua kinh điển, mỗi hợp âm 1 ô nhịp
+  chords: [
+    [220.0, 261.63, 329.63], // A3 C4 E4 — Am
+    [174.61, 220.0, 261.63], // F3 A3 C4 — F
+    [261.63, 329.63, 392.0], // C4 E4 G4 — C
+    [196.0, 246.94, 293.66], // G3 B3 D4 — G
+  ] as number[][],
+  bass: [55.0, 43.65, 65.41, 49.0], // A1 F1 C2 G1
+  // Giai điệu gốc: 8 ô nhịp x 8 nốt móc đơn; -1 = nghỉ (tần số Hz)
+  melody: [
+    [440, -1, 523.25, 659.25, -1, 880, -1, 659.25],
+    [783.99, -1, 659.25, 587.33, -1, 523.25, -1, -1],
+    [440, -1, 523.25, 659.25, -1, 783.99, -1, 880],
+    [659.25, -1, 587.33, 523.25, 587.33, 659.25, -1, -1],
+    [440, -1, 523.25, 659.25, -1, 880, -1, 1046.5],
+    [880, -1, 783.99, 659.25, -1, 587.33, -1, 659.25],
+    [783.99, -1, 880, 1046.5, -1, 880, -1, 783.99],
+    [659.25, -1, 587.33, -1, 523.25, 587.33, 659.25, -1],
+  ] as number[][],
+};
 
-class ClassroomMusic {
+const BASE_LEVEL = 0.4;
+const ARP_IDX = [0, 1, 2, 1, 0, 2, 1, 2, 0, 1, 2, 1, 2, 1, 0, 2]; // 16 bước arp trong 1 ô nhịp
+
+class DuckRaceMusic {
   private ctx: AudioContext | null = null;
-  private bus: GainNode | null = null; // âm lượng tổng (theo thanh trượt ở trang điều khiển)
-  private duck: GainNode | null = null; // nhỏ xuống khi cô đọc
+  private bus: GainNode | null = null;
+  private duck: GainNode | null = null;
   private delaySend: GainNode | null = null;
+  private noiseBuf: AudioBuffer | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
-  private chordIdx = 0;
   private stepIdx = 0;
-  private nextChordAt = 0;
   private nextStepAt = 0;
   enabled = false;
   private volume = 1;
@@ -46,7 +57,8 @@ class ClassroomMusic {
       const ctx = new AC();
       this.ctx = ctx;
       const comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -28;
+      comp.threshold.value = -24;
+      comp.ratio.value = 8;
       comp.connect(ctx.destination);
       this.duck = ctx.createGain();
       this.duck.gain.value = 1;
@@ -54,26 +66,30 @@ class ClassroomMusic {
       this.bus = ctx.createGain();
       this.bus.gain.value = 0;
       this.bus.connect(this.duck);
-      // delay ngắn cho tiếng gảy có độ nảy vui tai
+      // echo 3/4 phách cho giai điệu có đuôi kiểu remix
       const delay = ctx.createDelay(1);
-      delay.delayTime.value = BEAT * 0.5;
+      delay.delayTime.value = BEAT * 0.75;
       const fb = ctx.createGain();
-      fb.gain.value = 0.25;
+      fb.gain.value = 0.3;
       const fbFilter = ctx.createBiquadFilter();
       fbFilter.type = 'lowpass';
-      fbFilter.frequency.value = 2200;
+      fbFilter.frequency.value = 2400;
       delay.connect(fbFilter).connect(fb).connect(delay);
       const wet = ctx.createGain();
-      wet.gain.value = 0.15;
+      wet.gain.value = 0.18;
       delay.connect(wet).connect(this.bus);
       this.delaySend = ctx.createGain();
       this.delaySend.gain.value = 1;
       this.delaySend.connect(delay);
+      // đệm nhiễu dùng cho hat/clap
+      const len = Math.floor(ctx.sampleRate * 0.5);
+      this.noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = this.noiseBuf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     }
     return this.ctx;
   }
 
-  /** Gọi bất cứ lúc nào: nếu nhạc đang bật mà context bị treo thì mở lại */
   resume() {
     if (!this.enabled) return;
     const ctx = this.ensureCtx();
@@ -88,15 +104,14 @@ class ClassroomMusic {
     if (on) {
       void ctx.resume();
       this.bus.gain.cancelScheduledValues(t);
-      this.bus.gain.setTargetAtTime(BASE_LEVEL * this.volume, t, 1.2);
+      this.bus.gain.setTargetAtTime(BASE_LEVEL * this.volume, t, 1.0);
       if (!this.timer) {
-        this.nextChordAt = t + 0.1;
-        this.nextStepAt = t + 0.1;
-        this.timer = setInterval(() => this.schedule(), 400);
+        this.nextStepAt = t + 0.08;
+        this.timer = setInterval(() => this.schedule(), 300);
         this.schedule();
       }
     } else {
-      this.bus.gain.setTargetAtTime(0, t, 0.4);
+      this.bus.gain.setTargetAtTime(0, t, 0.35);
       if (this.timer) {
         clearInterval(this.timer);
         this.timer = null;
@@ -110,97 +125,165 @@ class ClassroomMusic {
     this.bus.gain.setTargetAtTime(BASE_LEVEL * this.volume, this.ctx.currentTime, 0.2);
   }
 
-  /** Cô đang đọc thì nhạc nhỏ xuống còn ~1/3, hết đọc lại lớn dần */
   setDucked(on: boolean) {
     if (on === this.ducked) return;
     this.ducked = on;
     if (!this.ctx || !this.duck) return;
-    this.duck.gain.setTargetAtTime(on ? 0.32 : 1, this.ctx.currentTime, 0.25);
+    this.duck.gain.setTargetAtTime(on ? 0.3 : 1, this.ctx.currentTime, 0.22);
   }
 
   private schedule() {
     const ctx = this.ctx;
     if (!ctx || !this.bus || !this.enabled) return;
-    const ahead = ctx.currentTime + 1.2;
-    while (this.nextChordAt < ahead) {
-      const i = this.chordIdx % CHORDS.length;
-      this.playChord(CHORDS[i], this.nextChordAt);
-      this.playBass(BASS[i], this.nextChordAt, 0.055);
-      this.playBass(BASS[i], this.nextChordAt + CHORD_SEC / 2, 0.035); // bass nảy thêm giữa ô nhịp
-      this.chordIdx++;
-      this.nextChordAt += CHORD_SEC;
-    }
+    const ahead = ctx.currentTime + 1.1;
     while (this.nextStepAt < ahead) {
-      const pattern = Math.floor(this.stepIdx / 8) % 2 === 0 ? PATTERN_A : PATTERN_B;
-      const note = pattern[this.stepIdx % 8];
-      if (note >= 0) this.playPluck(PENTA[note], this.nextStepAt);
+      this.playStep(this.stepIdx, this.nextStepAt);
       this.stepIdx++;
-      this.nextStepAt += STEP_SEC;
+      this.nextStepAt += STEP;
     }
   }
 
-  private playChord(freqs: number[], at: number) {
-    const ctx = this.ctx;
-    if (!ctx || !this.bus) return;
-    for (const f of freqs) {
-      for (const [type, mult, vol] of [
-        ['sine', 1, 0.04],
-        ['triangle', 1.003, 0.016],
-      ] as const) {
-        const osc = ctx.createOscillator();
-        osc.type = type;
-        osc.frequency.value = f * mult;
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(0, at);
-        g.gain.linearRampToValueAtTime(vol, at + 0.7);
-        g.gain.setValueAtTime(vol, at + CHORD_SEC - 0.3);
-        g.gain.linearRampToValueAtTime(0, at + CHORD_SEC + 0.9);
-        osc.connect(g).connect(this.bus);
-        osc.start(at);
-        osc.stop(at + CHORD_SEC + 1);
-      }
+  // 1 ô nhịp = 16 bước; hợp âm đổi theo ô nhịp (vòng 4 hợp âm), giai điệu 8 ô nhịp lặp lại
+  private playStep(step: number, at: number) {
+    const inBar = step % 16;
+    const bar = Math.floor(step / 16);
+    const chord = TRACK.chords[bar % 4];
+    const root = TRACK.bass[bar % 4];
+    if (inBar % 4 === 0) this.kick(at);
+    if (inBar === 4 || inBar === 12) this.clap(at);
+    this.hat(at, inBar % 2 === 0 ? 0.016 : 0.032, inBar === 14);
+    if (inBar % 2 === 0) this.bassNote(root * (inBar % 8 === 6 ? 2 : 1), at);
+    if (inBar === 2 || inBar === 6 || inBar === 10 || inBar === 14) this.stab(chord, at);
+    this.arp(chord[ARP_IDX[inBar]] * 2, at);
+    if (inBar % 2 === 0) {
+      const mel = TRACK.melody[bar % 8][inBar / 2];
+      if (mel > 0) this.lead(mel, at);
     }
   }
 
-  private playBass(freq: number, at: number, vol: number) {
+  private kick(at: number) {
     const ctx = this.ctx;
     if (!ctx || !this.bus) return;
     const osc = ctx.createOscillator();
     osc.type = 'sine';
-    osc.frequency.value = freq;
+    osc.frequency.setValueAtTime(150, at);
+    osc.frequency.exponentialRampToValueAtTime(46, at + 0.11);
     const g = ctx.createGain();
-    g.gain.setValueAtTime(0, at);
-    g.gain.linearRampToValueAtTime(vol, at + 0.06);
-    g.gain.exponentialRampToValueAtTime(0.0001, at + BEAT * 1.4);
+    g.gain.setValueAtTime(0.5, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.24);
     osc.connect(g).connect(this.bus);
     osc.start(at);
-    osc.stop(at + BEAT * 1.5);
+    osc.stop(at + 0.26);
   }
 
-  private playPluck(freq: number, at: number) {
+  private noise(at: number, dur: number, filterType: BiquadFilterType, freq: number, vol: number) {
+    const ctx = this.ctx;
+    if (!ctx || !this.bus || !this.noiseBuf) return;
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuf;
+    src.playbackRate.value = 0.9 + Math.random() * 0.2;
+    const f = ctx.createBiquadFilter();
+    f.type = filterType;
+    f.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(vol, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    src.connect(f).connect(g).connect(this.bus);
+    src.start(at, Math.random() * 0.3);
+    src.stop(at + dur + 0.02);
+  }
+
+  private hat(at: number, vol: number, open: boolean) {
+    this.noise(at, open ? 0.22 : 0.05, 'highpass', 7500, vol);
+  }
+
+  private clap(at: number) {
+    this.noise(at, 0.16, 'bandpass', 1700, 0.11);
+    this.noise(at + 0.012, 0.2, 'bandpass', 1500, 0.08);
+  }
+
+  private bassNote(freq: number, at: number) {
+    const ctx = this.ctx;
+    if (!ctx || !this.bus) return;
+    const f = ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.setValueAtTime(700, at);
+    f.frequency.exponentialRampToValueAtTime(220, at + STEP * 1.6);
+    f.connect(this.bus);
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.11, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + STEP * 1.7);
+    osc.connect(f).connect(g);
+    osc.start(at);
+    osc.stop(at + STEP * 1.8);
+  }
+
+  private stab(freqs: number[], at: number) {
+    const ctx = this.ctx;
+    if (!ctx || !this.bus) return;
+    const f = ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = 2600;
+    f.connect(this.bus);
+    for (const fr of freqs) {
+      for (const det of [1, 1.005]) {
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.value = fr * 2 * det;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.028, at);
+        g.gain.exponentialRampToValueAtTime(0.0001, at + 0.19);
+        osc.connect(g).connect(f);
+        osc.start(at);
+        osc.stop(at + 0.21);
+      }
+    }
+  }
+
+  private arp(freq: number, at: number) {
+    const ctx = this.ctx;
+    if (!ctx || !this.bus) return;
+    const osc = ctx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.value = freq;
+    const f = ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = 1800;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.016, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + STEP * 0.95);
+    osc.connect(f).connect(g).connect(this.bus);
+    osc.start(at);
+    osc.stop(at + STEP);
+  }
+
+  private lead(freq: number, at: number) {
     const ctx = this.ctx;
     if (!ctx || !this.bus || !this.delaySend) return;
     const lp = ctx.createBiquadFilter();
     lp.type = 'lowpass';
-    lp.frequency.value = 2600;
+    lp.frequency.value = 3200;
     lp.connect(this.bus);
     lp.connect(this.delaySend);
     for (const [type, vol] of [
-      ['triangle', 0.07],
-      ['sine', 0.028],
+      ['sawtooth', 0.045],
+      ['triangle', 0.03],
     ] as const) {
       const osc = ctx.createOscillator();
       osc.type = type;
       osc.frequency.value = freq;
       const g = ctx.createGain();
       g.gain.setValueAtTime(0, at);
-      g.gain.linearRampToValueAtTime(vol, at + 0.008);
-      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.7);
+      g.gain.linearRampToValueAtTime(vol, at + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + BEAT * 0.85);
       osc.connect(g).connect(lp);
       osc.start(at);
-      osc.stop(at + 0.8);
+      osc.stop(at + BEAT * 0.9);
     }
   }
 }
 
-export const music = new ClassroomMusic();
+export const music = new DuckRaceMusic();
