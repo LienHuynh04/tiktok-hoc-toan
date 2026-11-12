@@ -25,8 +25,8 @@ Bảng mốc + cooldown chỉnh trong `src/game/config.ts` (`LIKE_TIERS`). Quà 
 
 - Three.js: thành phố vô tận sinh bằng thuật toán tất định (toà kính nhiều biến thể, cần cẩu, công viên, sông + cầu dây văng), xe cộ chạy trên phố, mây trôi, nắng + bóng đổ thời gian thực, camera 3/4 bám sau lưng Hero.
 - Hero dựng hoàn toàn bằng code (không file ngoài): khớp vai/khuỷu/gối animate theo trạng thái — chạy, bay, đu (tay bám tơ), lộn vòng theo vật lý.
-- Vật lý tự chế: chạy nóc nhà → nhảy → đạn đạo → con lắc đu tơ (tự chọn điểm bám an toàn, có tầng chống quệt đất), MC giọng nam đọc sự kiện/cột mốc.
-- Nhạc nền gốc soạn bằng Web Audio (vòng Dm–Bb–F–C, 136 BPM), tự nhỏ xuống khi MC đọc.
+- Vật lý tự chế: chạy nóc nhà → nhảy → đạn đạo → con lắc đu tơ (tự chọn điểm bám an toàn, có tầng chống quệt đất), MC giọng nữ đọc sự kiện/cột mốc.
+- Nhạc nền gốc soạn bằng Web Audio (vòng Dm–Bb–Gm–A, 140 BPM, phong cách nhạc phim anh hùng — giai điệu sáng tác riêng, không chép nhạc phim), tự nhỏ xuống khi MC đọc.
 - Sự kiện LIVE đến từ TikTokLive connector ở server như mọi game trong repo; khi chưa live, trang điều khiển có **chế độ TEST**: nút giả lập tim theo từng mốc (+1/+10/+50/+100/+200/+500/+1.000/+5.000), tặng quà thử, bình luận thử. Không có kết nối TikTok giả nào được mô phỏng.
 
 ## Chạy

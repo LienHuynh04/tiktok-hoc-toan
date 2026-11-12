@@ -1,36 +1,38 @@
-// Nhạc nền Spider Hero — bản nhạc gốc soạn bằng Web Audio ngay trong trang stage:
-// nhịp hành động 136 BPM, vòng hợp âm anh hùng Dm–Bb–F–C (i–VI–III–VII), bass
-// dồn dập, giai điệu gốc thang D thứ với những quãng nhảy quả cảm kiểu nhạc phim
-// hành động. Không dùng file nhạc ngoài (repo chỉ đẩy được file chữ) nên không
-// dính bản quyền. Nhạc tự nhỏ xuống (duck) khi MC đọc. Trình duyệt bắt buộc có 1
-// tương tác đầu tiên mới cho phát tiếng: hook gọi resume() liên tục nên nhạc tự
-// lên ngay khi được phép.
+// Nhạc nền Spider Hero — bản nhạc GỐC soạn bằng Web Audio ngay trong trang
+// stage (bản 2, 2026-11-12): nhịp hành động 140 BPM, vòng hợp âm Dm–Bb–Gm–A
+// (i–VI–iv–V) căng kiểu nhạc phim siêu anh hùng, giai điệu gốc với quãng nhảy
+// quả cảm và cao trào ở ô nhịp 4/7. CHỈ lấy tinh thần "hào hùng điện ảnh" —
+// giai điệu là sáng tác riêng, không sao chép bất kỳ nhạc phim nào (nhạc phim
+// Spider-Man chính thức là có bản quyền, dùng là bị gỡ). Không dùng file nhạc
+// ngoài (repo chỉ đẩy được file chữ). Nhạc tự nhỏ xuống (duck) khi MC đọc.
+// Trình duyệt bắt buộc có 1 tương tác đầu tiên mới cho phát tiếng: hook gọi
+// resume() liên tục nên nhạc tự lên ngay khi được phép.
 
-const BPM = 136;
+const BPM = 140;
 const BEAT = 60 / BPM;
 const STEP = BEAT / 4; // lưới nốt tư (16th)
 
 // Dữ liệu bản nhạc — xuất ra để bản render nghe thử (ngoài trình duyệt) dùng chung 1 nguồn
 export const TRACK = {
   bpm: BPM,
-  // Dm – Bb – F – C: vòng hợp âm "anh hùng" kinh điển, mỗi hợp âm 1 ô nhịp
+  // Dm – Bb – Gm – A: vòng hợp âm điện ảnh căng thẳng, mỗi hợp âm 1 ô nhịp
   chords: [
     [146.83, 174.61, 220.0], // D3 F3 A3 — Dm
     [116.54, 146.83, 174.61], // Bb2 D3 F3 — Bb
-    [174.61, 220.0, 261.63], // F3 A3 C4 — F
-    [130.81, 164.81, 196.0], // C3 E3 G3 — C
+    [98.0, 116.54, 146.83], // G2 Bb2 D3 — Gm
+    [110.0, 138.59, 164.81], // A2 C#3 E3 — A
   ] as number[][],
-  bass: [73.42, 58.27, 43.65, 65.41], // D2 Bb1 F1 C2
+  bass: [73.42, 58.27, 49.0, 55.0], // D2 Bb1 G1 A1
   // Giai điệu gốc: 8 ô nhịp x 8 nốt móc đơn; -1 = nghỉ (tần số Hz)
   melody: [
-    [293.66, -1, 349.23, 440, -1, 587.33, -1, 440],
-    [392.0, -1, 440, 349.23, -1, 293.66, -1, -1],
-    [349.23, -1, 440, 466.16, -1, 440, -1, 392.0],
-    [440, -1, 392.0, 349.23, 392.0, 440, -1, -1],
-    [440, -1, 523.25, 698.46, -1, 523.25, -1, 440],
-    [392.0, -1, 349.23, 329.63, -1, 349.23, -1, -1],
-    [329.63, -1, 392.0, 523.25, -1, 659.25, -1, 523.25],
-    [587.33, -1, 523.25, -1, 440, 523.25, 587.33, -1],
+    [440, -1, 349.23, 293.66, -1, 587.33, -1, 440],
+    [466.16, -1, 587.33, 466.16, -1, 440, -1, 349.23],
+    [392.0, 466.16, -1, 587.33, -1, 466.16, 392.0, -1],
+    [554.37, -1, 440, 554.37, 659.25, -1, 880, -1],
+    [698.46, -1, 587.33, 698.46, -1, 440, -1, 349.23],
+    [587.33, -1, 466.16, 440, 349.23, -1, 440, -1],
+    [466.16, -1, 587.33, 783.99, -1, 587.33, 466.16, -1],
+    [554.37, 659.25, -1, 440, -1, 293.66, -1, -1],
   ] as number[][],
 };
 

@@ -94,7 +94,8 @@ export interface HeroView {
   musicVolume: number;
 }
 
-const M = (s: string) => `M: ${s}`;
+// MC của phòng: giọng NỮ (tiền tố "F:" — khung giọng đọc "M:" là nam, "F:" là nữ)
+const M = (s: string) => `F: ${s}`;
 
 const FX_BANNER: Partial<Record<FxKind, string>> = {
   speed: '⚡ ĐU DÂY TỐC ĐỘ CAO!',
