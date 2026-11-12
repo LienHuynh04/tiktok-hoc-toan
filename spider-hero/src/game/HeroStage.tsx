@@ -1,9 +1,14 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import type { HeroState } from './useHero';
 import { blocksInRange, riverAt, seeded, BRIDGE_DECK_Y, type Block } from './city3d';
 import { anchorsInRange } from './city3d';
 import type { FxEvent, HeroScene } from './hero';
+import { sfx } from './sfx';
 import './swing.css';
 
 // ============================================================================
@@ -24,26 +29,75 @@ function canvasTex(w: number, h: number, draw: (g: CanvasRenderingContext2D, w: 
   return t;
 }
 
-function buildingTexture(base: string, frame: string, litRatio: number, seed: number): THREE.Texture {
-  return canvasTex(96, 192, (g, w, h) => {
+/** Texture toà nhà + bản đồ phát sáng riêng (chỉ các ô cửa đang sáng đèn). */
+function buildingTextures(base: string, frame: string, litRatio: number, seed: number): { map: THREE.Texture; emissive: THREE.Texture } {
+  const cols = 6;
+  const rows = 14;
+  const rnd = seeded(seed);
+  const cells: { lit: boolean; glint: boolean }[][] = [];
+  for (let y = 0; y < rows; y++) {
+    cells.push([]);
+    for (let x = 0; x < cols; x++) {
+      const lit = rnd() < litRatio;
+      cells[y].push({ lit, glint: !lit && rnd() < 0.3 });
+    }
+  }
+  const map = canvasTex(96, 192, (g, w, h) => {
     g.fillStyle = base;
     g.fillRect(0, 0, w, h);
-    const rnd = seeded(seed);
-    const cols = 6;
-    const rows = 14;
     const cw = w / cols;
     const ch = h / rows;
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
-        const lit = rnd() < litRatio;
-        g.fillStyle = lit ? '#ffd98a' : frame;
+        const c = cells[y][x];
+        g.fillStyle = c.lit ? '#ffd98a' : frame;
         g.fillRect(x * cw + 2, y * ch + 3, cw - 4, ch - 6);
-        if (!lit && rnd() < 0.3) {
+        if (c.glint) {
           g.fillStyle = 'rgba(255,255,255,0.25)';
           g.fillRect(x * cw + 2, y * ch + 3, cw - 4, 3);
         }
       }
     }
+  });
+  const emissive = canvasTex(96, 192, (g, w, h) => {
+    g.fillStyle = '#000000';
+    g.fillRect(0, 0, w, h);
+    const cw = w / cols;
+    const ch = h / rows;
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        if (!cells[y][x].lit) continue;
+        g.fillStyle = '#ffb45e';
+        g.fillRect(x * cw + 2, y * ch + 3, cw - 4, ch - 6);
+      }
+    }
+  });
+  return { map, emissive };
+}
+
+function buildingMaterial(base: string, frame: string, litRatio: number, seed: number, roughness: number, metalness: number): THREE.MeshStandardMaterial {
+  const t = buildingTextures(base, frame, litRatio, seed);
+  return new THREE.MeshStandardMaterial({
+    map: t.map,
+    emissiveMap: t.emissive,
+    emissive: 0xffc98a,
+    emissiveIntensity: 0.85,
+    roughness,
+    metalness,
+  });
+}
+
+/** Bầu trời hoàng hôn: dải màu dọc vẽ bằng canvas (đỉnh trời xanh → chân trời vàng cam). */
+function skyTexture(): THREE.Texture {
+  return canvasTex(16, 512, (g, w, h) => {
+    const grad = g.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#4f9fd8');
+    grad.addColorStop(0.38, '#93c7ec');
+    grad.addColorStop(0.68, '#f9cf9d');
+    grad.addColorStop(0.86, '#ffb27d');
+    grad.addColorStop(1, '#ff9d6e');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, w, h);
   });
 }
 
@@ -103,10 +157,24 @@ interface HeroRig {
 
 function buildHero(): HeroRig {
   const S = 1.7; // phóng to 1.7 lần cho dễ nhìn trên sóng
-  const navy = new THREE.MeshStandardMaterial({ color: 0x274069, roughness: 0.55, metalness: 0.1 });
-  const red = new THREE.MeshStandardMaterial({ color: 0xc22430, roughness: 0.45, metalness: 0.1 });
+  // toon shading 3 nấc sáng — phẳng, đậm chất hoạt hình truyện tranh
+  const gradData = new Uint8Array([110, 175, 255]);
+  const gradientMap = new THREE.DataTexture(gradData, 3, 1, THREE.RedFormat);
+  gradientMap.minFilter = THREE.NearestFilter;
+  gradientMap.magFilter = THREE.NearestFilter;
+  gradientMap.needsUpdate = true;
+  const navy = new THREE.MeshToonMaterial({ color: 0x2c4a7c, gradientMap });
+  const red = new THREE.MeshToonMaterial({ color: 0xd42a35, gradientMap });
   const silver = new THREE.MeshStandardMaterial({ color: 0xd7dee8, roughness: 0.3, metalness: 0.85 });
-  const lens = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xbfe3ff, emissiveIntensity: 0.7, roughness: 0.2 });
+  const lens = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xd8f2ff, emissiveIntensity: 1.4, roughness: 0.2 });
+  // viền đen kiểu comic: vỏ ngược (BackSide) phình nhẹ bọc ngoài từng bộ phận
+  const outlineMat = new THREE.MeshBasicMaterial({ color: 0x1a0f0a, side: THREE.BackSide });
+  const outlined = (mesh: THREE.Mesh, k = 1.08): THREE.Mesh => {
+    const shell = new THREE.Mesh(mesh.geometry, outlineMat);
+    shell.scale.setScalar(k);
+    mesh.add(shell);
+    return mesh;
+  };
 
   const group = new THREE.Group();
   const torso = new THREE.Group();
@@ -114,7 +182,7 @@ function buildHero(): HeroRig {
   group.add(torso);
 
   // thân ngắn, tròn — dáng chibi
-  const chest = new THREE.Mesh(new THREE.CapsuleGeometry(0.30 * S, 0.22 * S, 6, 14), red);
+  const chest = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(0.30 * S, 0.22 * S, 6, 14), red), 1.07);
   chest.position.y = 0.34 * S;
   chest.castShadow = true;
   torso.add(chest);
@@ -130,7 +198,7 @@ function buildHero(): HeroRig {
   // đầu TO (gần 40% chiều cao), đỏ trơn, mắt trắng lớn có viền navy
   const headG = new THREE.Group();
   headG.position.y = 0.84 * S;
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.34 * S, 24, 18), red);
+  const head = outlined(new THREE.Mesh(new THREE.SphereGeometry(0.34 * S, 24, 18), red), 1.05);
   head.castShadow = true;
   headG.add(head);
   for (const sx of [-1, 1]) {
@@ -148,17 +216,17 @@ function buildHero(): HeroRig {
   function arm(side: 1 | -1) {
     const shoulder = new THREE.Group();
     shoulder.position.set(side * 0.36 * S, 0.56 * S, 0);
-    const upper = new THREE.Mesh(new THREE.CapsuleGeometry(0.10 * S, 0.20 * S, 4, 10), navy);
+    const upper = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(0.10 * S, 0.20 * S, 4, 10), navy), 1.1);
     upper.position.y = -0.15 * S;
     upper.castShadow = true;
     shoulder.add(upper);
     const fore = new THREE.Group();
     fore.position.y = -0.30 * S;
-    const foreMesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.09 * S, 0.18 * S, 4, 10), navy);
+    const foreMesh = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(0.09 * S, 0.18 * S, 4, 10), navy), 1.1);
     foreMesh.position.y = -0.13 * S;
     foreMesh.castShadow = true;
     fore.add(foreMesh);
-    const glove = new THREE.Mesh(new THREE.SphereGeometry(0.115 * S, 10, 8), red);
+    const glove = outlined(new THREE.Mesh(new THREE.SphereGeometry(0.115 * S, 10, 8), red), 1.1);
     glove.position.y = -0.28 * S;
     fore.add(glove);
     shoulder.add(fore);
@@ -168,11 +236,11 @@ function buildHero(): HeroRig {
   function leg(side: 1 | -1) {
     const hip = new THREE.Group();
     hip.position.set(side * 0.15 * S, -0.02 * S, 0);
-    const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.12 * S, 0.22 * S, 4, 10), navy);
+    const thigh = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(0.12 * S, 0.22 * S, 4, 10), navy), 1.1);
     thigh.position.y = -0.17 * S;
     thigh.castShadow = true;
     hip.add(thigh);
-    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.17 * S, 0.26 * S, 0.27 * S), red);
+    const boot = outlined(new THREE.Mesh(new THREE.BoxGeometry(0.17 * S, 0.26 * S, 0.27 * S), red), 1.09);
     boot.position.set(0, -0.44 * S, 0.05 * S);
     boot.castShadow = true;
     hip.add(boot);
@@ -189,6 +257,7 @@ const fmtDist = (m: number) => (m >= 1000 ? `${(m / 1000).toLocaleString('vi-VN'
 export function HeroStage({ game }: { game: HeroState }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const flashRef = useRef<HTMLDivElement>(null);
+  const vignetteRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef(game);
   gameRef.current = game;
 
@@ -201,27 +270,37 @@ export function HeroStage({ game }: { game: HeroState }) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.06;
     mount.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = skyTexture();
+    scene.fog = new THREE.Fog(0xf2c491, 120, 430);
+    const camera = new THREE.PerspectiveCamera(62, 1080 / 1920, 0.1, 1200);
+
+    // hậu kỳ: bloom cho cửa sổ phát sáng/mắt hero/tơ + OutputPass áp ACES
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloom = new UnrealBloomPass(new THREE.Vector2(1080, 1920), 0.5, 0.55, 0.82);
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
     const resize = () => {
       const w = mount.clientWidth || 1080;
       const h = mount.clientHeight || 1920;
       renderer.setSize(w, h);
+      composer.setSize(w, h);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     };
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x93c7ec);
-    scene.fog = new THREE.Fog(0xa9cfee, 130, 460);
-    const camera = new THREE.PerspectiveCamera(62, 1080 / 1920, 0.1, 1200);
-
-    const hemi = new THREE.HemisphereLight(0xd6ecff, 0x77694f, 1.05);
+    const hemi = new THREE.HemisphereLight(0xffe3c0, 0x6e5a68, 0.9);
     scene.add(hemi);
     // đèn viền từ phía sau-trái: tách hero khỏi nền toà nhà tối
-    const rim = new THREE.DirectionalLight(0xbcd7ff, 0.6);
+    const rim = new THREE.DirectionalLight(0xbcd7ff, 0.5);
     scene.add(rim);
     scene.add(rim.target);
-    const sun = new THREE.DirectionalLight(0xfff1d6, 2.0);
+    const sun = new THREE.DirectionalLight(0xffbe78, 2.3);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.camera.left = -110;
@@ -235,10 +314,10 @@ export function HeroStage({ game }: { game: HeroState }) {
 
     // mặt trời + mây
     const glowTex = glowTexture();
-    const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffe9a8, transparent: true, opacity: 0.95, depthWrite: false }));
-    sunSprite.scale.set(90, 90, 1);
+    const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffcf8a, transparent: true, opacity: 0.95, depthWrite: false }));
+    sunSprite.scale.set(130, 130, 1);
     scene.add(sunSprite);
-    const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x5d6a76, roughness: 1, transparent: true, opacity: 0.95 });
+    const cloudMat = new THREE.MeshStandardMaterial({ color: 0xfff1de, emissive: 0x8a6a52, roughness: 1, transparent: true, opacity: 0.95 });
     const clouds: THREE.Group[] = [];
     for (let i = 0; i < 14; i++) {
       const cl = new THREE.Group();
@@ -315,10 +394,10 @@ export function HeroStage({ game }: { game: HeroState }) {
     // ---------- pool toà nhà / cầu ----------
     const unitBox = new THREE.BoxGeometry(1, 1, 1);
     const mats = [
-      new THREE.MeshStandardMaterial({ map: buildingTexture('#7fb2d9', '#33506b', 0.16, 11), roughness: 0.25, metalness: 0.35 }),
-      new THREE.MeshStandardMaterial({ map: buildingTexture('#c9a184', '#5d4433', 0.2, 22), roughness: 0.8 }),
-      new THREE.MeshStandardMaterial({ map: buildingTexture('#5b7290', '#1f303f', 0.3, 33), roughness: 0.2, metalness: 0.5 }),
-      new THREE.MeshStandardMaterial({ map: buildingTexture('#b9c2cc', '#54616e', 0.12, 44), roughness: 0.6 }),
+      buildingMaterial('#7fb2d9', '#33506b', 0.16, 11, 0.25, 0.35),
+      buildingMaterial('#c9a184', '#5d4433', 0.2, 22, 0.8, 0),
+      buildingMaterial('#5b7290', '#1f303f', 0.3, 33, 0.2, 0.5),
+      buildingMaterial('#b9c2cc', '#54616e', 0.12, 44, 0.6, 0),
     ];
     const roofMat = new THREE.MeshStandardMaterial({ color: 0x8d9299, roughness: 0.95 });
     const grassMat = new THREE.MeshStandardMaterial({ color: 0x5da24e, roughness: 1 });
@@ -465,10 +544,88 @@ export function HeroStage({ game }: { game: HeroState }) {
     // ---------- hero + dây tơ chính ----------
     const hero = buildHero();
     scene.add(hero.group);
-    const ropeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 1, 5), ropeMat);
+    // Ống tơ thon hai đầu (to ở tay, nhỏ ở điểm bám) uốn theo đường cong võng —
+    // hình học cấp phát sẵn, mỗi khung chỉ ghi lại toạ độ (không cấp phát mới).
+    const ROPE_RINGS = 16;
+    const ROPE_SIDES = 7;
+    const ropePos = new Float32Array(ROPE_RINGS * ROPE_SIDES * 3);
+    const ropeNor = new Float32Array(ROPE_RINGS * ROPE_SIDES * 3);
+    const ropeGeo = new THREE.BufferGeometry();
+    ropeGeo.setAttribute('position', new THREE.BufferAttribute(ropePos, 3).setUsage(THREE.DynamicDrawUsage));
+    ropeGeo.setAttribute('normal', new THREE.BufferAttribute(ropeNor, 3).setUsage(THREE.DynamicDrawUsage));
+    {
+      const idx: number[] = [];
+      for (let r = 0; r < ROPE_RINGS - 1; r++) {
+        for (let s = 0; s < ROPE_SIDES; s++) {
+          const a = r * ROPE_SIDES + s;
+          const b = r * ROPE_SIDES + ((s + 1) % ROPE_SIDES);
+          const c = a + ROPE_SIDES;
+          const d = b + ROPE_SIDES;
+          idx.push(a, c, b, b, c, d);
+        }
+      }
+      ropeGeo.setIndex(idx);
+    }
+    const rope = new THREE.Mesh(ropeGeo, new THREE.MeshBasicMaterial({ color: new THREE.Color(1.7, 1.7, 1.7) }));
     rope.visible = false;
+    rope.frustumCulled = false;
     scene.add(rope);
+    const _hand = new THREE.Vector3();
+    const _anchor = new THREE.Vector3();
+    const _mid = new THREE.Vector3();
+    const _pt = new THREE.Vector3();
+    const _tan = new THREE.Vector3();
+    const _n1 = new THREE.Vector3();
+    const _n2 = new THREE.Vector3();
+    function updateRope(hand: THREE.Vector3, anchor: THREE.Vector3, sag: number) {
+      _mid.lerpVectors(hand, anchor, 0.5);
+      _mid.y -= sag;
+      for (let r = 0; r < ROPE_RINGS; r++) {
+        const t = r / (ROPE_RINGS - 1);
+        // đường cong Bezier bậc 2: tay -> điểm võng giữa -> điểm bám
+        const a = (1 - t) * (1 - t);
+        const b = 2 * (1 - t) * t;
+        const c = t * t;
+        _pt.set(
+          a * hand.x + b * _mid.x + c * anchor.x,
+          a * hand.y + b * _mid.y + c * anchor.y,
+          a * hand.z + b * _mid.z + c * anchor.z,
+        );
+        _tan
+          .set(
+            2 * (1 - t) * (_mid.x - hand.x) + 2 * t * (anchor.x - _mid.x),
+            2 * (1 - t) * (_mid.y - hand.y) + 2 * t * (anchor.y - _mid.y),
+            2 * (1 - t) * (_mid.z - hand.z) + 2 * t * (anchor.z - _mid.z),
+          )
+          .normalize();
+        _n1.set(-_tan.y, _tan.x, 0);
+        if (_n1.lengthSq() < 0.01) _n1.set(1, 0, 0);
+        _n1.normalize();
+        _n2.crossVectors(_tan, _n1);
+        const radius = 0.085 * (1 - t) + 0.038 * t; // thon dần về điểm bám
+        for (let s = 0; s < ROPE_SIDES; s++) {
+          const ang = (s / ROPE_SIDES) * Math.PI * 2;
+          const cos = Math.cos(ang);
+          const sin = Math.sin(ang);
+          const o = (r * ROPE_SIDES + s) * 3;
+          ropePos[o] = _pt.x + (_n1.x * cos + _n2.x * sin) * radius;
+          ropePos[o + 1] = _pt.y + (_n1.y * cos + _n2.y * sin) * radius;
+          ropePos[o + 2] = _pt.z + (_n1.z * cos + _n2.z * sin) * radius;
+          ropeNor[o] = _n1.x * cos + _n2.x * sin;
+          ropeNor[o + 1] = _n1.y * cos + _n2.y * sin;
+          ropeNor[o + 2] = _n1.z * cos + _n2.z * sin;
+        }
+      }
+      (ropeGeo.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
+      (ropeGeo.getAttribute('normal') as THREE.BufferAttribute).needsUpdate = true;
+    }
+    // vết tơ dính ở điểm bám (đĩa mạng nhện nhỏ, luôn quay mặt về camera)
+    const splat = new THREE.Mesh(
+      new THREE.PlaneGeometry(3.0, 3.0),
+      new THREE.MeshBasicMaterial({ map: webDiscTexture(), transparent: true, opacity: 0.95, depthWrite: false, side: THREE.DoubleSide }),
+    );
+    splat.visible = false;
+    scene.add(splat);
 
     // ---------- tơ trang trí: LineSegments gộp chung 1 draw call ----------
     const MAXSEG = 260;
@@ -531,7 +688,6 @@ export function HeroStage({ game }: { game: HeroState }) {
     const camPos = new THREE.Vector3(-8.8, 3.4, 7.6); // offset camera so với hero (được làm mượt)
     const camLook = new THREE.Vector3(20, 22, 0);
     let fov = 62;
-    const upVec = new THREE.Vector3(0, 1, 0);
     const tmpA = new THREE.Vector3();
     const tmpB = new THREE.Vector3();
 
@@ -542,12 +698,16 @@ export function HeroStage({ game }: { game: HeroState }) {
         ring.visible = true;
         shake = f.fx === 'mega' ? 1.6 : 1.1;
         flashVal = f.fx === 'mega' ? 0.7 : 0.5;
+        sfx.pop(f.fx === 'mega');
       } else if (f.fx === 'storm') {
         shake = Math.max(shake, 0.35);
+        sfx.pop(false);
+      } else if (f.fx === 'speed') {
+        sfx.whoosh(0.9);
       }
     }
 
-    function poseHero(h: { x: number; y: number; z: number; rot: number; vx: number; vy: number; mode: string; ax: number; ay: number; az: number; runPhase: number }, dt: number, now: number) {
+    function poseHero(h: { x: number; y: number; z: number; rot: number; vx: number; vy: number; mode: string; ax: number; ay: number; az: number; runPhase: number; landAt: number }, dt: number, now: number) {
       hero.group.position.set(h.x, h.y, h.z);
       const damp = 1 - Math.exp(-dt * 11);
       const dampSlow = 1 - Math.exp(-dt * 6);
@@ -606,21 +766,67 @@ export function HeroStage({ game }: { game: HeroState }) {
       hero.legR.rotation.z += (P.legR - hero.legR.rotation.z) * damp;
       hero.torso.rotation.z += (P.torso - hero.torso.rotation.z) * damp;
 
-      // dây tơ chính khi đang đu
+      // squash & stretch: đáp nóc nhà thì nén người, vọt lên/đu nhanh thì giãn nhẹ
+      let sy = 1;
+      const sinceLand = now - h.landAt;
+      if (h.mode === 'run' && sinceLand >= 0 && sinceLand < 260) {
+        sy = 1 - 0.22 * Math.sin((sinceLand / 260) * Math.PI);
+      } else if (h.mode === 'air' && h.vy > 7) {
+        sy = 1 + Math.min(0.1, (h.vy - 7) * 0.008);
+      } else if (h.mode === 'swing') {
+        sy = 1 + Math.min(0.06, Math.hypot(h.vx, h.vy) * 0.0016);
+      }
+      const sxz = 1 + (1 - sy) * 0.7;
+      hero.group.scale.set(sxz, sy, sxz);
+
+      // dây tơ chính khi đang đu: ống tơ võng theo lực căng + vết tơ ở điểm bám
       if (h.mode === 'swing') {
         rope.visible = true;
-        tmpA.set(h.x + 0.4, h.y + 1.3, h.z); // tay chibi ngắn hơn bản cũ nên điểm bắn tơ hạ xuống theo
-        tmpB.set(h.ax, h.ay, h.az);
-        const len = tmpA.distanceTo(tmpB);
-        rope.position.copy(tmpA).add(tmpB).multiplyScalar(0.5);
-        rope.scale.set(1, len, 1);
-        tmpB.sub(tmpA).normalize();
-        rope.quaternion.setFromUnitVectors(upVec, tmpB);
+        _hand.set(h.x + 0.4, h.y + 1.3, h.z); // tay chibi ngắn: điểm bắn tơ hạ theo tỉ lệ mới
+        _anchor.set(h.ax, h.ay, h.az);
+        const dist = _hand.distanceTo(_anchor);
+        const spd = Math.hypot(h.vx, h.vy);
+        const sag = THREE.MathUtils.clamp(dist * 0.055 - spd * 0.05, 0.12, 2.4); // bay nhanh = tơ căng, chậm = tơ võng
+        updateRope(_hand, _anchor, sag);
+        splat.visible = true;
+        splat.position.copy(_anchor);
+        splat.lookAt(camera.position);
+        const ss = 1 + 0.07 * Math.sin(now / 110);
+        splat.scale.set(ss, ss, ss);
       } else {
         rope.visible = false;
+        splat.visible = false;
       }
-      void now;
     }
+
+    // ---------- vệt tốc độ (speed lines) bám theo camera ----------
+    const STREAKS = 26;
+    const streakPos = new Float32Array(STREAKS * 6);
+    const streakDat: { x: number; y: number; z: number; len: number }[] = [];
+    for (let i = 0; i < STREAKS; i++) {
+      streakDat.push({
+        x: (Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 13),
+        y: (Math.random() - 0.5) * 20,
+        z: -14 - Math.random() * 34,
+        len: 2.5 + Math.random() * 3,
+      });
+    }
+    const streakGeo = new THREE.BufferGeometry();
+    streakGeo.setAttribute('position', new THREE.BufferAttribute(streakPos, 3).setUsage(THREE.DynamicDrawUsage));
+    const streakMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+    const streaks = new THREE.LineSegments(streakGeo, streakMat);
+    streaks.frustumCulled = false;
+    scene.add(streaks);
+
+    // ---------- âm thanh hiệu ứng: mở khoá theo tương tác đầu tiên (như nhạc/giọng) ----------
+    if (new URLSearchParams(window.location.search).get('mute') === '1') sfx.enabled = false;
+    const unlockSfx = () => sfx.resume();
+    window.addEventListener('pointerdown', unlockSfx);
+    window.addEventListener('focus', unlockSfx);
+    document.addEventListener('visibilitychange', unlockSfx);
+    const sfxWatchdog = setInterval(unlockSfx, 1500);
+    let prevMode = '';
+    let prevLandAt = 0;
 
     resize();
     window.addEventListener('resize', resize);
@@ -709,11 +915,11 @@ export function HeroStage({ game }: { game: HeroState }) {
       // --- nền/đường/mây/xe/ánh sáng bám theo hero ---
       ground.position.x = heroX;
       for (const road of roads) road.position.x = heroX - (heroX % 23.33);
-      sun.position.set(heroX + 40, 100, 55);
+      sun.position.set(heroX + 48, 58, 38); // nắng chiều thấp: bóng đổ dài, ánh vàng
       sun.target.position.set(heroX + 10, 0, 0);
       rim.position.set(heroX - 35, 26, -42);
       rim.target.position.set(heroX, 14, 0);
-      sunSprite.position.set(heroX + 230, 128, -190);
+      sunSprite.position.set(heroX + 260, 92, -215);
       for (const cl of clouds) {
         cl.position.x += dt * 1.1;
         if (cl.position.x < heroX - 180) cl.position.x += 760;
@@ -729,6 +935,18 @@ export function HeroStage({ game }: { game: HeroState }) {
 
       // --- hero + tơ ---
       poseHero(h, dt, now);
+      // âm thanh theo chuyển trạng thái vật lý
+      if (prevMode && prevMode !== h.mode) {
+        const spdNow = Math.hypot(h.vx, h.vy);
+        if (h.mode === 'swing') sfx.thwip();
+        else if (prevMode === 'swing' && h.mode === 'air') sfx.whoosh(Math.min(1, spdNow / 26));
+        else if (prevMode === 'run' && h.mode === 'air') sfx.whoosh(0.35);
+      }
+      if (h.landAt !== prevLandAt) {
+        if (prevMode === 'air') sfx.thud();
+        prevLandAt = h.landAt;
+      }
+      prevMode = h.mode;
       let seg = 0;
       const pushSeg = (x1: number, y1: number, z1: number, x2: number, y2: number, z2: number, gold: boolean, fade: number) => {
         if (seg >= MAXSEG) return;
@@ -833,14 +1051,51 @@ export function HeroStage({ game }: { game: HeroState }) {
         camera.position.y += (Math.random() - 0.5) * shake * 1.1;
       }
       camera.lookAt(camLook);
-      const targetFov = sc.burst ? 71 : 62;
+      // FOV giãn theo tốc độ (cảm giác lao nhanh) + rung rất nhẹ ở tốc độ cực cao
+      const spdKmh = Math.hypot(h.vx, h.vy) * 3.6;
+      const targetFov = 62 + THREE.MathUtils.clamp((spdKmh - 55) / 6, 0, 6) + (sc.burst ? 4 : 0);
       fov += (targetFov - fov) * (1 - Math.exp(-dt * 2.6));
       if (Math.abs(fov - camera.fov) > 0.05) {
         camera.fov = fov;
         camera.updateProjectionMatrix();
       }
+      if (spdKmh > 95) {
+        const amp = (spdKmh - 95) / 300;
+        camera.position.x += (Math.random() - 0.5) * amp;
+        camera.position.y += (Math.random() - 0.5) * amp;
+      }
+      if (vignetteRef.current) {
+        const vig = THREE.MathUtils.clamp((spdKmh - 68) / 55, 0, 0.8);
+        vignetteRef.current.style.opacity = vig > 0.02 ? String(vig) : '0';
+      }
 
-      renderer.render(scene, camera);
+      // vệt tốc độ: các vệt trắng lao ngược qua hai bên camera khi bay nhanh
+      const sFactor = THREE.MathUtils.clamp((spdKmh - 62) / 45, 0, 1);
+      streakMat.opacity = sFactor * 0.5;
+      if (sFactor > 0) {
+        streaks.position.copy(camera.position);
+        streaks.quaternion.copy(camera.quaternion);
+        for (let i = 0; i < STREAKS; i++) {
+          const s = streakDat[i];
+          s.z += dt * (26 + spdKmh * 0.55);
+          if (s.z > -5) {
+            s.z = -38 - Math.random() * 10;
+            s.x = (Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 13);
+            s.y = (Math.random() - 0.5) * 20;
+          }
+          const o = i * 6;
+          streakPos[o] = s.x;
+          streakPos[o + 1] = s.y;
+          streakPos[o + 2] = s.z;
+          streakPos[o + 3] = s.x;
+          streakPos[o + 4] = s.y;
+          streakPos[o + 5] = s.z - s.len;
+        }
+        (streakGeo.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
+      }
+      streaks.visible = sFactor > 0;
+
+      composer.render();
     };
     raf = requestAnimationFrame(loop);
 
@@ -848,6 +1103,11 @@ export function HeroStage({ game }: { game: HeroState }) {
       disposed = true;
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
+      window.removeEventListener('pointerdown', unlockSfx);
+      window.removeEventListener('focus', unlockSfx);
+      document.removeEventListener('visibilitychange', unlockSfx);
+      clearInterval(sfxWatchdog);
+      composer.dispose();
       renderer.dispose();
       mount.removeChild(renderer.domElement);
     };
@@ -862,6 +1122,11 @@ export function HeroStage({ game }: { game: HeroState }) {
     <div className="relative h-full w-full overflow-hidden bg-[#93c7ec]">
       <div ref={mountRef} className="absolute inset-0" />
       <div ref={flashRef} className="pointer-events-none absolute inset-0 bg-white opacity-0" />
+      <div
+        ref={vignetteRef}
+        className="pointer-events-none absolute inset-0 opacity-0"
+        style={{ background: 'radial-gradient(ellipse at center, transparent 52%, rgba(26,8,38,0.55) 100%)' }}
+      />
 
       {/* HUD trên: quãng đường + tốc độ */}
       <div className="pointer-events-none absolute left-4 top-4 rounded-2xl bg-slate-950/55 px-5 py-3 text-white shadow-lg backdrop-blur-sm">
