@@ -88,6 +88,7 @@ export interface HeroView {
   nextTier: { fx: FxKind; label: string; cost: number; have: number } | null;
   fxRecent: FxEvent[];
   banner: string | null;
+  quiz: { text: string; answer: number; leftMs: number; totalMs: number; solvedBy: string | null } | null;
   totals: { flips: number; storms: number; jumps: number; webShots: number };
   scene: HeroScene;
   musicOn: boolean;
@@ -96,6 +97,19 @@ export interface HeroView {
 
 // MC của phòng: giọng NỮ (tiền tố "F:" — khung giọng đọc "M:" là nam, "F:" là nữ)
 const M = (s: string) => `F: ${s}`;
+
+// Đọc số tiếng Việt (0–999) cho MC đọc câu đố thành tiếng
+const VI_ONES = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+function viNum(n: number): string {
+  if (n < 10) return VI_ONES[n];
+  if (n < 20) {
+    const u = n % 10;
+    return 'mười' + (u === 0 ? '' : u === 5 ? ' lăm' : ' ' + VI_ONES[u]);
+  }
+  const t = Math.floor(n / 10);
+  const u = n % 10;
+  return VI_ONES[t] + ' mươi' + (u === 0 ? '' : u === 1 ? ' mốt' : u === 5 ? ' lăm' : ' ' + VI_ONES[u]);
+}
 
 const FX_BANNER: Partial<Record<FxKind, string>> = {
   speed: '⚡ ĐU DÂY TỐC ĐỘ CAO!',
@@ -157,6 +171,10 @@ export class HeroRoom {
   private hangFromY = 0;
   private pendingHang = false;
 
+  // --- câu đố tính nhanh ---
+  private quiz: { text: string; spoken: string; answer: number; endsAt: number; solvedBy: string | null; rewarded: Set<string> } | null = null;
+  private nextQuizAt = 0;
+
   constructor(
     private now0: number,
     private rng: () => number = Math.random,
@@ -202,6 +220,8 @@ export class HeroRoom {
     this.modeSince = now;
     this.nextHangAt = now + 12_000; // lần treo ngược đầu tiên sau ~12 giây
     this.pendingHang = false;
+    this.quiz = null;
+    this.nextQuizAt = now + GAME.quizFirstMs;
   }
 
   // ---------------- vật lý ----------------
@@ -545,9 +565,79 @@ export class HeroRoom {
     return [{ text: M(`Cảm ơn ${p.spoken} đã theo dõi kênh! Ngồi xem Hero bay và thả tim cùng cả phòng nhé!`), ttl: GAME.chatterMaxWaitMs }];
   }
 
-  chat(e: { p: Person; comment: string }, _now: number): Say[] {
-    void e;
-    return [];
+  /** Sinh một câu tính nhanh mức dễ (cộng/trừ/nhân/chia, số nhỏ). */
+  private makeQuiz(now: number) {
+    const kind = Math.floor(this.rng() * 4);
+    let a = 0;
+    let b = 0;
+    let ans = 0;
+    let sym = '';
+    let word = '';
+    if (kind === 0) {
+      a = 15 + Math.floor(this.rng() * 76);
+      b = 8 + Math.floor(this.rng() * 63);
+      ans = a + b;
+      sym = '+';
+      word = 'cộng';
+    } else if (kind === 1) {
+      a = 30 + Math.floor(this.rng() * 70);
+      b = 5 + Math.floor(this.rng() * (a - 10));
+      ans = a - b;
+      sym = '−';
+      word = 'trừ';
+    } else if (kind === 2) {
+      a = 2 + Math.floor(this.rng() * 8);
+      b = 3 + Math.floor(this.rng() * 10);
+      ans = a * b;
+      sym = '×';
+      word = 'nhân';
+    } else {
+      b = 2 + Math.floor(this.rng() * 8);
+      ans = 3 + Math.floor(this.rng() * 10);
+      a = b * ans;
+      sym = '÷';
+      word = 'chia';
+    }
+    return {
+      text: `${a} ${sym} ${b} = ?`,
+      spoken: `${viNum(a)} ${word} ${viNum(b)}`,
+      answer: ans,
+      endsAt: now + GAME.quizMs,
+      solvedBy: null as string | null,
+      rewarded: new Set<string>(),
+    };
+  }
+
+  /**
+   * Bình luận của người xem: nếu đang có câu đố và bình luận chứa đúng đáp án
+   * (con số đầu tiên trong bình luận) thì thưởng — người đúng đầu tiên cho Hero
+   * TĂNG TỐC + cộng tim vào quỹ chung; người đúng tiếp theo trong giờ cũng
+   * được cộng tim (mỗi người 1 lần/câu). Sai thì im lặng, không phạt.
+   */
+  chat(e: { p: Person; comment: string }, now: number): Say[] {
+    const q = this.quiz;
+    if (!q || now >= q.endsAt) return [];
+    const m = /-?\d+/.exec(e.comment);
+    if (!m || parseInt(m[0], 10) !== q.answer) return [];
+    if (q.rewarded.has(e.p.username)) return [];
+    q.rewarded.add(e.p.username);
+    this.spawnSparks(this.x, this.y + 1.5, this.z, 6, 'heart', now);
+    if (!q.solvedBy) {
+      q.solvedBy = e.p.nickname;
+      this.credit += GAME.quizFirstReward;
+      this.burstUntil = Math.max(this.burstUntil, now + 4000);
+      q.endsAt = Math.min(q.endsAt, now + 3500); // có người đúng rồi: khép câu nhanh cho nhịp show chạy tiếp
+      this.bannerText = `🎉 ${e.p.nickname} tính đúng! Hero TĂNG TỐC!`;
+      this.bannerUntil = now + 3200;
+      const out = this.schedule(now);
+      out.push({
+        main: true,
+        text: M(`Chính xác! ${e.p.spoken} tính đúng rồi! ${q.spoken} bằng ${viNum(q.answer)}. Hero tăng tốc, cộng ${GAME.quizFirstReward} tim vào quỹ chung nè!`),
+      });
+      return out;
+    }
+    this.credit += GAME.quizExtraReward;
+    return this.schedule(now);
   }
 
   thank(p: Person, giftName: string): Say[] {
@@ -590,6 +680,21 @@ export class HeroRoom {
         'Hero treo ngược một lát cho đỡ mỏi tay. Cả nhà thấy Hero ngầu chưa!',
       ];
       out.push({ main: true, text: M(lines[Math.floor(this.rng() * lines.length)]) });
+    }
+    // Câu đố tính nhanh: mở theo nhịp, hết giờ thì đóng (kèm đáp án cho vui)
+    if (!this.quiz && now >= this.nextQuizAt) {
+      this.quiz = this.makeQuiz(now);
+      out.push({
+        main: true,
+        text: M(`Tính nhanh nè cả nhà! ${this.quiz.spoken} bằng mấy? Gõ đáp án vào bình luận — ai đúng là Hero tăng tốc liền đó!`),
+      });
+    }
+    if (this.quiz && now >= this.quiz.endsAt) {
+      if (!this.quiz.solvedBy && this.rng() < 0.6) {
+        out.push({ text: M(`Hết giờ! Đáp án là ${viNum(this.quiz.answer)} nè cả nhà. Câu sau cố lên nha!`), ttl: GAME.chatterMaxWaitMs });
+      }
+      this.quiz = null;
+      this.nextQuizAt = now + GAME.quizEveryMs;
     }
     if (now >= this.nextIdleAt) {
       this.nextIdleAt = now + GAME.idleLineEveryMs;
@@ -657,6 +762,15 @@ export class HeroRoom {
       nextTier: next ? { fx: next.fx, label: next.label, cost: next.cost, have: this.credit } : null,
       fxRecent: this.fxQueue.filter((f) => now - f.at < 2500),
       banner: now < this.bannerUntil ? this.bannerText : null,
+      quiz: this.quiz
+        ? {
+            text: this.quiz.text,
+            answer: this.quiz.answer,
+            leftMs: Math.max(0, this.quiz.endsAt - now),
+            totalMs: GAME.quizMs,
+            solvedBy: this.quiz.solvedBy,
+          }
+        : null,
       totals: { ...this.totals },
       scene: sc,
       musicOn: this.musicOn,

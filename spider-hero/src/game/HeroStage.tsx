@@ -1208,6 +1208,27 @@ export function HeroStage({ game }: { game: HeroState }) {
         </div>
       )}
 
+      {/* Câu đố tính nhanh: trả lời đúng bằng bình luận để Hero tăng tốc */}
+      {v?.quiz && (
+        <div
+          className={`pointer-events-none absolute left-1/2 top-[30%] w-[540px] max-w-[94%] -translate-x-1/2 rounded-[22px] px-6 py-4 text-center text-white shadow-2xl ${
+            v.quiz.solvedBy ? 'bg-emerald-600/90' : 'bg-indigo-700/90'
+          }`}
+        >
+          {v.quiz.solvedBy ? (
+            <div className="text-[26px] font-black leading-snug">🎉 {v.quiz.solvedBy} tính đúng! Đáp án: {v.quiz.answer} — Hero TĂNG TỐC!</div>
+          ) : (
+            <>
+              <div className="text-[32px] font-black leading-tight">🧮 Tính nhanh: {v.quiz.text}</div>
+              <div className="mt-1 text-[17px] font-semibold text-indigo-100">Gõ đáp án vào bình luận — đúng là Hero tăng tốc + cộng tim vào quỹ!</div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/20">
+                <div className="h-full rounded-full bg-amber-300" style={{ width: `${Math.max(0, Math.min(100, (v.quiz.leftMs / v.quiz.totalMs) * 100))}%` }} />
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Dòng hướng dẫn dưới cùng */}
       <div className="pointer-events-none absolute inset-x-4 bottom-4 rounded-2xl bg-slate-950/55 px-5 py-3 text-center text-[19px] font-semibold leading-snug text-white backdrop-blur-sm">
         ❤️ Thả tim để Hero bắn tơ — tim cộng dồn cả phòng: 10 tim nhảy cao · 50 đu tốc độ · 100 lộn vòng · 200 mưa tơ · 500 Bão Tơ · 1.000 Vụ Nổ Tơ · 5.000 Siêu Bão Tơ

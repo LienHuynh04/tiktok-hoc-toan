@@ -17,6 +17,11 @@ export const GAME = {
   hangMs: 2_200, // mỗi lần treo ngược kéo dài 2,2 giây
   hangMinAnchorY: 28, // chỉ treo khi điểm bám đủ cao, tránh đụng nóc nhà bên dưới
   hangLen: 4.6, // sợi tơ treo ngắn dưới điểm bám (m)
+  quizFirstMs: 18_000, // câu đố đầu tiên sau khi mở phiên
+  quizEveryMs: 40_000, // nhịp ra câu đố tính nhanh
+  quizMs: 12_000, // thời gian trả lời mỗi câu
+  quizFirstReward: 50, // tim cộng quỹ cho người đúng đầu tiên (+ tăng tốc)
+  quizExtraReward: 20, // tim cộng quỹ cho mỗi người đúng tiếp theo trong giờ
   idleLineEveryMs: 60_000,
   chatterMaxWaitMs: 60_000,
   giftLineMaxWaitMs: 30_000,

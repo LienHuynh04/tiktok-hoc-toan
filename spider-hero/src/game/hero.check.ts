@@ -93,6 +93,31 @@ const credit = (r: HeroRoom) => (r as unknown as { credit: number }).credit;
   r3.like(P('c'), 5000, t0);
   ok(r3.fxSince(0).some((f) => f.fx === 'mega'), 'like: 5000 tim -> Siêu Bão Tơ');
   ok(credit(r3) === 0, 'like: Siêu Bão Tơ rút đúng 5000 tim');
+
+  // câu đố tính nhanh: mở theo nhịp tick, bình luận đúng -> tăng tốc + ghi tên
+  const r4 = new HeroRoom(t0);
+  r4.newSession(t0);
+  let n4 = t0;
+  let q4 = r4.view(n4).quiz;
+  for (let i = 0; i < 80 && !q4; i++) {
+    n4 += 500;
+    r4.tick(n4);
+    q4 = r4.view(n4).quiz;
+  }
+  ok(!!q4, 'đố: câu đố tự mở sau giờ hẹn');
+  if (q4) {
+    const wrong = r4.chat({ p: P('do-thu'), comment: String(q4.answer + 9) }, n4);
+    ok(wrong.length === 0 && r4.view(n4).quiz?.solvedBy === null, 'đố: trả lời sai -> không thưởng, không phạt');
+    r4.chat({ p: P('do-thu'), comment: `đáp án là ${q4.answer} nè` }, n4);
+    const v4 = r4.view(n4);
+    ok(v4.quiz?.solvedBy === P('do-thu').nickname, 'đố: ghi tên người trả lời đúng đầu tiên');
+    ok(v4.scene.burst, 'đố: trả lời đúng -> Hero tăng tốc (burst)');
+    const creditBefore = v4.credit;
+    r4.chat({ p: P('do-thu'), comment: String(q4.answer) }, n4);
+    ok(r4.view(n4).credit === creditBefore, 'đố: cùng một người không được thưởng 2 lần trong 1 câu');
+    r4.chat({ p: P('nguoi-khac'), comment: String(q4.answer) }, n4);
+    ok(r4.view(n4).credit >= creditBefore, 'đố: người thứ hai trả lời đúng vẫn được cộng quỹ');
+  }
 }
 
 if (fails) {

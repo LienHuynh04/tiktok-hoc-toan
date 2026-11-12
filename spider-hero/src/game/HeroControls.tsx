@@ -47,6 +47,34 @@ export function HeroControls({ view, stageCount }: { view: HeroView | null; stag
         </label>
       </div>
 
+      {view.quiz && (
+        <div className="rounded-xl bg-indigo-950/60 p-3">
+          <p className="mb-2 font-semibold text-slate-100">
+            🧮 Câu đố đang mở: {view.quiz.text} (đáp án {view.quiz.answer}, còn {Math.ceil(view.quiz.leftMs / 1000)}s)
+            {view.quiz.solvedBy ? ` — ${view.quiz.solvedBy} đã trả lời đúng` : ''}
+          </p>
+          {!view.quiz.solvedBy && (
+            <div className="flex flex-wrap gap-2">
+              <Btn
+                onClick={() =>
+                  emitTest('chat', { username: 'ban-test', nickname: 'Bạn Test', comment: String(view.quiz!.answer), avatar: '' })
+                }
+                color="bg-emerald-600 hover:bg-emerald-500"
+              >
+                ✅ Giả lập trả lời ĐÚNG
+              </Btn>
+              <Btn
+                onClick={() =>
+                  emitTest('chat', { username: 'ban-test', nickname: 'Bạn Test', comment: String(view.quiz!.answer + 7), avatar: '' })
+                }
+              >
+                ❌ Giả lập trả lời sai
+              </Btn>
+            </div>
+          )}
+        </div>
+      )}
+
       <div>
         <p className="mb-2 font-semibold text-slate-100">Giả lập thả tim (chế độ TEST — dùng khi chưa live):</p>
         <div className="flex flex-wrap gap-2">
