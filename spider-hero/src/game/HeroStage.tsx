@@ -142,8 +142,11 @@ function glowTexture(): THREE.Texture {
 }
 
 // ---------- dựng hình Hero: anh hùng NGUYÊN BẢN dáng chibi đầu to ----------
-// Đầu đỏ TRƠN (không kẻ mạng nhện, không logo hãng nào), mắt trắng to, thân ngắn
-// đỏ tươi, tay chân ngắn mập, huy hiệu tia bạc trên ngực — dấu hiệu riêng.
+// ---------- dựng hình Hero: NGƯỜI QUE nguyên bản ----------
+// Que đen mảnh có khớp tròn, đầu tròn đen mắt trắng to, khăn quàng đỏ bay theo
+// tốc độ, giày đỏ, huy hiệu tia bạc ở ngực — phong cách người que là chất liệu
+// chung, không phải thiết kế của hãng nào. Giữ nguyên hệ khớp (rig) để dùng lại
+// toàn bộ động tác chạy/đu/lộn/treo ngược.
 interface HeroRig {
   group: THREE.Group;
   torso: THREE.Group;
@@ -153,103 +156,108 @@ interface HeroRig {
   foreR: THREE.Group;
   legL: THREE.Group;
   legR: THREE.Group;
+  scarf: THREE.Group;
 }
 
 function buildHero(): HeroRig {
   const S = 1.7; // phóng to 1.7 lần cho dễ nhìn trên sóng
-  // toon shading 3 nấc sáng — phẳng, đậm chất hoạt hình truyện tranh
   const gradData = new Uint8Array([110, 175, 255]);
   const gradientMap = new THREE.DataTexture(gradData, 3, 1, THREE.RedFormat);
   gradientMap.minFilter = THREE.NearestFilter;
   gradientMap.magFilter = THREE.NearestFilter;
   gradientMap.needsUpdate = true;
-  const navy = new THREE.MeshToonMaterial({ color: 0x2c4a7c, gradientMap });
-  const red = new THREE.MeshToonMaterial({ color: 0xd42a35, gradientMap });
+  const ink = new THREE.MeshToonMaterial({ color: 0x20242e, gradientMap });
+  const redMat = new THREE.MeshStandardMaterial({ color: 0xd42a35, roughness: 0.6 });
   const silver = new THREE.MeshStandardMaterial({ color: 0xd7dee8, roughness: 0.3, metalness: 0.85 });
   const lens = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xd8f2ff, emissiveIntensity: 1.4, roughness: 0.2 });
-  // viền đen kiểu comic: vỏ ngược (BackSide) phình nhẹ bọc ngoài từng bộ phận
-  const outlineMat = new THREE.MeshBasicMaterial({ color: 0x1a0f0a, side: THREE.BackSide });
-  const outlined = (mesh: THREE.Mesh, k = 1.08): THREE.Mesh => {
-    const shell = new THREE.Mesh(mesh.geometry, outlineMat);
-    shell.scale.setScalar(k);
-    mesh.add(shell);
-    return mesh;
-  };
 
   const group = new THREE.Group();
   const torso = new THREE.Group();
   torso.position.y = 0.1 * S;
   group.add(torso);
 
-  // thân ngắn, tròn — dáng chibi
-  const chest = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(0.30 * S, 0.22 * S, 6, 14), red), 1.07);
-  chest.position.y = 0.34 * S;
-  chest.castShadow = true;
-  torso.add(chest);
+  // thân: một đoạn que mảnh từ hông lên vai + khớp hông/vai tròn
+  const spine = new THREE.Mesh(new THREE.CapsuleGeometry(0.055 * S, 0.55 * S, 4, 10), ink);
+  spine.position.y = 0.3 * S;
+  spine.castShadow = true;
+  torso.add(spine);
+  const pelvis = new THREE.Mesh(new THREE.SphereGeometry(0.075 * S, 10, 8), ink);
+  pelvis.position.y = 0.0;
+  torso.add(pelvis);
   // huy hiệu tia bạc trên ngực — dấu hiệu riêng, không dùng logo của ai
-  const badge = new THREE.Mesh(new THREE.OctahedronGeometry(0.15 * S), silver);
-  badge.position.set(0, 0.42 * S, 0.29 * S);
+  const badge = new THREE.Mesh(new THREE.OctahedronGeometry(0.11 * S), silver);
+  badge.position.set(0, 0.44 * S, 0.07 * S);
   badge.scale.set(1, 1.5, 0.4);
   torso.add(badge);
-  const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.30 * S, 0.32 * S, 0.10 * S, 14), silver);
-  belt.position.y = 0.04 * S;
-  torso.add(belt);
 
-  // đầu TO (gần 40% chiều cao), đỏ trơn, mắt trắng lớn có viền navy
+  // khăn quàng đỏ: nút thắt ở cổ + đuôi khăn (poseHero cho bay theo tốc độ)
+  const scarf = new THREE.Group();
+  scarf.position.set(0, 0.8 * S, -0.03 * S);
+  const knot = new THREE.Mesh(new THREE.SphereGeometry(0.085 * S, 10, 8), redMat);
+  scarf.add(knot);
+  const tailGeo = new THREE.PlaneGeometry(0.17 * S, 0.55 * S);
+  tailGeo.translate(0, -0.275 * S, 0);
+  const tail = new THREE.Mesh(tailGeo, new THREE.MeshStandardMaterial({ color: 0xd42a35, roughness: 0.65, side: THREE.DoubleSide }));
+  tail.position.z = -0.04 * S;
+  tail.castShadow = true;
+  scarf.add(tail);
+  torso.add(scarf);
+
+  // đầu tròn to, đen, mắt trắng lớn
   const headG = new THREE.Group();
-  headG.position.y = 0.84 * S;
-  const head = outlined(new THREE.Mesh(new THREE.SphereGeometry(0.34 * S, 24, 18), red), 1.05);
+  headG.position.y = 0.88 * S;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.3 * S, 22, 16), ink);
   head.castShadow = true;
   headG.add(head);
   for (const sx of [-1, 1]) {
-    const rimEye = new THREE.Mesh(new THREE.SphereGeometry(0.118 * S, 12, 10), navy);
-    rimEye.position.set(sx * 0.135 * S, 0.03 * S, 0.265 * S);
-    rimEye.scale.set(1.2, 1.5, 0.45);
-    headG.add(rimEye);
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.102 * S, 12, 10), lens);
-    eye.position.set(sx * 0.135 * S, 0.03 * S, 0.285 * S);
-    eye.scale.set(1.2, 1.5, 0.45);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.075 * S, 12, 10), lens);
+    eye.position.set(sx * 0.11 * S, 0.03 * S, 0.245 * S);
+    eye.scale.set(1.1, 1.4, 0.5);
     headG.add(eye);
   }
   torso.add(headG);
 
   function arm(side: 1 | -1) {
     const shoulder = new THREE.Group();
-    shoulder.position.set(side * 0.36 * S, 0.56 * S, 0);
-    const upper = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(0.10 * S, 0.20 * S, 4, 10), navy), 1.1);
-    upper.position.y = -0.15 * S;
+    shoulder.position.set(side * 0.09 * S, 0.58 * S, 0);
+    const joint = new THREE.Mesh(new THREE.SphereGeometry(0.068 * S, 10, 8), ink);
+    shoulder.add(joint);
+    const upper = new THREE.Mesh(new THREE.CapsuleGeometry(0.045 * S, 0.31 * S, 4, 10), ink);
+    upper.position.y = -0.2 * S;
     upper.castShadow = true;
     shoulder.add(upper);
     const fore = new THREE.Group();
-    fore.position.y = -0.30 * S;
-    const foreMesh = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(0.09 * S, 0.18 * S, 4, 10), navy), 1.1);
-    foreMesh.position.y = -0.13 * S;
+    fore.position.y = -0.4 * S;
+    const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.058 * S, 10, 8), ink);
+    fore.add(elbow);
+    const foreMesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.04 * S, 0.33 * S, 4, 10), ink);
+    foreMesh.position.y = -0.21 * S;
     foreMesh.castShadow = true;
     fore.add(foreMesh);
-    const glove = outlined(new THREE.Mesh(new THREE.SphereGeometry(0.115 * S, 10, 8), red), 1.1);
-    glove.position.y = -0.28 * S;
-    fore.add(glove);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.065 * S, 10, 8), ink);
+    hand.position.y = -0.44 * S;
+    fore.add(hand);
     shoulder.add(fore);
     torso.add(shoulder);
     return { shoulder, fore };
   }
   function leg(side: 1 | -1) {
     const hip = new THREE.Group();
-    hip.position.set(side * 0.15 * S, -0.02 * S, 0);
-    const thigh = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(0.12 * S, 0.22 * S, 4, 10), navy), 1.1);
-    thigh.position.y = -0.17 * S;
+    hip.position.set(side * 0.07 * S, -0.05 * S, 0);
+    const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.05 * S, 0.62 * S, 4, 10), ink);
+    thigh.position.y = -0.5 * S;
     thigh.castShadow = true;
     hip.add(thigh);
-    const boot = outlined(new THREE.Mesh(new THREE.BoxGeometry(0.17 * S, 0.26 * S, 0.27 * S), red), 1.09);
-    boot.position.set(0, -0.44 * S, 0.05 * S);
-    boot.castShadow = true;
-    hip.add(boot);
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.1 * S, 0.07 * S, 0.21 * S), redMat);
+    shoe.position.set(0, -0.875 * S, 0.05 * S);
+    shoe.castShadow = true;
+    hip.add(shoe);
     torso.add(hip);
     return hip;
   }
   const aL = arm(-1);
   const aR = arm(1);
-  return { group, torso, armL: aL.shoulder, armR: aR.shoulder, foreL: aL.fore, foreR: aR.fore, legL: leg(-1), legR: leg(1) };
+  return { group, torso, armL: aL.shoulder, armR: aR.shoulder, foreL: aL.fore, foreR: aR.fore, legL: leg(-1), legR: leg(1), scarf };
 }
 
 const fmtDist = (m: number) => (m >= 1000 ? `${(m / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 2 })} km` : `${m} m`);
@@ -777,6 +785,12 @@ export function HeroStage({ game }: { game: HeroState }) {
       hero.legR.rotation.z += (P.legR - hero.legR.rotation.z) * damp;
       hero.torso.rotation.z += (P.torso - hero.torso.rotation.z) * damp;
 
+      // khăn quàng đỏ: bay nhanh thì khăn căng ngang ra sau, chậm thì rủ xuống — luôn phấp phới
+      const spdH = Math.hypot(h.vx, h.vy);
+      const sf = THREE.MathUtils.clamp(spdH / 26, 0, 1);
+      hero.scarf.rotation.z = -(0.12 + sf * 0.85) + Math.sin(now / 85) * 0.07 * (1 + sf * 1.6);
+      hero.scarf.rotation.x = Math.sin(now / 120) * 0.13;
+
       // squash & stretch: đáp nóc nhà thì nén người, vọt lên/đu nhanh thì giãn nhẹ
       let sy = 1;
       const sinceLand = now - h.landAt;
@@ -794,9 +808,9 @@ export function HeroStage({ game }: { game: HeroState }) {
       if (h.mode === 'swing' || h.mode === 'hang') {
         rope.visible = true;
         if (h.mode === 'hang') {
-          _hand.set(h.x - 0.1, h.y + 1.3, h.z); // treo ngược: sợi tơ nối vào chân đang móc phía trên đầu
+          _hand.set(h.x - 0.1, h.y + 1.45, h.z); // treo ngược: sợi tơ nối vào chân đang móc phía trên đầu
         } else {
-          _hand.set(h.x + 0.4, h.y + 1.3, h.z); // tay chibi ngắn: điểm bắn tơ hạ theo tỉ lệ mới
+          _hand.set(h.x + 0.4, h.y + 1.5, h.z); // người que tay dài: điểm bắn tơ ở bàn tay giơ cao
         }
         _anchor.set(h.ax, h.ay, h.az);
         const dist = _hand.distanceTo(_anchor);
