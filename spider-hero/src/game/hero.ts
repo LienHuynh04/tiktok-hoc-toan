@@ -55,7 +55,7 @@ export interface Spark {
   kind: 'spark' | 'heart' | 'poof';
 }
 
-export type HeroMode = 'run' | 'air' | 'swing';
+export type HeroMode = 'run' | 'air' | 'swing' | 'hang';
 
 export interface HeroScene {
   hero: {
@@ -150,6 +150,12 @@ export class HeroRoom {
   private nextIdleAt = 0;
   private totals = { flips: 0, storms: 0, jumps: 0, webShots: 0 };
 
+  // --- treo ngược trình diễn ---
+  private nextHangAt = Number.MAX_SAFE_INTEGER;
+  private hangFromX = 0;
+  private hangFromY = 0;
+  private pendingHang = false;
+
   constructor(
     private now0: number,
     private rng: () => number = Math.random,
@@ -193,6 +199,8 @@ export class HeroRoom {
     this.rotV = 0;
     this.runPhase = 0;
     this.modeSince = now;
+    this.nextHangAt = now + 12_000; // lần treo ngược đầu tiên sau ~12 giây
+    this.pendingHang = false;
   }
 
   // ---------------- vật lý ----------------
@@ -236,6 +244,26 @@ export class HeroRoom {
       this.rot *= 1 - 8 * dt;
       return;
     }
+    if (this.mode === 'hang') {
+      // Treo ngược dưới điểm bám: trượt mượt về vị trí treo, đung đưa nhẹ,
+      // hết giờ thì buông tay lộn một vòng lao tiếp.
+      const t = (now - this.modeSince) / GAME.hangMs;
+      if (t >= 1) {
+        this.release(Math.max(this.vx, 10.5), 1.2, now, false);
+        this.rotV = -5.2;
+        this.totals.flips++;
+        return;
+      }
+      const blend = Math.min(1, t / 0.16);
+      const ease = blend * blend * (3 - 2 * blend);
+      const sway = Math.sin((now - this.modeSince) / 430) * 0.85 * (1 - t * 0.35);
+      const hx = this.ax + 2.2 + sway;
+      const hy = this.ay - GAME.hangLen;
+      this.x = this.hangFromX + (hx - this.hangFromX) * ease;
+      this.y = this.hangFromY + (hy - this.hangFromY) * ease;
+      this.rot = Math.PI + Math.sin((now - this.modeSince) / 430) * 0.05;
+      return;
+    }
     if (this.mode === 'swing') {
       const alpha = -(GAME.gravity / this.len) * Math.sin(this.ang) - 0.03 * this.omg;
       this.omg += alpha * dt;
@@ -252,6 +280,17 @@ export class HeroRoom {
       this.z += (this.az * 0.3 - this.z) * Math.min(1, 2.2 * dt);
       this.rot = -this.ang * 0.4;
       if (this.ang > GAME.releaseAngle && this.omg > 0) {
+        // Đến lượt trình diễn: thay vì buông tơ bay tiếp, Hero bắt sợi tơ treo ngược
+        // (chỉ khi điểm bám đủ cao và sợi tơ đủ dài để treo an toàn).
+        if (now >= this.nextHangAt && this.ay >= GAME.hangMinAnchorY && this.len >= 14) {
+          this.mode = 'hang';
+          this.modeSince = now;
+          this.hangFromX = this.x;
+          this.hangFromY = this.y;
+          this.nextHangAt = now + GAME.hangEveryMs + this.rng() * 20_000;
+          this.pendingHang = true;
+          return;
+        }
         let vx = this.len * this.omg * Math.cos(this.ang);
         let vy = this.len * this.omg * Math.sin(this.ang);
         const sp = Math.hypot(vx, vy);
@@ -541,6 +580,16 @@ export class HeroRoom {
       out.push({ main: true, text: M(`Cả đội ơi, Hero đã bay được ${km} ki lô mét rồi! Thả tim tiếp để bay xa hơn nữa nhé!`) });
       this.pendingMilestone = 0;
     }
+    if (this.pendingHang) {
+      this.pendingHang = false;
+      this.bannerText = '🙃 Hero treo ngược ngắm phố!';
+      this.bannerUntil = now + 3600;
+      const lines = [
+        'Ối, Hero treo ngược ngắm phố nè cả nhà! Nhìn phố từ trên cao xuống đẹp ghê á!',
+        'Hero treo ngược một lát cho đỡ mỏi tay. Cả nhà thấy Hero ngầu chưa!',
+      ];
+      out.push({ main: true, text: M(lines[Math.floor(this.rng() * lines.length)]) });
+    }
     if (now >= this.nextIdleAt) {
       this.nextIdleAt = now + GAME.idleLineEveryMs;
       const lines = [
@@ -577,8 +626,8 @@ export class HeroRoom {
         y: this.y,
         z: this.z,
         rot: this.rot,
-        vx: this.mode === 'swing' ? this.len * this.omg * Math.cos(this.ang) : this.vx,
-        vy: this.mode === 'swing' ? this.len * this.omg * Math.sin(this.ang) : this.vy,
+        vx: this.mode === 'swing' ? this.len * this.omg * Math.cos(this.ang) : this.mode === 'hang' ? 0 : this.vx,
+        vy: this.mode === 'swing' ? this.len * this.omg * Math.sin(this.ang) : this.mode === 'hang' ? 0 : this.vy,
         mode: this.mode,
         ax: this.ax,
         ay: this.ay,

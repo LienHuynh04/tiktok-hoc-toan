@@ -715,7 +715,9 @@ export function HeroStage({ game }: { game: HeroState }) {
       const dRot = h.rot - prevRot;
       prevRot = h.rot;
       let targetRot: number;
-      if (h.mode === 'swing') {
+      if (h.mode === 'hang') {
+        targetRot = Math.PI + Math.sin(now / 430) * 0.06; // lộn ngược hẳn, đung đưa rất nhẹ
+      } else if (h.mode === 'swing') {
         targetRot = Math.atan2(-(h.ax - h.x), h.ay - h.y) * 0.85;
       } else if (h.mode === 'run') {
         targetRot = -0.10;
@@ -741,6 +743,15 @@ export function HeroStage({ game }: { game: HeroState }) {
         P.legL = -s * 0.95;
         P.legR = s * 0.95;
         P.torso = -0.14;
+      } else if (h.mode === 'hang') {
+        // treo ngược: hai tay buông thõng về phía mặt đất, một chân duỗi móc tơ, một chân co
+        P.armL = Math.PI - 0.35;
+        P.armR = Math.PI + 0.3;
+        P.foreL = -0.5;
+        P.foreR = -0.65;
+        P.legL = 0.12;
+        P.legR = 0.85;
+        P.torso = 0.03;
       } else if (h.mode === 'swing') {
         P.armR = Math.PI - 0.3; // tay phải giơ cao bám tơ
         P.foreR = -0.12;
@@ -779,14 +790,18 @@ export function HeroStage({ game }: { game: HeroState }) {
       const sxz = 1 + (1 - sy) * 0.7;
       hero.group.scale.set(sxz, sy, sxz);
 
-      // dây tơ chính khi đang đu: ống tơ võng theo lực căng + vết tơ ở điểm bám
-      if (h.mode === 'swing') {
+      // dây tơ chính khi đang đu/treo: ống tơ võng theo lực căng + vết tơ ở điểm bám
+      if (h.mode === 'swing' || h.mode === 'hang') {
         rope.visible = true;
-        _hand.set(h.x + 0.4, h.y + 1.3, h.z); // tay chibi ngắn: điểm bắn tơ hạ theo tỉ lệ mới
+        if (h.mode === 'hang') {
+          _hand.set(h.x - 0.1, h.y + 1.3, h.z); // treo ngược: sợi tơ nối vào chân đang móc phía trên đầu
+        } else {
+          _hand.set(h.x + 0.4, h.y + 1.3, h.z); // tay chibi ngắn: điểm bắn tơ hạ theo tỉ lệ mới
+        }
         _anchor.set(h.ax, h.ay, h.az);
         const dist = _hand.distanceTo(_anchor);
         const spd = Math.hypot(h.vx, h.vy);
-        const sag = THREE.MathUtils.clamp(dist * 0.055 - spd * 0.05, 0.12, 2.4); // bay nhanh = tơ căng, chậm = tơ võng
+        const sag = h.mode === 'hang' ? 0.1 : THREE.MathUtils.clamp(dist * 0.055 - spd * 0.05, 0.12, 2.4); // bay nhanh = tơ căng, chậm = tơ võng
         updateRope(_hand, _anchor, sag);
         splat.visible = true;
         splat.position.copy(_anchor);
@@ -939,6 +954,8 @@ export function HeroStage({ game }: { game: HeroState }) {
       if (prevMode && prevMode !== h.mode) {
         const spdNow = Math.hypot(h.vx, h.vy);
         if (h.mode === 'swing') sfx.thwip();
+        else if (h.mode === 'hang') sfx.whoosh(0.3);
+        else if (prevMode === 'hang' && h.mode === 'air') sfx.whoosh(0.55);
         else if (prevMode === 'swing' && h.mode === 'air') sfx.whoosh(Math.min(1, spdNow / 26));
         else if (prevMode === 'run' && h.mode === 'air') sfx.whoosh(0.35);
       }
@@ -1115,7 +1132,7 @@ export function HeroStage({ game }: { game: HeroState }) {
   }, []);
 
   const v = game.view;
-  const modeLabel = v?.mode === 'run' ? '🏃 Đang chạy nóc nhà' : v?.mode === 'swing' ? '🕸️ Đang đu tơ' : '🌀 Đang bay';
+  const modeLabel = v?.mode === 'run' ? '🏃 Đang chạy nóc nhà' : v?.mode === 'swing' ? '🕸️ Đang đu tơ' : v?.mode === 'hang' ? '🙃 Đang treo ngược ngắm phố' : '🌀 Đang bay';
   const nextPct = v?.nextTier ? Math.min(100, (v.nextTier.have / v.nextTier.cost) * 100) : 100;
 
   return (

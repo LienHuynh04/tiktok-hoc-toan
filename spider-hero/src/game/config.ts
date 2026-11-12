@@ -13,6 +13,10 @@ export const GAME = {
   anchorMaxAhead: 60,
   cruiseMin: 11, // buông tơ mà chậm hơn mức này thì được đẩy thêm cho khỏi rơi nhịp
   milestoneM: 500, // mỗi 500m MC chúc mừng một lần
+  hangEveryMs: 45_000, // tối thiểu giữa hai lần treo ngược trình diễn
+  hangMs: 2_200, // mỗi lần treo ngược kéo dài 2,2 giây
+  hangMinAnchorY: 28, // chỉ treo khi điểm bám đủ cao, tránh đụng nóc nhà bên dưới
+  hangLen: 4.6, // sợi tơ treo ngắn dưới điểm bám (m)
   idleLineEveryMs: 60_000,
   chatterMaxWaitMs: 60_000,
   giftLineMaxWaitMs: 30_000,

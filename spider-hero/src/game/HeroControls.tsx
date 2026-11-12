@@ -11,7 +11,7 @@ export function HeroControls({ view, stageCount }: { view: HeroView | null; stag
   if (!view) {
     return <p className="text-sm text-slate-400">Đang chờ trang stage chạy game… (mở link stage hoặc đợi vài giây)</p>;
   }
-  const modeText = { run: 'đang chạy nóc nhà', swing: 'đang đu tơ', air: 'đang bay' }[view.mode];
+  const modeText = { run: 'đang chạy nóc nhà', swing: 'đang đu tơ', air: 'đang bay', hang: 'đang treo ngược ngắm phố' }[view.mode];
   const fakeLike = (n: number) =>
     emitTest('like', { username: 'ban-test', nickname: 'Bạn Test', likeCount: n, totalLikes: 0 });
   return (
