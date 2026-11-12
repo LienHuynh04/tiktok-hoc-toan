@@ -1,6 +1,6 @@
 # Spider Hero — TikTok LIVE Interactive Game
 
-Game 3D tương tác cho TikTok LIVE: một siêu anh hùng **nguyên bản** (trang phục đỏ sẫm + xanh navy, mặt nạ, huy hiệu tia bạc — không dùng logo/thiết kế của thương hiệu nào) tự bay liên tục qua thành phố 3D: chạy trên nóc nhà, nhảy qua các toà, bắn tơ đu dây, lộn vòng giữa trời. Người xem điều khiển hiệu ứng bằng **thả tim**.
+Game 3D tương tác cho TikTok LIVE: một siêu anh hùng **nguyên bản** (dáng CHIBI đầu to: đầu đỏ trơn, mắt trắng lớn, thân đỏ tươi + tay chân xanh navy, huy hiệu tia bạc — không dùng logo/thiết kế của thương hiệu nào) tự bay liên tục qua thành phố 3D: chạy trên nóc nhà, nhảy qua các toà, bắn tơ đu dây, lộn vòng giữa trời. Người xem điều khiển hiệu ứng bằng **thả tim**.
 
 ## Cách chơi — bảng mốc LIKE
 

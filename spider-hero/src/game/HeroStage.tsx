@@ -87,7 +87,9 @@ function glowTexture(): THREE.Texture {
   });
 }
 
-// ---------- dựng hình Hero: anh hùng nguyên bản, đỏ sẫm + xanh navy, huy hiệu bạc ----------
+// ---------- dựng hình Hero: anh hùng NGUYÊN BẢN dáng chibi đầu to ----------
+// Đầu đỏ TRƠN (không kẻ mạng nhện, không logo hãng nào), mắt trắng to, thân ngắn
+// đỏ tươi, tay chân ngắn mập, huy hiệu tia bạc trên ngực — dấu hiệu riêng.
 interface HeroRig {
   group: THREE.Group;
   torso: THREE.Group;
@@ -101,8 +103,8 @@ interface HeroRig {
 
 function buildHero(): HeroRig {
   const S = 1.7; // phóng to 1.7 lần cho dễ nhìn trên sóng
-  const navy = new THREE.MeshStandardMaterial({ color: 0x1d2f52, roughness: 0.55, metalness: 0.1 });
-  const red = new THREE.MeshStandardMaterial({ color: 0x9e1b25, roughness: 0.5, metalness: 0.1 });
+  const navy = new THREE.MeshStandardMaterial({ color: 0x274069, roughness: 0.55, metalness: 0.1 });
+  const red = new THREE.MeshStandardMaterial({ color: 0xc22430, roughness: 0.45, metalness: 0.1 });
   const silver = new THREE.MeshStandardMaterial({ color: 0xd7dee8, roughness: 0.3, metalness: 0.85 });
   const lens = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xbfe3ff, emissiveIntensity: 0.7, roughness: 0.2 });
 
@@ -111,47 +113,53 @@ function buildHero(): HeroRig {
   torso.position.y = 0.1 * S;
   group.add(torso);
 
-  const chest = new THREE.Mesh(new THREE.CapsuleGeometry(0.30 * S, 0.42 * S, 6, 14), red);
-  chest.position.y = 0.42 * S;
+  // thân ngắn, tròn — dáng chibi
+  const chest = new THREE.Mesh(new THREE.CapsuleGeometry(0.30 * S, 0.22 * S, 6, 14), red);
+  chest.position.y = 0.34 * S;
   chest.castShadow = true;
   torso.add(chest);
   // huy hiệu tia bạc trên ngực — dấu hiệu riêng, không dùng logo của ai
-  const badge = new THREE.Mesh(new THREE.OctahedronGeometry(0.13 * S), silver);
-  badge.position.set(0, 0.52 * S, 0.30 * S);
+  const badge = new THREE.Mesh(new THREE.OctahedronGeometry(0.15 * S), silver);
+  badge.position.set(0, 0.42 * S, 0.29 * S);
   badge.scale.set(1, 1.5, 0.4);
   torso.add(badge);
   const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.30 * S, 0.32 * S, 0.10 * S, 14), silver);
-  belt.position.y = 0.02 * S;
+  belt.position.y = 0.04 * S;
   torso.add(belt);
 
+  // đầu TO (gần 40% chiều cao), đỏ trơn, mắt trắng lớn có viền navy
   const headG = new THREE.Group();
-  headG.position.y = 0.98 * S;
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.21 * S, 20, 16), navy);
+  headG.position.y = 0.84 * S;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.34 * S, 24, 18), red);
   head.castShadow = true;
   headG.add(head);
   for (const sx of [-1, 1]) {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.055 * S, 10, 8), lens);
-    eye.position.set(sx * 0.085 * S, 0.02 * S, 0.175 * S);
-    eye.scale.set(1.15, 0.75, 0.5);
+    const rimEye = new THREE.Mesh(new THREE.SphereGeometry(0.118 * S, 12, 10), navy);
+    rimEye.position.set(sx * 0.135 * S, 0.03 * S, 0.265 * S);
+    rimEye.scale.set(1.2, 1.5, 0.45);
+    headG.add(rimEye);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.102 * S, 12, 10), lens);
+    eye.position.set(sx * 0.135 * S, 0.03 * S, 0.285 * S);
+    eye.scale.set(1.2, 1.5, 0.45);
     headG.add(eye);
   }
   torso.add(headG);
 
   function arm(side: 1 | -1) {
     const shoulder = new THREE.Group();
-    shoulder.position.set(side * 0.38 * S, 0.72 * S, 0);
-    const upper = new THREE.Mesh(new THREE.CapsuleGeometry(0.085 * S, 0.30 * S, 4, 10), navy);
-    upper.position.y = -0.20 * S;
+    shoulder.position.set(side * 0.36 * S, 0.56 * S, 0);
+    const upper = new THREE.Mesh(new THREE.CapsuleGeometry(0.10 * S, 0.20 * S, 4, 10), navy);
+    upper.position.y = -0.15 * S;
     upper.castShadow = true;
     shoulder.add(upper);
     const fore = new THREE.Group();
-    fore.position.y = -0.40 * S;
-    const foreMesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.075 * S, 0.28 * S, 4, 10), navy);
-    foreMesh.position.y = -0.18 * S;
+    fore.position.y = -0.30 * S;
+    const foreMesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.09 * S, 0.18 * S, 4, 10), navy);
+    foreMesh.position.y = -0.13 * S;
     foreMesh.castShadow = true;
     fore.add(foreMesh);
-    const glove = new THREE.Mesh(new THREE.SphereGeometry(0.09 * S, 10, 8), red);
-    glove.position.y = -0.38 * S;
+    const glove = new THREE.Mesh(new THREE.SphereGeometry(0.115 * S, 10, 8), red);
+    glove.position.y = -0.28 * S;
     fore.add(glove);
     shoulder.add(fore);
     torso.add(shoulder);
@@ -159,13 +167,13 @@ function buildHero(): HeroRig {
   }
   function leg(side: 1 | -1) {
     const hip = new THREE.Group();
-    hip.position.set(side * 0.16 * S, -0.05 * S, 0);
-    const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.105 * S, 0.34 * S, 4, 10), navy);
-    thigh.position.y = -0.24 * S;
+    hip.position.set(side * 0.15 * S, -0.02 * S, 0);
+    const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.12 * S, 0.22 * S, 4, 10), navy);
+    thigh.position.y = -0.17 * S;
     thigh.castShadow = true;
     hip.add(thigh);
-    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.15 * S, 0.34 * S, 0.22 * S), red);
-    boot.position.set(0, -0.62 * S, 0.04 * S);
+    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.17 * S, 0.26 * S, 0.27 * S), red);
+    boot.position.set(0, -0.44 * S, 0.05 * S);
     boot.castShadow = true;
     hip.add(boot);
     torso.add(hip);
@@ -601,7 +609,7 @@ export function HeroStage({ game }: { game: HeroState }) {
       // dây tơ chính khi đang đu
       if (h.mode === 'swing') {
         rope.visible = true;
-        tmpA.set(h.x + 0.4, h.y + 1.6, h.z);
+        tmpA.set(h.x + 0.4, h.y + 1.3, h.z); // tay chibi ngắn hơn bản cũ nên điểm bắn tơ hạ xuống theo
         tmpB.set(h.ax, h.ay, h.az);
         const len = tmpA.distanceTo(tmpB);
         rope.position.copy(tmpA).add(tmpB).multiplyScalar(0.5);

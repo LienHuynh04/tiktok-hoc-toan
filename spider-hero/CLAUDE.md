@@ -1,7 +1,7 @@
 # Spider Hero — ghi chú cho phiên làm việc sau
 
 - Game 3D (Three.js) trong repo tiktok-hoc-toan, port **3024**. Khung live (server.ts, src/live/) copy từ dua-vit; engine riêng ở `src/game/hero.ts`, dữ liệu thành phố tất định ở `src/game/city3d.ts` (engine chọn điểm bám/nóc nhà và stage dựng mesh dùng CHUNG module này — sửa một bên phải khớp bên còn lại).
-- Nhân vật là anh hùng NGUYÊN BẢN (đỏ sẫm + navy, huy hiệu tia bạc): không logo, không hoạ tiết mạng nhện trên trang phục, không tên/nhân vật của Marvel hay hãng nào. Giữ nguyên tắc này khi sửa đồ hoạ.
+- Nhân vật là anh hùng NGUYÊN BẢN dáng chibi đầu to (đầu đỏ TRƠN, mắt trắng lớn viền navy, thân đỏ tươi, huy hiệu tia bạc): không logo, không hoạ tiết mạng nhện trên đầu/trang phục, không tên/nhân vật của Marvel hay hãng nào. Giữ nguyên tắc này khi sửa đồ hoạ.
 - Cơ chế lõi: quỹ LIKE chung + bảng mốc `LIKE_TIERS` trong config.ts (cost/cooldown/label). Bộ rút hiệu ứng trong `HeroRoom.schedule()`: gom batch 90ms, ưu tiên mốc đắt nhất đủ điều kiện, kiểm tra trạng thái bằng `fxStateOk()` (jump cần run, flip cần air/swing). Đừng phá các tính chất này — hero.check khoá chúng lại.
 - Vật lý: run (nóc nhà/mặt cầu) → air (đạn đạo) → swing (con lắc). Hai tầng an toàn chống rơi/quệt đất: `pickAnchor` chỉ chọn điểm mà vòng đu thấp nhất cách đất ≥ 8m (fallback điểm thoáng nhất) + trong lúc đu mà y < 8 thì tự buông tơ vọt lên. Trần tốc độ buông tơ 30 m/s.
 - Camera (HeroStage): vị trí = vị trí hero + offset mượt, điểm nhìn KHOÁ CỨNG theo hero + dự đoán vận tốc rất nhỏ (×0.045). Đừng quay lại kiểu lerp điểm nhìn độc lập — khung dọc hẹp + máy yếu là hero trôi khỏi khung ngay.
