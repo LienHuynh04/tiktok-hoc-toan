@@ -1,0 +1,19 @@
+/* Hiệu ứng chữ cho sân khấu Spider Hero */
+@keyframes hero-pop {
+  0% {
+    transform: translateX(-50%) scale(0.6);
+    opacity: 0;
+  }
+  55% {
+    transform: translateX(-50%) scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.hero-pop {
+  animation: hero-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}

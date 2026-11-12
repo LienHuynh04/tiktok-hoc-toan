@@ -1,0 +1,10 @@
+# Spider Hero — ghi chú cho phiên làm việc sau
+
+- Game 3D (Three.js) trong repo tiktok-hoc-toan, port **3024**. Khung live (server.ts, src/live/) copy từ dua-vit; engine riêng ở `src/game/hero.ts`, dữ liệu thành phố tất định ở `src/game/city3d.ts` (engine chọn điểm bám/nóc nhà và stage dựng mesh dùng CHUNG module này — sửa một bên phải khớp bên còn lại).
+- Nhân vật là anh hùng NGUYÊN BẢN (đỏ sẫm + navy, huy hiệu tia bạc): không logo, không hoạ tiết mạng nhện trên trang phục, không tên/nhân vật của Marvel hay hãng nào. Giữ nguyên tắc này khi sửa đồ hoạ.
+- Cơ chế lõi: quỹ LIKE chung + bảng mốc `LIKE_TIERS` trong config.ts (cost/cooldown/label). Bộ rút hiệu ứng trong `HeroRoom.schedule()`: gom batch 90ms, ưu tiên mốc đắt nhất đủ điều kiện, kiểm tra trạng thái bằng `fxStateOk()` (jump cần run, flip cần air/swing). Đừng phá các tính chất này — hero.check khoá chúng lại.
+- Vật lý: run (nóc nhà/mặt cầu) → air (đạn đạo) → swing (con lắc). Hai tầng an toàn chống rơi/quệt đất: `pickAnchor` chỉ chọn điểm mà vòng đu thấp nhất cách đất ≥ 8m (fallback điểm thoáng nhất) + trong lúc đu mà y < 8 thì tự buông tơ vọt lên. Trần tốc độ buông tơ 30 m/s.
+- Camera (HeroStage): vị trí = vị trí hero + offset mượt, điểm nhìn KHOÁ CỨNG theo hero + dự đoán vận tốc rất nhỏ (×0.045). Đừng quay lại kiểu lerp điểm nhìn độc lập — khung dọc hẹp + máy yếu là hero trôi khỏi khung ngay.
+- Stage vẽ bằng rAF đọc thẳng engine (`room.advance` + `room.scene` + `room.fxSince`); trang điều khiển xem trước qua ảnh chụp view (2.5fps) — giật ở bản xem trước là bình thường, bản stage thật mới là 60fps.
+- Quà chỉ cảm ơn (tim mới tạo hiệu ứng, và là hiệu ứng CHUNG theo quỹ của cả phòng). Nhạc gốc trong src/live/music.ts (TRACK, Dm–Bb–F–C 136 BPM) — không thay bằng nhạc ngoài.
+- Kiểm chứng trước khi push: `npm run check`, `npm run lint`, `npm run build`, và mở stage chụp màn hình thật (headless SwiftShader rất chậm ~3fps — đừng đánh giá độ mượt qua đó; đánh giá khung hình/bố cục thôi).
