@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { emitTest, sendControl } from '../live/page';
+import { fakeIdentity } from '../live/fakeNames';
 import type { StageView } from './useGame';
 import { GAME } from './config';
 
 // Nút riêng của Lớp Toán ở trang điều khiển: điều khiển ván + giả lập phòng đông để thử bot
-const TEN = ['lananh', 'minhtuan', 'bena', 'hoanglong', 'thutrang', 'quocbao99', 'duyanh', 'ngocanh', 'giahuy', 'khanhlinh', 'haiyen', 'ducanh'];
 const CHAT = ['khó quá cô ơi', 'tính sao vậy trời', 'hay quá', 'vào lớp', 'cô xinh quá', 'ủa là mấy', '???', 'hihi'];
-// Tên khách giả lập đặt theo dạng username (không ghi họ tên); quá 12 bạn thì thêm số sau cho khỏi trùng hẳn
-const fake = (i: number) => ({ username: `hs${i}`, nickname: `${TEN[i % TEN.length]}${i >= TEN.length ? Math.floor(i / TEN.length) : ''}`, avatar: '' });
+// Tên khách giả lập: bốc ngẫu nhiên không lặp từ kho FAKE_NAME_POOL (live/fakeNames.ts),
+// trông như username TikTok thường — không còn mẫu hs0/hs1 lộ bot.
 const shuffleWord = (w: string) => [...w].sort(() => Math.random() - 0.5).join('');
 
 export function GameControls({ view, stageCount = 0 }: { view: StageView | null; stageCount?: number }) {
@@ -31,7 +31,7 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
         return new Promise<void>((ok) =>
           setTimeout(async () => {
             // TikTok gắn giờ lúc gửi; tới tay bot có thể trễ tới 1,5 giây và lệch thứ tự
-            await emitTest('chat', { ...fake(i), comment, createTime: start + delay - Math.random() * 1500 }).catch(() => {});
+            await emitTest('chat', { ...fakeIdentity(), comment, createTime: start + delay - Math.random() * 1500 }).catch(() => {});
             setSent(++done);
             ok();
           }, delay),
@@ -96,14 +96,14 @@ export function GameControls({ view, stageCount = 0 }: { view: StageView | null;
         <Btn onClick={() => sendControl('custom', 'skip')}>⏭ Qua phần tiếp</Btn>
         <Btn onClick={() => sendControl('custom', 'newRound')}>🔄 Ván mới</Btn>
         <Btn onClick={() => sendControl('custom', 'resetQuestions')}>↻ Làm mới câu hỏi (giữ điểm)</Btn>
-        <Btn onClick={() => emitTest('chat', { ...fake(Math.floor(Math.random() * 50)), comment: view?.answer.toLowerCase() ?? '' })}>✅ 1 bạn trả lời đúng</Btn>
-        <Btn onClick={() => emitTest('chat', { ...fake(Math.floor(Math.random() * 50)), comment: 'vào lớp' })}>🙋 1 bạn vào lớp</Btn>
-        <Btn onClick={() => emitTest('gift', { ...fake(3), giftName: 'Hoa hồng', giftId: 1, diamondCount: 1, repeatCount: 1 })}>🌹 Hoa hồng (vào lớp)</Btn>
-        <Btn onClick={() => emitTest('gift', { ...fake(6), giftName: 'Cử chỉ thả tim', giftId: 3, diamondCount: 5, repeatCount: 1 })}>🫰 Thả tim (lên bàn đầu)</Btn>
-        <Btn onClick={() => emitTest('gift', { ...fake(7), giftName: 'Cỏ bốn lá', giftId: 4, diamondCount: 10, repeatCount: 1 })}>🍀 Cỏ bốn lá (Bảng May Mắn)</Btn>
-        <Btn onClick={() => emitTest('gift', { ...fake(4), giftName: 'Mũ', giftId: 2, diamondCount: 99, repeatCount: 1 })}>🎁 Quà to (thêm giờ)</Btn>
-        <Btn onClick={() => emitTest('like', { ...fake(5), likeCount: 300 })}>❤️ 300 tim</Btn>
-        <Btn onClick={() => emitTest('chat', { ...fake(Math.floor(Math.random() * 50)), comment: 'hôm nay sinh nhật con cô ơi' })}>🎂 Thử: 1 bạn báo sinh nhật</Btn>
+        <Btn onClick={() => emitTest('chat', { ...fakeIdentity(), comment: view?.answer.toLowerCase() ?? '' })}>✅ 1 bạn trả lời đúng</Btn>
+        <Btn onClick={() => emitTest('chat', { ...fakeIdentity(), comment: 'vào lớp' })}>🙋 1 bạn vào lớp</Btn>
+        <Btn onClick={() => emitTest('gift', { ...fakeIdentity(), giftName: 'Hoa hồng', giftId: 1, diamondCount: 1, repeatCount: 1 })}>🌹 Hoa hồng (vào lớp)</Btn>
+        <Btn onClick={() => emitTest('gift', { ...fakeIdentity(), giftName: 'Cử chỉ thả tim', giftId: 3, diamondCount: 5, repeatCount: 1 })}>🫰 Thả tim (lên bàn đầu)</Btn>
+        <Btn onClick={() => emitTest('gift', { ...fakeIdentity(), giftName: 'Cỏ bốn lá', giftId: 4, diamondCount: 10, repeatCount: 1 })}>🍀 Cỏ bốn lá (Bảng May Mắn)</Btn>
+        <Btn onClick={() => emitTest('gift', { ...fakeIdentity(), giftName: 'Mũ', giftId: 2, diamondCount: 99, repeatCount: 1 })}>🎁 Quà to (thêm giờ)</Btn>
+        <Btn onClick={() => emitTest('like', { ...fakeIdentity(), likeCount: 300 })}>❤️ 300 tim</Btn>
+        <Btn onClick={() => emitTest('chat', { ...fakeIdentity(), comment: 'hôm nay sinh nhật con cô ơi' })}>🎂 Thử: 1 bạn báo sinh nhật</Btn>
         <Btn onClick={() => sendControl('custom', 'recess:rps')}>✊ Ra chơi: oẳn tù tì</Btn>
         <Btn onClick={() => sendControl('custom', 'recess:callup')}>📢 Ra chơi: kiểm tra miệng</Btn>
         <Btn onClick={() => sendControl('custom', 'recess:pick')}>⚖️ Ra chơi: chọn phe</Btn>

@@ -1,12 +1,10 @@
 import { useState, type ReactNode } from 'react';
 import type { LiveStatus } from './types';
 import { emitTest, sendControl } from './page';
+import { fakeIdentity } from './fakeNames';
 
-const FAKE_NAMES = ['lananh', 'minhtuan', 'bena', 'hoanglong', 'thutrang', 'quocbao99', 'duyanh99', 'ngocanh'];
-const pick = () => {
-  const nickname = FAKE_NAMES[Math.floor(Math.random() * FAKE_NAMES.length)];
-  return { nickname, username: nickname.normalize('NFKD').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'khach' };
-};
+// Khách giả lập: bốc tên không lặp từ kho chung FAKE_NAME_POOL (fakeNames.ts)
+const pick = () => fakeIdentity();
 
 /**
  * Trang điều khiển (http://localhost:3007). Im lặng, không phát tiếng.
