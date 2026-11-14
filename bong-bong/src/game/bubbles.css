@@ -1,0 +1,125 @@
+/* Hiệu ứng riêng của Bong Bóng Avatar (tiền tố bb- để không đụng game khác) */
+
+/* Chữ hiệu ứng bay lên: "Nứt!", "+1 NỔ", lấp lánh */
+@keyframes bbFx {
+  0% { opacity: 0; transform: translate(-50%, -60%) scale(0.7); }
+  15% { opacity: 1; transform: translate(-50%, -100%) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -190%) scale(1); }
+}
+.bb-fx {
+  animation: bbFx 0.95s ease-out forwards;
+  text-shadow: 0 2px 0 #fff, 0 0 12px rgba(255, 255, 255, 0.9);
+}
+
+/* Banner nảy vào (bong bóng vàng, gió quạt, bảng nghỉ) */
+@keyframes bbPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.bb-pop {
+  animation: bbPop 0.35s ease-out;
+}
+
+/* Vòng nổ khi bong bóng vỡ: đặt ở tâm điểm nổ, giãn nở rồi tan */
+@keyframes bbBurst {
+  0% { transform: translate(-50%, -50%) scale(0.45); opacity: 0.95; }
+  100% { transform: translate(-50%, -50%) scale(1.55); opacity: 0; }
+}
+.bb-burst {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 9999px;
+  border: 5px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 22px rgba(150, 200, 255, 0.8), inset 0 0 18px rgba(255, 255, 255, 0.7);
+  animation: bbBurst 0.55s ease-out forwards;
+  pointer-events: none;
+}
+
+/* Giọt xà phòng văng ra khi nổ */
+@keyframes bbDrop {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+}
+.bb-drop {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.95), rgba(160, 205, 255, 0.55));
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  animation: bbDrop 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+/* Chữ truyện tranh "BỐP!" */
+@keyframes bbComic {
+  0% { transform: translate(-50%, -50%) scale(0.3) rotate(-10deg); opacity: 0; }
+  35% { transform: translate(-50%, -50%) scale(1.35) rotate(4deg); opacity: 1; }
+  60% { transform: translate(-50%, -50%) scale(1.1) rotate(-2deg); }
+  100% { transform: translate(-50%, -50%) scale(1.15) rotate(0deg); opacity: 0; }
+}
+.bb-comic {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: 'Patrick Hand', 'Be Vietnam Pro', sans-serif;
+  font-size: 58px;
+  font-weight: 700;
+  color: #d92b1f;
+  text-shadow: 0 3px 0 #fff, 0 0 14px rgba(255, 255, 255, 0.95);
+  animation: bbComic 0.9s ease-out forwards;
+  pointer-events: none;
+}
+
+/* Bong bóng tim trang trí khi có quà: nổi lên và tan dần */
+@keyframes bbHeart {
+  0% { transform: translate(-50%, -50%) translateY(10px) scale(0.6); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translateY(-120px) scale(1.1); opacity: 0; }
+}
+.bb-heart {
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.95), rgba(255, 182, 213, 0.35) 60%, rgba(255, 255, 255, 0.4));
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 10px rgba(190, 90, 130, 0.25);
+  animation: bbHeart 2.6s ease-out forwards;
+  pointer-events: none;
+}
+
+/* Chân Bug quệt vào từ góc dưới */
+@keyframes bbPawLeft {
+  0% { transform: translate(-130%, 30%) rotate(-24deg); opacity: 0; }
+  25% { opacity: 1; }
+  45% { transform: translate(-50%, -50%) rotate(6deg); }
+  70% { transform: translate(-42%, -56%) rotate(-8deg); }
+  100% { transform: translate(30%, 40%) rotate(10deg); opacity: 0; }
+}
+@keyframes bbPawRight {
+  0% { transform: translate(30%, 30%) rotate(24deg); opacity: 0; }
+  25% { opacity: 1; }
+  45% { transform: translate(-50%, -50%) rotate(-6deg); }
+  70% { transform: translate(-58%, -56%) rotate(8deg); }
+  100% { transform: translate(-130%, 40%) rotate(-10deg); opacity: 0; }
+}
+.bb-paw-left {
+  animation: bbPawLeft 1.4s ease-in-out forwards;
+}
+.bb-paw-right {
+  animation: bbPawRight 1.4s ease-in-out forwards;
+}
+
+/* Confetti ăn mừng thắng vòng */
+@keyframes bbConfettiFall {
+  0% { transform: translateY(-40px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(1990px) rotate(560deg); opacity: 0.9; }
+}
+.bb-confetti {
+  position: absolute;
+  top: 0;
+  width: 16px;
+  height: 26px;
+  border-radius: 3px;
+  animation: bbConfettiFall 2.8s ease-in forwards;
+}
