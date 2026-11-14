@@ -146,8 +146,8 @@ export function Dashboard({
               <Btn tone="ghost" onClick={() => emitTest('chat', { ...pick(), comment: 'Live hay quá' })}>
                 💬 Comment
               </Btn>
-              <Btn tone="ghost" onClick={() => emitTest('chat', { ...pick(), comment: 'ĐẨY' })}>
-                🐱 Gõ lệnh ĐẨY
+              <Btn tone="ghost" onClick={() => emitTest('chat', { ...pick(), comment: 'Cho mình một bong bóng!' })}>
+                🫧 Comment xin bong bóng
               </Btn>
               <Btn tone="ghost" onClick={() => emitTest('like', { ...pick(), likeCount: 300 })}>
                 ❤️ Thả 300 tim

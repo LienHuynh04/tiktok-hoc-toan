@@ -22,6 +22,7 @@ export type StageView = BubblesView;
 export function useBubbles() {
   const [status, setStatus] = useState<LiveStatus | null>(null);
   const [view, setView] = useState<StageView | null>(null);
+  const [bootError, setBootError] = useState<string | null>(null);
   const [lastGift, setLastGift] = useState<(GiftEvent & { at: number }) | null>(null);
   const [stageCount, setStageCount] = useState(0);
   const [channelName, setChannelName] = useState(GAME.defaultChannelName);
@@ -113,6 +114,9 @@ export function useBubbles() {
       if (c.action === 'custom' && c.text === 'fan_now') say(room.triggerFan(Date.now()));
       if (c.action === 'custom' && c.text === 'paw_now') say(room.triggerPaw(Date.now()));
       if (c.action === 'custom' && c.text === 'golden_now') say(room.forceGolden(Date.now()));
+      if (c.action === 'custom' && c.text === 'force_pop') say(room.debugForcePop(Date.now()));
+      if (c.action === 'custom' && c.text === 'ring_step') say(room.forceRingStep(Date.now()));
+      if (c.action === 'custom' && c.text === 'bomb_now') say(room.attachBomb(Date.now()));
       if (c.action === 'custom' && c.text === 'force_round_end') say(room.forceEndRound(Date.now()));
       if (c.action === 'custom' && c.text?.startsWith('sim_bubbles:')) {
         const n = Number(c.text.slice('sim_bubbles:'.length));
@@ -141,47 +145,85 @@ export function useBubbles() {
     let stop = false;
     const room = new BubblesRoom(Date.now());
     roomRef.current = room;
-    say(room.newSession(Date.now()));
+
+    // Chuỗi khởi động cũ là "tất cả hoặc không có gì": 1 lỗi đồng bộ bất kỳ (lời chào,
+    // nhạc, giọng đọc...) xảy ra TRƯỚC khi vòng chụp trạng thái được tạo sẽ giết cả
+    // engine trong im lặng — sân khấu đứng ở màn hình chờ mãi mà không có dấu vết gì.
+    // Nay: (1) vòng chụp trạng thái chạy TRƯỚC TIÊN và tự bọc lỗi, (2) từng phần phụ
+    // được cô lập bằng try/catch, (3) lỗi đầu tiên được ghi lại để hiện lên sân khấu —
+    // chụp màn hình gửi về là đọc được đúng lỗi thay vì đoán mò.
+    const noteError = (where: string, err: unknown) => {
+      console.error(`[bong-bong] ${where}:`, err);
+      setBootError((prev) => prev ?? `${where}: ${err instanceof Error ? err.message : String(err)}`);
+    };
+    const onWinError = (e: ErrorEvent) => noteError('Trang stage', e.error ?? e.message);
+    window.addEventListener('error', onWinError);
+
+    // 1) Vòng chụp trạng thái: sân khấu lên hình dù mọi phần phụ khác có lỗi.
+    // 100ms (thay vì 200ms như game theo lượt): bong bóng trôi liên tục cần ảnh chụp dày hơn cho mượt
+    let lastSent = 0;
+    const timer = setInterval(() => {
+      if (stop) return;
+      const now = Date.now();
+      try {
+        say(room.tick(now));
+        flushChatter(room, now);
+        music.setDucked(voice.busy); // MC đang đọc thì nhạc tự nhỏ xuống
+        dirty.current = true;
+        setView(room.view(now));
+        if (now - lastSent >= 400) {
+          lastSent = now;
+          fetch('/api/game/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(room.view(now)) }).catch(() => {});
+        }
+      } catch (err) {
+        noteError('Vòng chạy game', err);
+      }
+    }, 100);
+
+    // 2) Phần phụ, mỗi phần tự chịu lỗi của mình, không được giết engine.
+    try {
+      say(room.newSession(Date.now()));
+    } catch (err) {
+      noteError('Lời chào mở sân', err);
+    }
     // Nhạc nền bật sẵn; 1 lần chạm/click đầu tiên trên stage mở khoá CẢ nhạc lẫn giọng đọc
     // (trình duyệt chặn tự phát tiếng trước tương tác) — watchdog thử lại liên tục như các phòng khác.
-    music.setVolume(room.musicVolume);
-    music.setEnabled(room.musicOn);
+    try {
+      music.setVolume(room.musicVolume);
+      music.setEnabled(room.musicOn);
+    } catch (err) {
+      noteError('Nhạc nền', err);
+    }
     const unlock = () => {
-      music.resume();
-      voice.kick();
+      try {
+        music.resume();
+        voice.kick();
+      } catch {
+        /* mở khoá tiếng lỗi 1 lần: lần chạm sau thử lại */
+      }
     };
     window.addEventListener('pointerdown', unlock);
     window.addEventListener('focus', unlock);
     document.addEventListener('visibilitychange', unlock);
     const watchdog = setInterval(unlock, 1500);
-    let lastSent = 0;
-    // 100ms (thay vì 200ms như game theo lượt): bong bóng trôi liên tục cần ảnh chụp dày hơn cho mượt
-    const timer = setInterval(() => {
-      if (stop) return;
-      const now = Date.now();
-      say(room.tick(now));
-      flushChatter(room, now);
-      music.setDucked(voice.busy); // MC đang đọc thì nhạc tự nhỏ xuống
-      dirty.current = true;
-      setView(room.view(now));
-      if (now - lastSent >= 400) {
-        lastSent = now;
-        fetch('/api/game/state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(room.view(now)) }).catch(() => {});
-      }
-    }, 100);
     return () => {
       stop = true;
       clearInterval(timer);
       clearInterval(watchdog);
+      window.removeEventListener('error', onWinError);
       window.removeEventListener('pointerdown', unlock);
       window.removeEventListener('focus', unlock);
       document.removeEventListener('visibilitychange', unlock);
-      music.setEnabled(false);
+      try {
+        music.setEnabled(false);
+      } catch {
+        /* dọn dẹp lúc tắt trang: bỏ qua */
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { status, view, lastGift, stageCount, channelName };
+  return { status, view, lastGift, stageCount, channelName, bootError };
 }
 
 export type BubblesState = ReturnType<typeof useBubbles>;

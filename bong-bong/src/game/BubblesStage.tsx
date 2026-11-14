@@ -1,7 +1,7 @@
 import { useMemo, type CSSProperties } from 'react';
 import './bubbles.css';
 import type { BubblesState } from './useBubbles';
-import type { BubbleView } from './bubbles';
+import type { BubbleView, PoolView } from './bubbles';
 
 /** Khung "kính kem" dùng chung cả sân khấu (phong cách nhà mới, như Đại Náo) */
 const GLASS: CSSProperties = {
@@ -36,6 +36,19 @@ function BubbleBall({ b }: { b: BubbleView }) {
       }}
     >
       <div className="relative" style={{ width: d, height: d }}>
+        {/* vành mục tiêu: bong bóng to nhất sân bị cả phòng săn */}
+        {b.bounty && (
+          <div className="bb-bounty absolute rounded-full" style={{ inset: -12, border: '4px dashed rgba(229,72,46,0.9)' }} />
+        )}
+        {/* huy hiệu bom hẹn giờ đang ôm */}
+        {b.bomb && (
+          <div
+            className="absolute z-10 flex items-center gap-[3px] rounded-full px-[9px] py-[2px] text-[20px] font-black text-white shadow"
+            style={{ left: -18, top: -18, backgroundColor: '#37474f', border: '2px solid rgba(255,255,255,0.85)' }}
+          >
+            💣 {b.bombSec}
+          </div>
+        )}
         {/* vành cầu vồng mỏng của màng xà phòng */}
         <div
           className="absolute inset-0 rounded-full"
@@ -111,14 +124,103 @@ function BubbleBall({ b }: { b: BubbleView }) {
           </div>
         )}
       </div>
-      {/* tên + hệ số to */}
+      {/* tên + hệ số to (mục tiêu có thêm thẻ đỏ: nới khung cho đủ tên) */}
       <div
-        className="relative z-10 flex max-w-[230px] items-center gap-[6px] rounded-full px-[11px] py-[1px] text-[20px] font-extrabold leading-tight shadow"
-        style={{ ...GLASS, marginTop: -12 }}
+        className="relative z-10 flex items-center gap-[6px] rounded-full px-[11px] py-[1px] text-[20px] font-extrabold leading-tight shadow"
+        style={{ ...GLASS, marginTop: -12, maxWidth: b.bounty ? 360 : 230 }}
       >
+        {b.bounty && (
+          <span className="whitespace-nowrap rounded-full px-[8px] text-[16px] text-white" style={{ backgroundColor: '#e5482e' }}>
+            🎯 MỤC TIÊU
+          </span>
+        )}
         <span className="truncate">{b.nickname}</span>
         {b.growth > 1.05 && <span className="whitespace-nowrap text-[17px] text-[#b8860b]">×{b.growth.toFixed(2).replace(/0$/, '')}</span>}
         {b.cracks > 0 && <span className="whitespace-nowrap text-[16px] text-[#b03a2e]">✸{b.cracks}</span>}
+      </div>
+    </div>
+  );
+}
+
+/** Avatar trong hồ người vỡ: đĩa avatar/chữ cái, mặt Bug khi vỡ hiếm, dù khi đang rơi */
+function PoolAvatar({ e }: { e: PoolView }) {
+  const d = 62;
+  const initial = (e.nickname.trim()[0] ?? '?').toUpperCase();
+  const disc = (
+    <div className="relative shrink-0 overflow-hidden rounded-full shadow" style={{ width: d, height: d, border: '2.5px solid rgba(255,255,255,0.9)' }}>
+      <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: `hsl(${e.hue} 82% 86%)` }}>
+        <span className="font-black" style={{ fontSize: d * 0.4, color: `hsl(${e.hue} 55% 32%)` }}>
+          {initial}
+        </span>
+      </div>
+      {e.avatar && (
+        <img
+          src={e.avatar}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          draggable={false}
+          onError={(ev) => {
+            (ev.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      )}
+      {e.bugFace && (
+        <img
+          src="/assets/bug.png"
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          draggable={false}
+          onError={(ev) => {
+            (ev.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      )}
+    </div>
+  );
+  return (
+    <div className="absolute z-30 flex flex-col items-center" style={{ left: e.x, top: e.y, transform: 'translate(-50%, -50%)' }}>
+      {e.state === 'falling' && (
+        <div className="bb-sway flex flex-col items-center">
+          {/* tán dù sọc đỏ trắng */}
+          <div
+            style={{
+              width: 96,
+              height: 46,
+              borderRadius: '96px 96px 0 0',
+              background: 'repeating-linear-gradient(90deg, #e5482e 0 16px, #fff6ec 16px 32px)',
+              border: '2px solid rgba(122,84,50,0.4)',
+              boxShadow: '0 4px 10px rgba(91,58,30,0.25)',
+            }}
+          />
+          <div className="flex w-[76px] justify-between" style={{ marginTop: -2 }}>
+            <span style={{ width: 2, height: 16, backgroundColor: 'rgba(91,58,30,0.55)' }} />
+            <span style={{ width: 2, height: 16, backgroundColor: 'rgba(91,58,30,0.55)' }} />
+          </div>
+          {disc}
+        </div>
+      )}
+      {e.state === 'spin' && (
+        <div className="relative">
+          <div className="bb-spin">{disc}</div>
+          <span className="absolute text-[22px]" style={{ left: -14, top: -12 }}>
+            ✨
+          </span>
+          <span className="absolute text-[18px]" style={{ right: -12, bottom: -8 }}>
+            ✨
+          </span>
+        </div>
+      )}
+      {e.state === 'pooled' && (
+        <>
+          {disc}
+          <div className="rounded-full" style={{ width: 84, height: 15, marginTop: -7, backgroundColor: 'rgba(120,180,230,0.4)', filter: 'blur(2px)' }} />
+        </>
+      )}
+      <div
+        className="mt-[3px] max-w-[120px] truncate rounded-full px-[8px] text-[16px] font-extrabold leading-tight shadow"
+        style={{ ...GLASS, paddingTop: 0, paddingBottom: 0 }}
+      >
+        {e.nickname}
       </div>
     </div>
   );
@@ -139,7 +241,21 @@ export function BubblesStage({ game }: { game: BubblesState }) {
   if (!v) {
     return (
       <div className="relative h-[1920px] w-[1080px] overflow-hidden font-sans select-none" style={{ background: 'linear-gradient(180deg, #dceefb 0%, #f6f0e1 55%, #efe3cb 100%)', color: '#5b3a1e' }}>
-        <div className="flex h-full items-center justify-center text-[38px] font-bold">Đang thổi bong bóng… 🫧</div>
+        <div className="flex h-full flex-col items-center justify-center gap-[20px] px-[70px] text-center">
+          <div className="text-[38px] font-bold">Đang thổi bong bóng… 🫧</div>
+          {game.bootError ? (
+            <div className="rounded-[18px] px-[24px] py-[16px]" style={{ ...GLASS, color: '#a33327' }}>
+              <div className="text-[25px] font-extrabold">⚠ Có lỗi khi mở sân: {game.bootError}</div>
+              <div className="mt-[6px] text-[21px] font-semibold" style={{ color: '#7a5a3e' }}>
+                Chụp màn hình dòng lỗi này gửi chủ kênh để sửa đúng chỗ nhé.
+              </div>
+            </div>
+          ) : (
+            <div className="text-[23px] font-semibold" style={{ color: '#8a6a52' }}>
+              Nếu dòng này đứng yên quá 10 giây, hãy tải lại trang stage một lần.
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -175,6 +291,11 @@ export function BubblesStage({ game }: { game: BubblesState }) {
             {v.goldenName && (
               <div className="bb-pop mt-[10px] w-fit rounded-full px-[18px] py-[5px] text-[23px] font-extrabold shadow" style={{ backgroundColor: 'rgba(255,232,150,0.92)', border: '1.5px solid rgba(190,140,20,0.6)', color: '#7a5200' }}>
                 ✨ Bong bóng vàng: {v.goldenName} — không ai làm nứt được!
+              </div>
+            )}
+            {v.bomb && (
+              <div className="bb-pop mt-[10px] w-fit rounded-full px-[18px] py-[5px] text-[23px] font-extrabold shadow" style={{ backgroundColor: 'rgba(255,214,200,0.95)', border: '1.5px solid rgba(200,80,50,0.6)', color: '#9c3318' }}>
+                💣 {v.bubbles.find((b) => b.username === v.bomb?.username)?.nickname ?? 'Ai đó'} đang ôm bom — còn {v.bomb.sec}s!
               </div>
             )}
             {v.gustDir !== null && (
@@ -219,6 +340,27 @@ export function BubblesStage({ game }: { game: BubblesState }) {
 
       {/* ===== Lớp bong bóng + chân Bug + hiệu ứng ===== */}
       <div className="pointer-events-none absolute inset-0 z-20">
+        {/* Vòng gió đang thu hẹp: ở ngoài vòng lâu sẽ nứt dần */}
+        {v.ring && (
+          <div
+            className="bb-ring absolute rounded-full"
+            style={{
+              left: v.ring.cx - v.ring.r,
+              top: v.ring.cy - v.ring.r,
+              width: v.ring.r * 2,
+              height: v.ring.r * 2,
+              border: '5px solid rgba(255,110,80,0.8)',
+              transition: 'left 900ms ease, top 900ms ease, width 900ms ease, height 900ms ease',
+            }}
+          >
+            <div
+              className="absolute left-1/2 top-[12px] -translate-x-1/2 whitespace-nowrap rounded-full px-[15px] py-[3px] text-[21px] font-extrabold shadow"
+              style={{ backgroundColor: 'rgba(255,224,214,0.95)', border: '1.5px solid rgba(200,80,50,0.55)', color: '#9c3318' }}
+            >
+              🌀 VÒNG GIÓ ĐANG THU HẸP
+            </div>
+          </div>
+        )}
         {v.bubbles.map((b) => (
           <BubbleBall key={b.username} b={b} />
         ))}
@@ -249,6 +391,29 @@ export function BubblesStage({ game }: { game: BubblesState }) {
           </div>
         )}
 
+        {/* Hồ người vỡ: dải nước + nhãn + các avatar chờ hồi sinh */}
+        {v.pool.length > 0 && (
+          <>
+            <div
+              className="absolute rounded-[26px]"
+              style={{
+                left: 24,
+                right: 24,
+                top: 1492,
+                height: 128,
+                background: 'linear-gradient(180deg, rgba(140,195,240,0.30), rgba(90,150,220,0.45))',
+                border: '2px solid rgba(255,255,255,0.65)',
+              }}
+            />
+            <div className="absolute rounded-full px-[14px] py-[3px] text-[20px] font-extrabold shadow" style={{ ...GLASS, left: 34, top: 1458 }}>
+              🏊 HỒ NGƯỜI VỠ — chờ hồi sinh
+            </div>
+          </>
+        )}
+        {v.pool.map((e) => (
+          <PoolAvatar key={e.username} e={e} />
+        ))}
+
         {/* Hiệu ứng chữ + nổ */}
         {v.effects.map((fx) => {
           if (fx.kind === 'pop') {
@@ -266,6 +431,39 @@ export function BubblesStage({ game }: { game: BubblesState }) {
                   );
                 })}
                 <div className="bb-comic">BỐP!</div>
+              </div>
+            );
+          }
+          if (fx.kind === 'fish') {
+            return (
+              <div key={fx.id} className="absolute z-40" style={{ left: fx.x, top: fx.y, width: 0, height: 0 }}>
+                {Array.from({ length: 7 }, (_, k) => (
+                  <span
+                    key={k}
+                    className="bb-fishfall absolute text-[34px]"
+                    style={{ left: (k - 3) * 36, top: -24 - (k % 3) * 18, animationDelay: `${k * 0.09}s` }}
+                  >
+                    🐟
+                  </span>
+                ))}
+              </div>
+            );
+          }
+          if (fx.kind === 'confetti') {
+            return (
+              <div key={fx.id} className="absolute z-40" style={{ left: fx.x, top: fx.y, width: 0, height: 0 }}>
+                {Array.from({ length: 9 }, (_, k) => (
+                  <span
+                    key={k}
+                    className="bb-confetti-piece"
+                    style={{
+                      left: (k - 4) * 26,
+                      top: -16 - (k % 3) * 14,
+                      backgroundColor: ['#f7c948', '#f0a13c', '#ffe98a', '#e5482e', '#f7c948'][k % 5],
+                      animationDelay: `${k * 0.07}s`,
+                    }}
+                  />
+                ))}
               </div>
             );
           }
@@ -338,6 +536,16 @@ export function BubblesStage({ game }: { game: BubblesState }) {
         </div>
       )}
 
+      {/* Chẩn đoán lỗi phụ (nếu có): hiện nhỏ để chụp gửi chủ kênh, game vẫn chạy */}
+      {game.bootError && (
+        <div
+          className="absolute bottom-[228px] left-[26px] z-30 max-w-[720px] rounded-[14px] px-[14px] py-[8px] text-[19px] font-semibold shadow"
+          style={{ ...GLASS, color: '#a33327' }}
+        >
+          ⚠ {game.bootError}
+        </div>
+      )}
+
       {/* ===== Chân trang: luật chơi (kính kem) ===== */}
       <div className="absolute inset-x-0 bottom-0 z-30 px-[26px] pb-[20px]">
         <div className="rounded-[22px] px-[20px] py-[14px]" style={GLASS}>
@@ -353,8 +561,9 @@ export function BubblesStage({ game }: { game: BubblesState }) {
             </span>
           </div>
           <div className="mt-[8px] text-center text-[21px] font-semibold leading-snug" style={{ color: '#7a5a3e' }}>
-            Bong bóng chỉ to bằng tim và chat của chính chủ (tối đa ×2,2). Ba vết nứt là nổ BỐP — bong bóng vàng không ai làm nứt được. Quà chỉ để
-            cảm ơn: bong bóng tim bay trang trí, không to thêm, không chống nứt.
+            Bong bóng chỉ to bằng tim và chat của chính chủ (tối đa ×2,2). Ba vết nứt là nổ BỐP — avatar nhảy dù xuống hồ người vỡ chờ hồi sinh.
+            Nửa sau vòng có vòng gió thu hẹp, bom chuyền 10 giây và mục tiêu to nhất bị săn điểm đôi. Quà chỉ để cảm ơn: bong bóng tim bay trang
+            trí, không to thêm, không chống nứt.
           </div>
         </div>
       </div>

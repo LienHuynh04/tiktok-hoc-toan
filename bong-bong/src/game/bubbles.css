@@ -123,3 +123,66 @@
   border-radius: 3px;
   animation: bbConfettiFall 2.8s ease-in forwards;
 }
+
+/* VỠ LẠ: avatar bị văng ra xoay chóng mặt */
+@keyframes bbSpin {
+  to { transform: rotate(360deg); }
+}
+.bb-spin {
+  animation: bbSpin 0.8s linear infinite;
+}
+
+/* VỠ LẠ: dù + avatar đung đưa khi rơi */
+@keyframes bbSway {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+.bb-sway {
+  animation: bbSway 1.6s ease-in-out infinite;
+  transform-origin: 50% 0;
+}
+
+/* VỠ HIẾM mưa cá: cá rơi xuống quanh điểm nổ */
+@keyframes bbFishFall {
+  0% { transform: translateY(-14px) rotate(-14deg); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(165px) rotate(150deg); opacity: 0; }
+}
+.bb-fishfall {
+  animation: bbFishFall 1.5s ease-in forwards;
+  pointer-events: none;
+}
+
+/* VỠ HIẾM confetti vàng: mảnh giấy rơi tại điểm nổ */
+@keyframes bbConfettiPiece {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(180px) rotate(320deg); opacity: 0; }
+}
+.bb-confetti-piece {
+  position: absolute;
+  width: 15px;
+  height: 22px;
+  border-radius: 3px;
+  animation: bbConfettiPiece 1.5s ease-in forwards;
+  pointer-events: none;
+}
+
+/* GÂY CẤN: vòng gió phát sáng nhịp thở */
+@keyframes bbRingPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 110, 80, 0.30), inset 0 0 60px rgba(255, 110, 80, 0.15); }
+  50% { box-shadow: 0 0 0 12px rgba(255, 110, 80, 0.10), inset 0 0 95px rgba(255, 110, 80, 0.26); }
+}
+.bb-ring {
+  animation: bbRingPulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* GÂY CẤN: vành mục tiêu to nhất nhấp nháy nhẹ */
+@keyframes bbBountyPulse {
+  0%, 100% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(1.05); opacity: 0.65; }
+}
+.bb-bounty {
+  animation: bbBountyPulse 1.2s ease-in-out infinite;
+  pointer-events: none;
+}

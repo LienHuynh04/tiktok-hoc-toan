@@ -59,6 +59,7 @@ interface Bubble {
   lastLikeAt: number;
   maxAnnounced: boolean;
   hue: number;
+  outsideMs: number; // thời gian liên tục ở ngoài vòng gió (gây cấn)
 }
 
 interface Fx {
@@ -66,9 +67,29 @@ interface Fx {
   x: number;
   y: number;
   text: string;
-  kind: 'pop' | 'crack' | 'sparkle' | 'grow';
+  kind: 'pop' | 'crack' | 'sparkle' | 'grow' | 'fish' | 'confetti';
   size: number;
   until: number;
+}
+
+/** Ba biến thể vỡ hiếm */
+export type RareKind = 'fish' | 'bugface' | 'confetti';
+
+/** Một avatar trong "hồ người vỡ": bị văng ra khỏi bong bóng, nhảy dù xuống hồ, chờ hồi sinh */
+interface PoolEntry {
+  username: string;
+  nickname: string;
+  spoken: string;
+  avatar: string;
+  hue: number;
+  x: number;
+  y: number;
+  state: 'spin' | 'falling' | 'pooled';
+  spinUntil: number;
+  bugFaceUntil: number;
+  rare: RareKind | null;
+  poppedAt: number;
+  seed: number;
 }
 
 interface Heart {
@@ -99,6 +120,21 @@ export interface BubbleView {
   crown: boolean;
   hue: number;
   wob: number;
+  bomb: boolean; // đang ôm bom hẹn giờ
+  bombSec: number; // giây đếm ngược còn lại của quả bom (0 nếu không ôm bom)
+  bounty: boolean; // đang là mục tiêu to nhất sân
+}
+
+export interface PoolView {
+  username: string;
+  nickname: string;
+  avatar: string;
+  hue: number;
+  x: number;
+  y: number;
+  state: 'spin' | 'falling' | 'pooled';
+  bugFace: boolean;
+  rare: RareKind | null;
 }
 
 export interface BubblesView {
@@ -112,6 +148,10 @@ export interface BubblesView {
   paw: { x: number; y: number; side: 'left' | 'right' } | null;
   gustDir: number | null;
   goldenName: string | null;
+  pool: PoolView[];
+  ring: { cx: number; cy: number; r: number } | null;
+  bomb: { username: string; sec: number } | null;
+  bountyUser: string | null;
   lastWinner: string | null;
   celebration: 'roundwin' | null;
   aliveReal: number;
@@ -162,6 +202,18 @@ export class BubblesRoom {
   private lastIdleLineAt: number;
   private idleLineIdx = 0;
   private botIdx = 0;
+  // Vỡ lạ
+  private pool: PoolEntry[] = [];
+  // Gây cấn: vòng gió
+  private ringActive = false;
+  private ringR = GAME.ringStartR;
+  private ringNextAt: number;
+  // Gây cấn: bom chuyền
+  private bomb: { carrier: string; endsAt: number; lastTransferAt: number; warned3s: boolean } | null = null;
+  private nextBombAt: number;
+  // Gây cấn: mục tiêu to nhất (chấm lại định kỳ, không nhấp nháy theo từng khung)
+  private bountyUser: string | null = null;
+  private bountyReevalAt = 0;
 
   constructor(now: number, private rng: () => number = Math.random) {
     this.lastTickAt = now;
@@ -170,6 +222,8 @@ export class BubblesRoom {
     this.nextFanAt = now + GAME.fanEveryMs;
     this.nextGoldenAt = now + GAME.goldenEveryMs;
     this.nextPawAt = now + GAME.pawFirstMs;
+    this.ringNextAt = now + GAME.ringGraceMs;
+    this.nextBombAt = now + GAME.bombFirstMs;
   }
 
   // ---------- Tiện ích ----------
@@ -262,7 +316,11 @@ export class BubblesRoom {
       lastLikeAt: -Infinity,
       maxAnnounced: false,
       hue: hashHue(p.username),
+      outsideMs: 0,
     };
+    // Lên sân lại = rời hồ người vỡ
+    const pi = this.pool.findIndex((e) => e.username === p.username);
+    if (pi >= 0) this.pool.splice(pi, 1);
     this.bubbles.set(p.username, b);
     this.totalSpawns++;
     if (!bot) {
@@ -337,18 +395,84 @@ export class BubblesRoom {
 
   private popBubble(victim: Bubble, scorer: Bubble | null, now: number) {
     const r = radiusOf(victim.growth);
+    const vx = victim.x;
+    const vy = victim.y;
+    const wasBounty = victim.username === this.bountyUser;
     this.bubbles.delete(victim.username);
+    if (this.bomb && this.bomb.carrier === victim.username) {
+      this.bomb = null;
+      this.scheduleNextBomb(now);
+    }
     if (!victim.bot) this.lockout.set(victim.username, now + GAME.respawnLockMs);
     this.pairCd.forEach((_v, k) => {
       if (k.includes(victim.username)) this.pairCd.delete(k);
     });
     this.totalPops++;
-    this.addFx(victim.x, victim.y, 'BỐP!', 'pop', now, r * 2, GAME.popShowMs);
-    if (scorer && !scorer.bot && scorer.username !== victim.username) {
-      const pts = scorer.goldenUntil > now ? 2 : 1;
-      this.stat(scorer.username, scorer.nickname).pops += pts;
-      this.addFx(scorer.x, scorer.y - radiusOf(scorer.growth) - 20, `+${pts} NỔ`, 'grow', now);
+    this.addFx(vx, vy, 'BỐP!', 'pop', now, r * 2, GAME.popShowMs);
+
+    // VỠ HIẾM: 10% lần nổ của người thật (rng tất định trong kiểm chứng)
+    let rare: RareKind | null = null;
+    if (!victim.bot && this.rng() < GAME.rareChance) {
+      const roll = this.rng();
+      rare = roll < 1 / 3 ? 'fish' : roll < 2 / 3 ? 'bugface' : 'confetti';
+      if (rare === 'fish') this.addFx(vx, vy, '🐟', 'fish', now, r * 2, 1700);
+      if (rare === 'confetti') this.addFx(vx, vy, '🎉', 'confetti', now, r * 2, 1700);
     }
+
+    const hasScorer = !!(scorer && !scorer.bot && scorer.username !== victim.username);
+    if (hasScorer) {
+      // Điểm nổ: đang vàng x2, vỡ hiếm x2, hạ đúng mục tiêu x2 — chồng nhau nhưng trần x4
+      let mult = 1;
+      if (scorer!.goldenUntil > now) mult *= 2;
+      if (rare) mult *= 2;
+      if (wasBounty) mult *= 2;
+      if (mult > 4) mult = 4;
+      this.stat(scorer!.username, scorer!.nickname).pops += mult;
+      this.addFx(scorer!.x, scorer!.y - radiusOf(scorer!.growth) - 20, `+${mult} NỔ`, 'grow', now);
+      // HẤP THỤ: người làm nổ nhận 30% phần to vượt mức gốc của nạn nhân (vẫn trần x2,2)
+      const absorb = (victim.growth - 1) * GAME.absorbRate;
+      if (absorb > 0) for (const s of this.grow(scorer!, absorb, now)) this.say(s);
+    }
+
+    if (!victim.bot) {
+      if (rare) {
+        this.say({
+          text: F(
+            `VỠ HIẾM! Bong bóng của ${victim.spoken} vừa nổ theo kiểu hiếm có khó tìm${
+              hasScorer ? `, ${scorer!.spoken} được tính điểm gấp đôi cho cú nổ này` : ''
+            }! Cả phòng chứng kiến khoảnh khắc hiếm đấy!`,
+          ),
+          priority: true,
+        });
+      } else if (hasScorer) {
+        this.say({ text: F(`Bốp! Bong bóng của ${victim.spoken} nổ rồi — ${scorer!.spoken} là người làm nổ đấy!`) });
+      } else {
+        this.say({ text: F(`Bốp! Bong bóng của ${victim.spoken} nổ tung rồi!`) });
+      }
+
+      // HỒ NGƯỜI VỠ: avatar KHÔNG biến mất — bị văng ra, xoay chóng mặt, mở dù rơi xuống hồ
+      this.pool = this.pool.filter((e) => e.username !== victim.username);
+      this.pool.unshift({
+        username: victim.username,
+        nickname: victim.nickname,
+        spoken: victim.spoken,
+        avatar: victim.avatar,
+        hue: victim.hue,
+        x: vx,
+        y: vy,
+        state: 'spin',
+        spinUntil: now + (rare === 'bugface' ? GAME.bugFaceMs : GAME.spinMs),
+        bugFaceUntil: rare === 'bugface' ? now + GAME.bugFaceMs : 0,
+        rare,
+        poppedAt: now,
+        seed: this.rng() * 10,
+      });
+      if (this.pool.length > GAME.poolCap) this.pool.length = GAME.poolCap;
+    }
+  }
+
+  private scheduleNextBomb(now: number) {
+    this.nextBombAt = now + GAME.bombEveryMinMs + this.rng() * (GAME.bombEveryMaxMs - GAME.bombEveryMinMs);
   }
 
   // ---------- Sự kiện máy ----------
@@ -395,8 +519,76 @@ export class BubblesRoom {
     return [{ text: F(`Ối, chân của Bug từ đâu thò ra quệt một cái! Bong bóng to nhất của ${target.spoken} bị cào trúng, nứt liền hai vết!`), priority: true }];
   }
 
+  /** Gắn bom hẹn giờ vào 1 bong bóng người thật ngẫu nhiên (bom KHÔNG BAO GIỜ gắn vào bot) */
+  attachBomb(now: number): Say[] {
+    if (this.phase !== 'battle' || this.bomb) return [];
+    const reals = this.aliveReal();
+    if (!reals.length) {
+      this.nextBombAt = now + 15_000; // chưa có người thật: hẹn lại sau một lát
+      return [];
+    }
+    const carrier = reals[Math.floor(this.rng() * reals.length)];
+    this.bomb = { carrier: carrier.username, endsAt: now + GAME.bombMs, lastTransferAt: now, warned3s: false };
+    this.addFx(carrier.x, carrier.y - radiusOf(carrier.growth) - 26, '💣', 'grow', now);
+    return [
+      {
+        text: F(
+          `Bom hẹn giờ xuất hiện! Bong bóng của ${carrier.spoken} đang ôm bom, mười giây đếm ngược bắt đầu! Đụng vào bong bóng người thật khác là bom chuyền sang người đó đấy!`,
+        ),
+        priority: true,
+      },
+    ];
+  }
+
+  /** Nút ở trang điều khiển (và lịch máy gọi chung): vòng gió xuất hiện / thu hẹp ngay 1 nấc */
+  forceRingStep(now: number): Say[] {
+    if (this.phase !== 'battle') return [];
+    if (!this.ringActive) {
+      this.ringActive = true;
+      this.ringR = GAME.ringStartR;
+      this.ringNextAt = now + GAME.ringStepMs;
+      return [
+        {
+          text: F('Vòng gió bắt đầu thu hẹp rồi! Bong bóng nào ở ngoài vòng lâu là bị nứt dần đấy, bơi vào trong vòng cho an toàn!'),
+          priority: true,
+        },
+      ];
+    }
+    if (this.ringR > GAME.ringMinR) {
+      this.ringR = Math.max(GAME.ringMinR, this.ringR * GAME.ringShrink);
+      this.ringNextAt = now + GAME.ringStepMs;
+      if (this.ringR <= GAME.ringMinR) {
+        return [{ text: F('Vòng gió đã thu hẹp hết cỡ rồi! Sân giờ chật lắm, cẩn thận đụng nhau đấy!') }];
+      }
+    }
+    this.ringNextAt = now + GAME.ringStepMs; // đã hẹp hết cỡ: giãn nhịp kiểm tra lại
+    return [];
+  }
+
+  /** Chấm lại mục tiêu to nhất: định kỳ 15 giây hoặc ngay khi mục tiêu cũ không còn */
+  private latchBounty(now: number) {
+    const cur = this.bountyUser ? this.bubbles.get(this.bountyUser) : undefined;
+    if (cur && !cur.bot && now < this.bountyReevalAt) return; // mục tiêu còn đó và chưa tới kỳ chấm lại
+    this.bountyReevalAt = now + GAME.bountyReevalMs;
+    const reals = this.aliveReal();
+    const biggest = reals.length ? reals.reduce((m, b) => (b.growth > m.growth ? b : m)) : null;
+    const next = biggest && biggest.growth >= GAME.bountyMinGrowth ? biggest.username : null;
+    if (next !== this.bountyUser) {
+      this.bountyUser = next;
+      if (next) {
+        const t = this.bubbles.get(next)!;
+        if (t.growth >= 1.3) {
+          this.say({
+            text: F(`Bong bóng của ${t.spoken} đang to nhất sân — là mục tiêu của cả phòng đấy! Ai làm nổ được nó là tính điểm đôi!`),
+          });
+        }
+      }
+    }
+  }
+
   // ---------- Vòng đấu ----------
   private endRound(now: number): Say[] {
+    this.bomb = null;
     const alive = this.aliveReal();
     const winner = alive.length === 1 ? alive[0] : null;
     this.phase = 'intermission';
@@ -433,6 +625,14 @@ export class BubblesRoom {
     this.pairCd.clear();
     this.lockout.clear();
     this.realSpawnedThisRound = 0;
+    // Vòng mới: vòng gió làm lại từ đầu, bom hẹn lại từ đầu, mục tiêu chấm lại
+    this.ringActive = false;
+    this.ringR = GAME.ringStartR;
+    this.ringNextAt = now + GAME.ringGraceMs;
+    this.bomb = null;
+    this.nextBombAt = now + GAME.bombFirstMs;
+    this.bountyUser = null;
+    this.bountyReevalAt = 0;
     const pending = [...this.pendingSpawn.values()];
     this.pendingSpawn.clear();
     for (const p of pending.slice(0, GAME.maxBubbles)) this.spawnBubble(p, false, now);
@@ -463,8 +663,12 @@ export class BubblesRoom {
     const f = GAME.field;
     const bubbles = this.aliveBubbles();
     const gust = now < this.gustUntil;
+    const rcx = (f.x0 + f.x1) / 2;
+    const rcy = (f.y0 + f.y1) / 2;
+    const ringOn = this.ringActive && this.phase === 'battle';
 
     for (const b of bubbles) {
+      if (!this.bubbles.has(b.username)) continue; // vừa nổ trong chính bước này (vòng gió)
       const r = radiusOf(b.growth);
       const ss = speedScale(b.growth);
       b.phase += dt;
@@ -474,6 +678,22 @@ export class BubblesRoom {
       b.vx += (targetVx - b.vx) * Math.min(1, dt * 1.8);
       b.vy += (desiredVy - b.vy) * Math.min(1, dt * 2.2);
       if (gust) b.vx += this.gustDir * 620 * dt;
+      // Vòng gió: ở ngoài vòng bị kéo nhẹ về tâm, ở lâu quá thì nứt dần (áp dụng cả bot)
+      if (ringOn) {
+        const distC = Math.hypot(b.x - rcx, b.y - rcy) || 1;
+        if (distC > this.ringR) {
+          const pull = Math.min(120, (distC - this.ringR) * 0.9);
+          b.vx += ((rcx - b.x) / distC) * pull * dt;
+          b.vy += ((rcy - b.y) / distC) * pull * dt;
+          b.outsideMs += dtMs;
+          if (b.outsideMs >= GAME.ringCrackMs) {
+            b.outsideMs = 0;
+            this.crack(b, null, now);
+          }
+        } else {
+          b.outsideMs = Math.max(0, b.outsideMs - dtMs);
+        }
+      }
       // trần tốc độ chung
       const sp = Math.hypot(b.vx, b.vy);
       const cap = 300;
@@ -511,6 +731,16 @@ export class BubblesRoom {
         A.y -= ny * overlap * (mB / (mA + mB));
         B.x += nx * overlap * (mA / (mA + mB));
         B.y += ny * overlap * (mA / (mA + mB));
+        // Bom chuyền: carrier đụng bong bóng NGƯỜI THẬT khác thì bom sang người đó
+        // (giữ tối thiểu 3 giây mới chuyền tiếp; đếm ngược vẫn chạy tiếp, không đặt lại)
+        if (this.phase === 'battle' && this.bomb && now - this.bomb.lastTransferAt >= GAME.bombTransferCdMs) {
+          const other = A.username === this.bomb.carrier ? B : B.username === this.bomb.carrier ? A : null;
+          if (other && !other.bot) {
+            this.bomb.carrier = other.username;
+            this.bomb.lastTransferAt = now;
+            this.addFx((A.x + B.x) / 2, (A.y + B.y) / 2 - 18, '💣➜', 'sparkle', now, 0, 700);
+          }
+        }
         const rvn = (B.vx - A.vx) * nx + (B.vy - A.vy) * ny;
         if (rvn >= 0) continue; // đang tách ra rồi
         const vAn = A.vx * nx + A.vy * ny;
@@ -531,11 +761,30 @@ export class BubblesRoom {
         const big = rA >= rB ? A : B;
         const small = big === A ? B : A;
         const ratio = Math.max(rA, rB) / Math.min(rA, rB);
-        if (relSpeed >= GAME.crackSpeed && ratio >= GAME.crackRatio) {
+        // Ngoại lệ MỤC TIÊU: nạn nhân đang là mục tiêu to nhất thì bỏ qua yêu cầu tỉ lệ 35%
+        // (chỉ cần to hơn + đụng đủ mạnh) — nếu không, mục tiêu cỡ lớn không bao giờ bị hạ bằng va chạm.
+        const bountyHit = small.username === this.bountyUser;
+        if (relSpeed >= GAME.crackSpeed && (ratio >= GAME.crackRatio || bountyHit)) {
           // Bot KHÔNG BAO GIỜ là kẻ làm nứt (kể cả nứt bot khác) — chỉ người thật mới gây nứt.
           if (!big.bot) this.crack(small, big, now);
         } else {
           this.addFx((A.x + B.x) / 2, (A.y + B.y) / 2 - 10, '✦', 'sparkle', now, 0, 600);
+        }
+      }
+    }
+
+    // Hồ người vỡ: avatar xoay một lúc -> mở dù rơi xuống -> đáp xuống hồ chờ hồi sinh
+    for (const e of this.pool) {
+      if (e.state === 'spin' && now >= e.spinUntil) e.state = 'falling';
+      if (e.state === 'falling') {
+        e.y += GAME.fallSpeed * dt;
+        e.x += Math.sin(now / 350 + e.seed * 6) * 26 * dt;
+        if (e.x < 60) e.x = 60;
+        if (e.x > 1020) e.x = 1020;
+        if (e.y >= GAME.poolY) {
+          e.y = GAME.poolY;
+          e.state = 'pooled';
+          this.say({ text: F(`${e.spoken} nhảy dù đáp xuống hồ người vỡ an toàn rồi! Nghỉ một chút, comment lại là lên sân tiếp!`) });
         }
       }
     }
@@ -544,6 +793,7 @@ export class BubblesRoom {
   // ---------- Tick ----------
   tick(now: number): Say[] {
     const says: Say[] = [];
+    if (this.phase === 'battle') this.latchBounty(now); // chấm mục tiêu TRƯỚC khi chạy vật lý: ổn định suốt tick này
     let elapsed = now - this.lastTickAt;
     this.lastTickAt = now;
     if (elapsed < 0) elapsed = 0;
@@ -572,6 +822,38 @@ export class BubblesRoom {
     if (now >= this.nextFanAt) says.push(...this.triggerFan(now));
     if (now >= this.nextGoldenAt) says.push(...this.forceGolden(now));
     if (now >= this.nextPawAt) says.push(...this.triggerPaw(now));
+
+    // Vòng gió thu hẹp theo lịch (sau 40 giây yên bình đầu vòng)
+    if (now >= this.ringNextAt) says.push(...this.forceRingStep(now));
+
+    // Bom hẹn giờ: theo lịch gắn, cảnh báo ở 3 giây cuối, hết giờ là nổ (đi đường pop chung, không ai được điểm)
+    if (!this.bomb && now >= this.nextBombAt) says.push(...this.attachBomb(now));
+    if (this.bomb) {
+      const carrier = this.bubbles.get(this.bomb.carrier);
+      if (!carrier) {
+        this.bomb = null;
+        this.scheduleNextBomb(now);
+      } else {
+        if (!this.bomb.warned3s && this.bomb.endsAt - now <= 3_000) {
+          this.bomb.warned3s = true;
+          says.push({ text: F('Bom sắp nổ rồi, còn ba giây thôi!'), priority: true });
+        }
+        if (now >= this.bomb.endsAt) {
+          this.bomb = null;
+          this.scheduleNextBomb(now);
+          this.addFx(carrier.x, carrier.y, '💥', 'pop', now, radiusOf(carrier.growth) * 2, 1_200);
+          if (carrier.goldenUntil > now) {
+            says.push({
+              text: F(`Bùm! Mà bong bóng của ${carrier.spoken} đang vàng óng nên chặn đứng quả bom luôn, ghê chưa!`),
+              priority: true,
+            });
+          } else {
+            says.push({ text: F(`BÙM! Quả bom nổ ngay trên bong bóng của ${carrier.spoken} rồi!`), priority: true });
+            this.popBubble(carrier, null, now);
+          }
+        }
+      }
+    }
 
     // Kết vòng: còn tối đa 1 bong bóng người thật và vòng đã có ít nhất 3 người thật vào sân
     if (this.realSpawnedThisRound >= 3 && this.aliveReal().length <= 1) {
@@ -618,7 +900,24 @@ export class BubblesRoom {
     return [];
   }
 
+  /** Nút test ở trang điều khiển: ép nổ bong bóng người thật nhỏ nhất (người làm nổ = bong bóng to nhất còn lại), đi đúng đường pop chung */
+  debugForcePop(now: number): Say[] {
+    const reals = this.aliveReal();
+    if (!reals.length) return [];
+    const victim = reals.reduce((m, b) => (b.growth < m.growth ? b : m));
+    const scorer = reals.filter((b) => b.username !== victim.username).reduce<Bubble | null>(
+      (m, b) => (!m || b.growth > m.growth ? b : m),
+      null,
+    );
+    this.popBubble(victim, scorer, now);
+    return [];
+  }
+
   // ---------- Móc kiểm chứng (test dùng, như debugPlace của arena-meo) ----------
+  debugSetRng(fn: () => number) {
+    this.rng = fn;
+  }
+
   debugPlace(username: string, x: number, y: number) {
     const b = this.bubbles.get(username);
     if (b) {
@@ -659,6 +958,9 @@ export class BubblesRoom {
         crown: b.username === this.lastWinner,
         hue: b.hue,
         wob: Math.round(Math.sin(b.phase * 4) * 100) / 100,
+        bomb: this.bomb?.carrier === b.username,
+        bombSec: this.bomb?.carrier === b.username ? Math.max(0, Math.ceil((this.bomb.endsAt - now) / 1000)) : 0,
+        bounty: this.phase === 'battle' && b.username === this.bountyUser,
       });
     }
     const board = [...this.session.entries()]
@@ -678,6 +980,23 @@ export class BubblesRoom {
       paw: this.paw ? { x: Math.round(this.paw.x), y: Math.round(this.paw.y), side: this.paw.side } : null,
       gustDir: now < this.gustUntil ? this.gustDir : null,
       goldenName: golden ? golden.nickname : null,
+      pool: this.pool.map((e) => ({
+        username: e.username,
+        nickname: e.nickname,
+        avatar: e.avatar,
+        hue: e.hue,
+        x: Math.round(e.x),
+        y: Math.round(e.state === 'pooled' ? e.y + Math.sin(now / 480 + e.seed * 7) * 7 : e.y),
+        state: e.state,
+        bugFace: now < e.bugFaceUntil,
+        rare: e.rare,
+      })),
+      ring:
+        this.ringActive && this.phase === 'battle'
+          ? { cx: Math.round((GAME.field.x0 + GAME.field.x1) / 2), cy: Math.round((GAME.field.y0 + GAME.field.y1) / 2), r: Math.round(this.ringR) }
+          : null,
+      bomb: this.bomb ? { username: this.bomb.carrier, sec: Math.max(0, Math.ceil((this.bomb.endsAt - now) / 1000)) } : null,
+      bountyUser: this.phase === 'battle' ? this.bountyUser : null,
       lastWinner: this.lastWinnerName,
       celebration: this.celebration && now < this.celebration.until ? this.celebration.kind : null,
       aliveReal: this.aliveReal().length,

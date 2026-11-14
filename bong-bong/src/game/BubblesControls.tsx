@@ -20,7 +20,10 @@ export function BubblesControls({ view, stageCount }: { view: BubblesView | null
           Vòng {view.round} · {view.phase === 'battle' ? 'đang nổi' : `nghỉ giữa vòng (còn ${view.intermissionSec}s)`} ·{' '}
           {view.aliveTotal} bong bóng trên sân ({view.aliveReal} người thật) · đã nổ {view.totals.pops} lần cả buổi
           {view.goldenName ? ` · ✨ bong bóng vàng: ${view.goldenName}` : ''}
-          {view.gustDir !== null ? ' · 🌀 đang có gió quạt' : ''} · {stageCount} trang stage đang mở
+          {view.gustDir !== null ? ' · 🌀 đang có gió quạt' : ''}
+          {view.ring ? ` · 🌀 vòng gió r=${view.ring.r}` : ''}
+          {view.bomb ? ` · 💣 bom còn ${view.bomb.sec}s` : ''}
+          {view.pool.length ? ` · 🏊 ${view.pool.length} avatar trong hồ người vỡ` : ''} · {stageCount} trang stage đang mở
         </p>
       </div>
 
@@ -33,6 +36,15 @@ export function BubblesControls({ view, stageCount }: { view: BubblesView | null
         </button>
         <button onClick={() => sendControl('custom', 'golden_now')} className="rounded-lg bg-amber-500 px-4 py-2 font-semibold text-white hover:bg-amber-400">
           ✨ Bật bong bóng vàng
+        </button>
+        <button onClick={() => sendControl('custom', 'force_pop')} className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-500">
+          💥 Ép nổ 1 bong bóng
+        </button>
+        <button onClick={() => sendControl('custom', 'ring_step')} className="rounded-lg bg-orange-600 px-4 py-2 font-semibold text-white hover:bg-orange-500">
+          🌀 Thu vòng gió 1 nấc
+        </button>
+        <button onClick={() => sendControl('custom', 'bomb_now')} className="rounded-lg bg-slate-800 px-4 py-2 font-semibold text-white ring-1 ring-slate-500 hover:bg-slate-700">
+          💣 Gắn bom ngay
         </button>
         <button onClick={() => sendControl('custom', 'force_round_end')} className="rounded-lg bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-500">
           🏁 Kết thúc vòng ngay
@@ -100,6 +112,20 @@ export function BubblesControls({ view, stageCount }: { view: BubblesView | null
           tin, trần <b className="text-slate-100">×2,2</b>. Đụng nhau: nếu một bong bóng to hơn ít nhất <b className="text-slate-100">35%</b> và
           cú đụng đủ mạnh thì bong bóng nhỏ hơn <b className="text-slate-100">nứt 1 vết</b>; 3 vết là <b className="text-slate-100">nổ BỐP</b>,
           người làm nổ +1 điểm "nổ" (đang vàng thì +2). Bong bóng nổ thì 8 giây sau chủ của nó comment lại để có bong bóng mới.
+        </p>
+        <p className="mt-2">
+          <b className="text-slate-100">Vỡ lạ:</b> bong bóng nổ thì avatar của nạn nhân <b className="text-slate-100">không biến mất</b> — bị văng
+          ra xoay chóng mặt, mở dù rơi xuống <b className="text-slate-100">hồ người vỡ</b> ở đáy sân, chờ hồi sinh (comment lại sau 8 giây là lên
+          sân và rời hồ). Người làm nổ <b className="text-slate-100">hấp thụ 30%</b> phần to vượt mức gốc của nạn nhân. 10% lần nổ là{' '}
+          <b className="text-slate-100">vỡ hiếm</b> (điểm x2): mưa cá, avatar hoá mặt Bug cười 2 giây, hoặc confetti vàng.
+        </p>
+        <p className="mt-2">
+          <b className="text-slate-100">Gây cấn:</b> sau 40 giây đầu vòng, <b className="text-slate-100">vòng gió</b> xuất hiện và thu hẹp mỗi 20
+          giây (tới ~45% sân) — ở ngoài vòng 2,5 giây là nứt 1 vết (bot cũng bị). Mỗi ~45–70 giây có 1 <b className="text-slate-100">bom hẹn giờ
+          10 giây</b> gắn vào bong bóng người thật (không bao giờ gắn bot): đụng người thật khác là chuyền bom (giữ tối thiểu 3 giây), hết giờ
+          bong bóng ôm bom nổ tung (không ai được điểm). Bong bóng <b className="text-slate-100">to nhất sân là MỤC TIÊU</b> (vành đỏ + thẻ): hạ
+          nó được điểm đôi — riêng với mục tiêu, cú đụng không cần chênh 35% (chỉ cần to hơn + đủ mạnh). Điểm chồng nhau (vàng x2, hiếm x2, mục
+          tiêu x2) bị chặn ở <b className="text-slate-100">x4</b>.
         </p>
         <p className="mt-2">
           Sự kiện máy: ~50 giây có <b className="text-slate-100">gió quạt</b> thổi cả đàn bong bóng 3 giây; ~2–3 phút <b className="text-slate-100">chân
