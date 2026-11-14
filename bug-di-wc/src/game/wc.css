@@ -1,0 +1,178 @@
+/* Hiệu ứng riêng của Bug Đi WC (tiền tố wc- để không đụng game khác).
+   Vỏ sân khấu dùng chung .glass-panel / .glass-pill "storybook glass" như Đại Náo/Bong Bóng. */
+
+/* ===== Vỏ kính kem ===== */
+.glass-panel {
+  background: rgba(252, 247, 238, 0.88);
+  -webkit-backdrop-filter: blur(10px) saturate(1.08);
+  backdrop-filter: blur(10px) saturate(1.08);
+  border: 1.5px solid rgba(122, 84, 50, 0.35);
+  border-radius: 22px;
+  box-shadow: 0 10px 28px rgba(91, 58, 30, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+.glass-pill {
+  background: rgba(252, 247, 238, 0.88);
+  -webkit-backdrop-filter: blur(10px) saturate(1.08);
+  backdrop-filter: blur(10px) saturate(1.08);
+  border: 1.5px solid rgba(122, 84, 50, 0.32);
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(91, 58, 30, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+.wc-display {
+  font-family: 'Baloo 2', 'Comic Sans MS', 'Chalkboard SE', 'Segoe UI Rounded', system-ui, sans-serif;
+  letter-spacing: 0.01em;
+}
+
+/* ===== Rung theo nhịp tim (3 cấp) ===== */
+@keyframes wcShakeSm {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(1.5px, -1px) rotate(0.4deg); }
+  75% { transform: translate(-1.5px, 1px) rotate(-0.4deg); }
+}
+.wc-shake-sm { animation: wcShakeSm 0.34s linear infinite; }
+@keyframes wcShakeMd {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scaleY(1); }
+  20% { transform: translate(3.5px, -2.5px) rotate(0.8deg) scaleY(0.985); }
+  55% { transform: translate(-3.5px, 2px) rotate(-0.8deg) scaleY(1.012); }
+  80% { transform: translate(2px, 1px) rotate(0.5deg) scaleY(0.99); }
+}
+.wc-shake-md { animation: wcShakeMd 0.22s linear infinite; }
+@keyframes wcShakeLg {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scaleY(1); }
+  15% { transform: translate(6px, -5px) rotate(1.4deg) scaleY(0.965); }
+  40% { transform: translate(-6px, 4px) rotate(-1.4deg) scaleY(1.03); }
+  65% { transform: translate(5px, 3px) rotate(1deg) scaleY(0.975); }
+  85% { transform: translate(-4px, -3px) rotate(-1deg) scaleY(1.02); }
+}
+.wc-shake-lg { animation: wcShakeLg 0.13s linear infinite; }
+
+/* Viền màn hìnhPulse khi nhịp tim rất cao */
+@keyframes wcEdgePulse {
+  0%, 100% { box-shadow: inset 0 0 60px rgba(240, 161, 60, 0); }
+  50% { box-shadow: inset 0 0 90px rgba(240, 161, 60, 0.45); }
+}
+.wc-edge-pulse { animation: wcEdgePulse 0.5s ease-in-out infinite; }
+
+/* Gag mốc 25%: bồn cầu (cả cụm Bug) rung lắc mạnh từng cơn */
+@keyframes wcWobble {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-2.4deg); }
+  45% { transform: rotate(2.2deg); }
+  70% { transform: rotate(-1.6deg); }
+}
+.wc-wobble { animation: wcWobble 0.3s ease-in-out infinite; transform-origin: 50% 92%; }
+
+/* Gag mốc 50%: cả nền rung nhẹ như ống nước rung */
+@keyframes wcPipes {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(2px, -1.5px); }
+  75% { transform: translate(-2px, 1.5px); }
+}
+.wc-pipes { animation: wcPipes 0.16s linear infinite; }
+
+/* Sen ló vào từ mép phải */
+@keyframes wcPeekIn {
+  0% { transform: translateX(78%) rotate(4deg); opacity: 0; }
+  12% { opacity: 1; }
+  22%, 82% { transform: translateX(34%) rotate(-2deg); opacity: 1; }
+  100% { transform: translateX(78%) rotate(4deg); opacity: 0; }
+}
+.wc-peek { animation: wcPeekIn 6s ease-in-out forwards; }
+
+/* Popup "RẶN!" ghi công người thả tim */
+@keyframes wcPopup {
+  0% { opacity: 0; transform: translateY(14px) scale(0.7) rotate(-3deg); }
+  18% { opacity: 1; transform: translateY(0) scale(1.08) rotate(2deg); }
+  30% { transform: translateY(-4px) scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(-72px) scale(0.98); }
+}
+.wc-popup { animation: wcPopup 1.55s ease-out forwards; }
+
+/* Bong bóng chat của người xem: trồi lên cạnh Bug rồi tan */
+@keyframes wcBubbleIn {
+  0% { opacity: 0; transform: translateY(16px) scale(0.85); }
+  10% { opacity: 1; transform: translateY(0) scale(1); }
+  85% { opacity: 1; transform: translateY(-14px); }
+  100% { opacity: 0; transform: translateY(-26px); }
+}
+.wc-bubble { animation: wcBubbleIn 5s ease-out forwards; }
+
+/* Bong bóng thoại của Bug (càu nhàu) nảy vào */
+@keyframes wcPop {
+  0% { transform: scale(0.5) rotate(-4deg); opacity: 0; }
+  60% { transform: scale(1.07) rotate(1.5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.wc-pop { animation: wcPop 0.3s ease-out; }
+
+/* Mồ hôi văng */
+@keyframes wcSweat {
+  0% { opacity: 0; transform: translateY(0) scale(0.6); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(38px) scale(1.05); }
+}
+.wc-sweat { animation: wcSweat 0.8s ease-in infinite; }
+
+/* Đường rặn lượn sóng quanh đầu */
+@keyframes wcWave {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  50% { opacity: 0.9; transform: translateY(-5px); }
+}
+.wc-wave { animation: wcWave 0.9s ease-in-out infinite; }
+
+/* Giấy vệ sinh + tim bay khi có quà */
+@keyframes wcTpFloat {
+  0% { transform: translateY(10px) rotate(-8deg) scale(0.7); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-150px) rotate(14deg) scale(1.1); opacity: 0; }
+}
+.wc-tp { position: absolute; animation: wcTpFloat 2.2s ease-out infinite; }
+
+/* Bug sung sướng nhảy sau khi thành công */
+@keyframes wcBounce {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  30% { transform: translateY(-64px) scaleY(1.04) rotate(-3deg); }
+  55% { transform: translateY(0) scaleY(0.94); }
+  75% { transform: translateY(-30px) scaleY(1.02) rotate(3deg); }
+}
+.wc-bounce { animation: wcBounce 0.9s ease-in-out infinite; }
+
+/* Xoáy nước xả bồn cầu */
+@keyframes wcSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.wc-spin { animation: wcSpin 0.8s linear infinite; transform-origin: 50% 50%; }
+
+/* Cục vàng rơi xuống */
+@keyframes wcDrop {
+  0% { transform: translateY(-190px) scale(0.6); opacity: 0; }
+  25% { opacity: 1; }
+  70% { transform: translateY(0) scale(1.05); opacity: 1; }
+  100% { transform: translateY(16px) scale(0.7); opacity: 0; }
+}
+.wc-drop { animation: wcDrop 1.6s ease-in forwards; }
+
+@keyframes wcConfettiFall {
+  0% { transform: translateY(-40px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(1990px) rotate(560deg); opacity: 0.9; }
+}
+.wc-confetti {
+  position: absolute;
+  top: 0;
+  width: 16px;
+  height: 26px;
+  border-radius: 3px;
+  animation: wcConfettiFall 2.8s ease-in forwards;
+}
+
+/* Thanh độ quạu nhấp nháy khi sắp dỗi */
+@keyframes wcAnnoyPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.wc-annoy-hot { animation: wcAnnoyPulse 0.45s ease-in-out infinite; }
+
+/* Dấu giận 💢 rung */
+@keyframes wcAnger {
+  0%, 100% { transform: rotate(-8deg) scale(1); }
+  50% { transform: rotate(8deg) scale(1.18); }
+}
+.wc-anger { animation: wcAnger 0.4s ease-in-out infinite; }
