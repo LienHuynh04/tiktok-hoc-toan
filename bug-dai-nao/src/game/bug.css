@@ -1,0 +1,89 @@
+/* Hiệu ứng riêng của Bug Đại Náo Nhà Sen (tiền tố bug-) */
+
+@keyframes bugPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.07); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.bug-pop { animation: bugPop 0.3s ease-out; }
+
+@keyframes bugBob {
+  0%, 100% { margin-top: 0; }
+  50% { margin-top: -7px; }
+}
+.bug-bob { animation: bugBob 0.34s ease-in-out infinite; }
+
+@keyframes bugSway {
+  0%, 100% { rotate: -4deg; }
+  50% { rotate: 4deg; }
+}
+.bug-sway { animation: bugSway 1.6s ease-in-out infinite; }
+
+/* Đu đèn bằng sprite ảnh thật: lắc nhẹ ±3°, neo ở vị trí hai chân bám đèn */
+@keyframes bugSwaySoft {
+  0%, 100% { rotate: -3deg; }
+  50% { rotate: 3deg; }
+}
+.bug-sway-soft { animation: bugSwaySoft 1.9s ease-in-out infinite; }
+
+/* Đổi tư thế sprite: lớp hình cũ mờ dần ~150ms phủ lên hình mới (chéo mờ) */
+@keyframes bugPoseOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.bug-pose-out { animation: bugPoseOut 0.15s linear forwards; }
+
+/* Vòng sáng ở vật mục tiêu của nhiệm vụ hiện tại (trên tranh) */
+@keyframes bugRing {
+  0%, 100% { opacity: 0.95; scale: 1; }
+  50% { opacity: 0.55; scale: 1.1; }
+}
+.bug-ring { animation: bugRing 1.15s ease-in-out infinite; }
+
+@keyframes bugPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+}
+.bug-pulse { animation: bugPulse 0.8s ease-in-out infinite; }
+
+@keyframes bugShake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(var(--shakePx, 6px), calc(var(--shakePx, 6px) * -0.6)); }
+  40% { transform: translate(calc(var(--shakePx, 6px) * -1), calc(var(--shakePx, 6px) * 0.5)); }
+  60% { transform: translate(var(--shakePx, 6px), calc(var(--shakePx, 6px) * 0.7)); }
+  80% { transform: translate(calc(var(--shakePx, 6px) * -0.7), calc(var(--shakePx, 6px) * -0.5)); }
+}
+
+@keyframes bugFishFall {
+  0% { transform: translateY(-120px) rotate(-14deg); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translateY(1120px) rotate(24deg); opacity: 0.9; }
+}
+.bug-fish {
+  position: absolute;
+  top: 0;
+  animation: bugFishFall 2.6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes bugConfettiFall {
+  0% { transform: translateY(-40px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(1080px) rotate(340deg); opacity: 0.85; }
+}
+.bug-confetti {
+  position: absolute;
+  top: 0;
+  width: 16px;
+  height: 24px;
+  border-radius: 3px;
+  animation: bugConfettiFall 2.8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes bugSpinStar {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.bug-spin-star { animation: bugSpinStar 1.1s linear infinite; }
+
+.bug-zoomies { filter: drop-shadow(-14px 0 10px rgba(242, 112, 89, 0.45)); }
