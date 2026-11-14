@@ -18,7 +18,8 @@ export function WcControls({ view, stageCount }: { view: WcView | null; stageCou
         <p className="leading-relaxed">
           Cấp táo bón {view.level} · Lượt {view.attempt} ·{' '}
           {view.phase === 'attempt' ? `đang rặn ${Math.floor(view.progressPct)}% (còn ${view.remainSec}s)` : view.phase === 'success' ? 'ĐANG ĂN MỪNG!' : 'nghỉ giữa lượt'} ·{' '}
-          nhịp tim {view.likeRate}/giây · 😾 quạu {view.annoyance}
+          nhịp tim {view.likeRate}/giây · 😾 quạu {view.annoyance} · 🐱 mood <b className="text-slate-100">{view.mood}</b> · pose{' '}
+          <b className="text-slate-100">{view.pose}</b>
           {view.sulking ? ` · ĐANG DỖI (còn ${view.sulkSec}s)` : ''}
           {view.waterSec > 0 ? ` · 💧 NƯỚC còn ${view.waterSec}s` : ''}
           {view.fiberSec > 0 ? ` · 🥬 XƠ còn ${view.fiberSec}s` : ''}
@@ -81,6 +82,21 @@ export function WcControls({ view, stageCount }: { view: WcView | null; stageCou
           <button onClick={() => sendControl('custom', 'sim_sorry')} className="rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-600">
             🙏 XIN LỖI giả lập ×3
           </button>
+          <button onClick={() => sendControl('custom', 'force_sleepy')} className="rounded-lg bg-indigo-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-600">
+            😴 Ép Bug ngủ gật
+          </button>
+          <button onClick={() => sendControl('custom', 'force_max')} className="rounded-lg bg-red-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600">
+            💪 Ép gồng tối đa
+          </button>
+          <button onClick={() => sendControl('custom', 'wake_bug')} className="rounded-lg bg-cyan-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-600">
+            ⏰ Đánh thức Bug
+          </button>
+          <button onClick={() => sendControl('custom', 'face_happy')} className="rounded-lg bg-yellow-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yellow-500">
+            😂 Ép mặt vui
+          </button>
+          <button onClick={() => sendControl('custom', 'face_surprised')} className="rounded-lg bg-violet-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-600">
+            😲 Ép mặt ngạc nhiên
+          </button>
         </div>
         <div className="mt-3 mb-2 font-semibold text-slate-100">📡 Giả lập sự kiện live (đi qua đúng đường sự kiện TikTok)</div>
         <div className="flex flex-wrap gap-1.5">
@@ -123,9 +139,22 @@ export function WcControls({ view, stageCount }: { view: WcView | null; stageCou
           dỗi 1,5s/câu, hết dỗi Bug cộng +2% adrenaline.
         </p>
         <p className="mt-2">
+          <b className="text-slate-100">Bug SỐNG (mood + bộ tư thế):</b> Bug có tâm trạng suy từ nhịp tim/độ quạu — focused (rặn thường), pumped (tim ≥8/giây),
+          annoyed/furious (quạu 30+/80+), sulking (dỗi, sprite quay lưng thật), sleepy (20s không tim + không chat là gật gù ngủ gật, có Zzz + tiếng ngáy; tim/chat
+          đầu tiên làm Bug giật mình tỉnh dậy), bliss (ăn mừng). Tư thế đổi theo mood: gồng tối đa khi tim dải cao / tiến độ ≥90% / combo RẶN ≥8; thắng thì ngồi
+          phè phỡn 1,2s rồi mới nhảy. Kèm chuyển động vi mô: thở phồng xẹp, giật tai, chớp mắt, liếc đọc bong bóng chat mới nhất.
+        </p>
+        <p className="mt-2">
+          <b className="text-slate-100">Khuôn mặt theo tương tác (giữ mặt rặn gốc làm nền):</b> quạu 30+ là Bug đổi sang <b className="text-slate-100">mặt liếc xéo
+          deadpan</b> (furious 80+ thêm rung mạnh + tiếng xì), ngủ gật dùng <b className="text-slate-100">mặt buồn ngủ</b> tai rũ + bong bóng nước dãi (gật gù nhẹ
+          hơn trước). Thêm 2 <b className="text-slate-100">face beat</b> ngắn theo sự kiện — thắng pose mood nhưng không bao giờ đè lúc dỗi/ăn mừng:{' '}
+          <b className="text-slate-100">mặt vui toe toét</b> 1,2s khi có quà (kèm lời cảm ơn) và khi combo RẶN chạm 5 / 10 người; <b className="text-slate-100">mặt
+          ngạc nhiên</b> mắt tròn miệng O 0,8s khi chạm mốc 25/50/75 (mốc 75 kèm Sen ló vào) và trong khoảnh khắc giật mình tỉnh dậy, sau đó về mặt rặn.
+        </p>
+        <p className="mt-2">
           <b className="text-slate-100">Quà chỉ được cảm ơn + giấy vệ sinh bay trang trí — không lực, không tiến độ, không buff.</b> MC là giọng nữ hài hước; Bug có
-          tiếng mèo tổng hợp (gằn khi rặn, xì khi quạu, tru khi dỗi, grừ khi nhàn). Nhạc/giọng/tiếng mèo chỉ phát sau khi bấm Interact 1 lần vào stage trong LIVE
-          Studio.
+          tiếng mèo tổng hợp (gằn khi rặn, xì khi quạu, tru khi dỗi, grừ khi nhàn, ngáy khi ngủ gật). Nhạc/giọng/tiếng mèo chỉ phát sau khi bấm Interact 1 lần vào
+          stage trong LIVE Studio.
         </p>
       </div>
     </div>

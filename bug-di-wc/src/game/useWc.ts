@@ -125,6 +125,11 @@ export function useWc() {
       if (c.action === 'custom' && c.text === 'sim_tease') say(room.simTease(Date.now()));
       if (c.action === 'custom' && c.text === 'force_sulk') say(room.forceSulk(Date.now()));
       if (c.action === 'custom' && c.text === 'sim_sorry') say(room.simSorry(Date.now()));
+      if (c.action === 'custom' && c.text === 'force_sleepy') say(room.forceSleepy(Date.now()));
+      if (c.action === 'custom' && c.text === 'force_max') say(room.forceMaxstrain(Date.now()));
+      if (c.action === 'custom' && c.text === 'wake_bug') say(room.wakeBug(Date.now()));
+      if (c.action === 'custom' && c.text === 'face_happy') room.forceFace('happy', Date.now());
+      if (c.action === 'custom' && c.text === 'face_surprised') room.forceFace('surprised', Date.now());
       if (c.action === 'custom' && (c.text === 'music_on' || c.text === 'music_off')) {
         room.musicOn = c.text === 'music_on';
         music.setEnabled(room.musicOn);
@@ -160,8 +165,18 @@ export function useWc() {
     let stop = false;
     const room = new WcRoom(Date.now());
     roomRef.current = room;
-    // Nạp trước ảnh chỉ dùng ở khoảnh khắc đặc biệt (thành công / mốc 75%) để không chớp emoji dự phòng
-    for (const src of ['/assets/bug-relief.png', '/assets/sen.png']) {
+    // Nạp trước cả bộ tư thế + ảnh khoảnh khắc đặc biệt để đổi pose không chớp emoji dự phòng
+    for (const src of [
+      '/assets/bug-relief.png',
+      '/assets/sen.png',
+      '/assets/bug-wc-max.png',
+      '/assets/bug-wc-sulk.png',
+      '/assets/bug-wc-relief-sit.png',
+      '/assets/bug-wc-face-happy.png',
+      '/assets/bug-wc-face-surprised.png',
+      '/assets/bug-wc-face-annoyed.png',
+      '/assets/bug-wc-face-sleepy.png',
+    ]) {
       const pre = new Image();
       pre.src = src;
     }
@@ -190,8 +205,12 @@ export function useWc() {
       flushChatter(room, now);
       music.setDucked(voice.busy); // MC đang đọc thì nhạc tự nhỏ xuống
       const v = room.view(now);
-      // Tiếng mèo liên tục: đang rặn có nhịp tim -> gằn theo nhịp; yên tĩnh lâu -> grừ nhàn
-      if (v.phase === 'attempt' && !v.sulking && v.likeRate >= 3) {
+      // Tiếng mèo liên tục theo tâm trạng: ngủ gật -> ngáy (hết grừ); đang rặn có nhịp tim -> gằn; yên tĩnh -> grừ nhàn
+      if (v.phase === 'attempt' && v.mood === 'sleepy') {
+        catSounds.stopPurr();
+        quietSince.current = 0;
+        catSounds.snore();
+      } else if (v.phase === 'attempt' && !v.sulking && v.likeRate >= 3) {
         catSounds.stopPurr();
         quietSince.current = 0;
         catSounds.grunt(v.likeRate);

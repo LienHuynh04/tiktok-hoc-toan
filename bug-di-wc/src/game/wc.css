@@ -176,3 +176,40 @@
   50% { transform: rotate(8deg) scale(1.18); }
 }
 .wc-anger { animation: wcAnger 0.4s ease-in-out infinite; }
+
+/* ===== Bug SỐNG: chuyển động vi mô (lớp trình diễn, engine không biết) ===== */
+/* Hô hấp: phồng xẹp rất nhẹ ~2,4s, neo đáy để thân "thở" lên xuống */
+@keyframes wcBreathe {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.008, 1.02); }
+}
+.wc-breathe { animation: wcBreathe 2.4s ease-in-out infinite; transform-origin: 50% 92%; }
+/* Đang dỗi: thở chậm và nông hơn (buồn thiu) */
+@keyframes wcBreatheSulk {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.004, 1.008); }
+}
+.wc-breathe-sulk { animation: wcBreatheSulk 3.8s ease-in-out infinite; transform-origin: 50% 92%; }
+
+/* Gồng TỐI ĐA: thân lắc qua lại ±1,5° */
+@keyframes wcRock {
+  0%, 100% { transform: rotate(1.5deg); }
+  50% { transform: rotate(-1.5deg); }
+}
+.wc-rock { animation: wcRock 0.5s ease-in-out infinite; transform-origin: 50% 92%; }
+
+/* Ngủ gật: đầu gục xuống -6° rồi ngóc lên gật gù */
+@keyframes wcNod {
+  0%, 100% { transform: rotate(-3.6deg) translateY(5px); }
+  45% { transform: rotate(-1.8deg) translateY(2px); }
+  60% { transform: rotate(-2.8deg) translateY(4px); }
+}
+.wc-nod { animation: wcNod 3.4s ease-in-out infinite; transform-origin: 50% 85%; }
+
+/* Chữ Z bay lên khi ngủ gật */
+@keyframes wcZzz {
+  0% { opacity: 0; transform: translateY(10px) scale(0.75) rotate(-6deg); }
+  25% { opacity: 0.95; }
+  100% { opacity: 0; transform: translateY(-84px) scale(1.18) rotate(8deg); }
+}
+.wc-zzz { animation: wcZzz 2.6s ease-out infinite; text-shadow: 0 2px 0 #fff, 0 0 10px rgba(255, 255, 255, 0.9); }

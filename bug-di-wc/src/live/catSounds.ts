@@ -138,6 +138,54 @@ class CatSounds {
     this.purrNodes = null;
   }
 
+  private lastSnoreAt = 0;
+
+  /** Ngáy nhè nhẹ khi Bug ngủ gật: còi hơi sine trầm lướt xuống + thở ra. Hook gọi lặp, tự throttle ~2,6s */
+  snore() {
+    if (!this.enabled) return;
+    const ctx = this.ensureCtx();
+    if (!ctx || ctx.state !== 'running' || !this.bus) return;
+    const nowMs = performance.now();
+    if (nowMs - this.lastSnoreAt < 2600) return;
+    this.lastSnoreAt = nowMs;
+    const t = ctx.currentTime + 0.02;
+    // tiếng "khò" vào: sine 300 -> 210Hz, rung nhẹ
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(300, t);
+    o.frequency.exponentialRampToValueAtTime(205, t + 0.55);
+    const vib = ctx.createOscillator();
+    vib.frequency.value = 26;
+    const vibG = ctx.createGain();
+    vibG.gain.value = 14;
+    vib.connect(vibG).connect(o.frequency);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.055, t + 0.14);
+    g.gain.setValueAtTime(0.055, t + 0.4);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+    o.connect(g).connect(this.bus);
+    o.start(t);
+    o.stop(t + 0.65);
+    vib.start(t);
+    vib.stop(t + 0.65);
+    // tiếng thở ra "phù": nhiễu qua bandpass trầm, nhỏ
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuf;
+    src.loop = true;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 800;
+    bp.Q.value = 0.7;
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.0001, t + 0.62);
+    ng.gain.exponentialRampToValueAtTime(0.02, t + 0.8);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + 1.25);
+    src.connect(bp).connect(ng).connect(this.bus);
+    src.start(t + 0.62);
+    src.stop(t + 1.3);
+  }
+
   get purring() {
     return !!this.purrNodes;
   }

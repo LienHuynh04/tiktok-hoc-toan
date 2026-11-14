@@ -2,7 +2,7 @@
 // NƯỚC/RAU, combo RẶN, mốc 1 lần, thắng + lên cấp, hết giờ giữ 40%, quà vô hiệu,
 // chọc mèo → quạu → dỗi → xin lỗi, bong bóng chat (trần 5 + lọc từ cấm), MC không
 // lặp câu liên tiếp. Chạy: npm run check.
-import { WcRoom, type Person } from './wc';
+import { FOLLOW_NOTE, WcRoom, type Person } from './wc';
 
 let failures = 0;
 function eq(actual: unknown, expected: unknown, label: string) {
@@ -283,6 +283,176 @@ const person = (username: string): Person => ({ username, nickname: username, sp
   room4.simSorry(T);
   eq(room4.view(T).sulking, true, 'xin lỗi giả lập x3 cắt 4,5s: dỗi 6s còn 1,5s');
   eq(room4.view(T).sulkSec, 2, 'thời gian dỗi còn lại hiện 2s (làm tròn lên)');
+}
+
+// ---------- 18. Bug SỐNG: mood suy theo dải tín hiệu, pose map đúng, ngủ gật + tỉnh dậy ----------
+{
+  // mood theo độ quạu: focused -> annoyed (30+) -> furious (80+) -> sulking (100)
+  const room = new WcRoom(T, mulberry32(18));
+  eq(room.view(T).mood, 'focused', 'mới vào lượt: mood focused');
+  eq(room.view(T).pose, 'strain', 'mới vào lượt: pose strain');
+  eq(room.view(T).strainActive, true, 'đang rặn bình thường: strainActive');
+  for (let i = 0; i < 3; i++) room.chat(person(`t${i}`), 'chọc', T);
+  eq(room.view(T).mood, 'annoyed', 'quạu 36: mood annoyed');
+  eq(room.view(T).pose, 'faceAnnoyed', 'quạu 36: pose mặt quạu liếc xéo (faceAnnoyed)');
+  for (let i = 4; i < 8; i++) room.chat(person(`t${i}`), 'chọc', T);
+  eq(room.view(T).mood, 'furious', 'quạu 84: mood furious');
+  eq(room.view(T).pose, 'faceAnnoyed', 'quạu 84: vẫn pose mặt quạu (furious thêm rung + xì ở stage/engine)');
+  room.forceSulk(T);
+  eq(room.view(T).mood, 'sulking', 'đang dỗi: mood sulking');
+  eq(room.view(T).pose, 'sulk', 'đang dỗi: pose sulk (ảnh quay lưng thật, không lật hình)');
+  eq(room.view(T).strainActive, false, 'đang dỗi: không gồng (strainActive false)');
+
+  // pumped + maxstrain theo nhịp tim cao
+  const room2 = new WcRoom(T, mulberry32(18));
+  room2.like(person('anhA'), 30, T); // 30 tim / cửa sổ 3s = 10/giây
+  eq(room2.view(T).mood, 'pumped', 'nhịp tim 10/giây: mood pumped');
+  eq(room2.view(T).pose, 'maxstrain', 'nhịp tim dải cao nhất: pose maxstrain');
+
+  // maxstrain theo tiến độ về đích (>= 90%)
+  const room3 = new WcRoom(T, mulberry32(18));
+  room3.debugSetProgressPct(95, T);
+  eq(room3.view(T).pose, 'maxstrain', 'tiến độ 95%: pose maxstrain');
+
+  // maxstrain theo combo RẶN >= 8 người (trên đường lên 8, combo chạm 5 đã bật mặt vui 1,2s trước)
+  const room4 = new WcRoom(T, mulberry32(18));
+  for (let i = 0; i < 8; i++) room4.chat(person(`r${i}`), 'RẶN', T);
+  eq(room4.view(T).pose, 'faceHappy', 'combo RẶN chạm 5 trên đường lên 8: mặt vui (beat) trước');
+  eq(room4.view(T + 1_300).pose, 'maxstrain', 'hết beat mặt vui: combo RẶN 8 người -> pose maxstrain');
+
+  // ngủ gật: 20s không tim + không chat -> doze, hết gồng
+  const room5 = new WcRoom(T, mulberry32(18));
+  room5.tick(T + 19_000);
+  eq(room5.view(T + 19_000).mood, 'focused', 'im 19s: chưa ngủ gật');
+  room5.tick(T + 20_000);
+  const vDoze = room5.view(T + 20_000);
+  eq(vDoze.mood, 'sleepy', 'im đủ 20s: mood sleepy');
+  eq(vDoze.pose, 'faceSleepy', 'ngủ gật: pose mặt buồn ngủ (faceSleepy)');
+  eq(vDoze.strainActive, false, 'ngủ gật: strainActive false (stage hết rung)');
+  ok(vDoze.bugBubble !== null, 'ngủ gật: Bug có bong bóng "Zzz"');
+
+  // tỉnh dậy bằng TIM đầu tiên: mặt ngạc nhiên (face beat) + bong bóng giật mình + cue meowBig
+  room5.like(person('anhA'), 1, T + 21_000);
+  const vWake = room5.view(T + 21_000);
+  eq(vWake.mood, 'focused', 'có tim: tỉnh dậy, mood focused');
+  eq(vWake.pose, 'faceSurprised', 'tỉnh dậy: mặt NGẠC NHIÊN (face beat 0,8s)');
+  eq(room5.view(T + 21_900).pose, 'strain', 'hết beat ngạc nhiên: về mặt rặn gốc strain');
+  ok(vWake.bugBubble !== null && vWake.bugBubble !== 'Zzz… buồn ngủ quá… 😴', 'tỉnh dậy: bong bóng giật mình của Bug');
+  ok(room5.drainCues().includes('meowBig'), 'tỉnh dậy: cue meowBig (tiếng meow giật mình)');
+
+  // tỉnh dậy bằng CHAT đầu tiên
+  const room6 = new WcRoom(T, mulberry32(18));
+  room6.tick(T + 25_000);
+  eq(room6.view(T + 25_000).mood, 'sleepy', 'phòng 2: im 25s là ngủ gật');
+  room6.chat(person('anhB'), 'chào Bug nè', T + 25_000);
+  eq(room6.view(T + 25_000).mood, 'focused', 'chat đầu tiên: tỉnh dậy');
+  ok(room6.drainCues().includes('meowBig'), 'tỉnh dậy bằng chat: cue meowBig');
+
+  // nhịp thắng: reliefSit (1,2s đầu) -> reliefJump -> nghỉ giữa lượt reliefSit; mood bliss
+  const room7 = new WcRoom(T, mulberry32(18));
+  room7.like(person('anhA'), 600, T);
+  eq(room7.view(T).pose, 'reliefSit', 'vừa thắng: pose reliefSit');
+  eq(room7.view(T).mood, 'bliss', 'đang ăn mừng: mood bliss');
+  eq(room7.view(T + 1_500).pose, 'reliefJump', 'sau 1,2s: pose reliefJump (nhảy nhẹ nhõm)');
+  room7.tick(T + 2_500);
+  eq(room7.view(T + 2_600).pose, 'reliefSit', 'nghỉ giữa lượt: pose reliefSit');
+
+  // móc điều khiển: ép ngủ gật / ép gồng / đánh thức
+  const room8 = new WcRoom(T, mulberry32(18));
+  room8.forceSleepy(T);
+  eq(room8.view(T).mood, 'sleepy', 'ép ngủ gật: mood sleepy ngay');
+  room8.wakeBug(T);
+  eq(room8.view(T).mood, 'focused', 'đánh thức từ trang điều khiển: tỉnh ngay');
+  const room9 = new WcRoom(T, mulberry32(18));
+  room9.forceMaxstrain(T);
+  eq(room9.view(T).pose, 'faceSurprised', 'ép gồng tối đa: tiến độ vọt qua mốc -> mặt ngạc nhiên (beat) trước');
+  eq(room9.view(T + 900).pose, 'maxstrain', 'hết beat: pose maxstrain như mục đích nút ép gồng');
+}
+
+// ---------- 19. Giờ nghỉ giữa lượt: MC nói đúng 1 câu pool nghỉ; câu follow NGUYÊN VĂN, thưa, tối đa 1 lần/giờ nghỉ ----------
+{
+  const FOLLOW = 'hãy cho tôi 1 follow để ủng hộ ra clip và game về mèo nha';
+  eq(FOLLOW_NOTE, FOLLOW, 'hằng số FOLLOW_NOTE trong engine khớp NGUYÊN VĂN câu user duyệt');
+  let followSeen = 0;
+  let intermissions = 0;
+  for (let seed = 1; seed <= 200; seed++) {
+    const room = new WcRoom(T, mulberry32(seed * 7919));
+    room.like(person('anhA'), 600, T); // thắng ngay
+    room.tick(T + 2_500); // -> intermission (tick trả về các câu đang chờ, đã gồm câu ăn mừng)
+    eq(room.view(T + 2_500).phase, 'intermission', `seed ${seed}: vào giờ nghỉ`);
+    const says = room.tick(T + 2_500 + 3_000); // tới mốc MC nói câu giờ nghỉ
+    // Câu MC mang tiền tố định tuyến giọng "F: " — phần nội dung sau tiền tố phải NGUYÊN VĂN
+    const followCount = says.filter((s) => s.text.replace(/^F: /, '') === FOLLOW).length;
+    ok(followCount <= 1, `seed ${seed}: câu follow tối đa 1 lần trong 1 giờ nghỉ`);
+    eq(says.length, 1, `seed ${seed}: giờ nghỉ MC nói đúng 1 câu pool nghỉ`);
+    if (followCount === 1) followSeen++;
+    // Không nói thêm câu pool nghỉ thứ hai trong cùng giờ nghỉ
+    const extra = room.tick(T + 2_500 + 6_000);
+    eq(extra.length, 0, `seed ${seed}: không có câu pool nghỉ thứ hai`);
+    intermissions++;
+  }
+  eq(intermissions, 200, 'đã chạy 200 giờ nghỉ mẫu');
+  ok(followSeen >= 3, `câu follow nguyên văn xuất hiện trong pool nghỉ (thấy ${followSeen}/200 giờ nghỉ — tần suất thưa)`);
+  ok(followSeen <= 100, `câu follow đủ thưa (thấy ${followSeen}/200, kỳ vọng ~1/6)`);
+}
+
+// ---------- 20. KHUÔN MẶT theo tương tác: face beat (vui/ngạc nhiên) + mặt quạu/buồn ngủ theo mood ----------
+{
+  // Quà -> mặt VUI 1,2s (kèm cảm ơn), hết hạn tự về mặt rặn; quà vẫn không tác dụng gameplay
+  const room = new WcRoom(T, mulberry32(20));
+  room.giftFx('chiB', T);
+  eq(room.view(T).pose, 'faceHappy', 'có quà: mặt VUI toe toét (face beat)');
+  eq(room.view(T + 1_100).pose, 'faceHappy', 'mặt vui giữ trong 1,2s');
+  eq(room.view(T + 1_300).pose, 'strain', 'hết 1,2s: mặt vui hết hạn, về mặt rặn gốc');
+  near(room.debugProgressPct(), 0, 'mặt vui vì quà vẫn không cộng tiến độ');
+
+  // Combo RẶN chạm 5 người -> mặt vui; chạm 10 người -> mặt vui lại
+  const room2 = new WcRoom(T, mulberry32(20));
+  for (let i = 0; i < 4; i++) room2.chat(person(`r${i}`), 'RẶN', T);
+  eq(room2.view(T).pose, 'strain', 'combo 4: chưa bật mặt vui');
+  room2.chat(person('r4'), 'RẶN', T);
+  eq(room2.view(T).pose, 'faceHappy', 'combo RẶN chạm 5 người: mặt vui');
+  eq(room2.view(T + 1_300).pose, 'strain', 'combo 5: mặt vui hết hạn sau 1,2s');
+  const room3 = new WcRoom(T, mulberry32(20));
+  for (let i = 0; i < 10; i++) room3.chat(person(`r${i}`), 'RẶN', T);
+  eq(room3.view(T).combo, 10, 'combo RẶN 10 người');
+  eq(room3.view(T).pose, 'faceHappy', 'combo RẶN chạm 10 người: mặt vui (thắng cả pose gồng tối đa theo combo)');
+  const room3b = new WcRoom(T, mulberry32(20));
+  room3b.simRanBurst(T); // 5 người giả lập chat RẶN
+  eq(room3b.view(T).pose, 'faceHappy', 'RẶN giả lập x5 từ trang điều khiển cũng bật mặt vui');
+
+  // Chạm mốc 25 -> mặt NGẠC NHIÊN 0,8s, thắng cả pose gồng tối đa theo nhịp tim
+  const room4 = new WcRoom(T, mulberry32(20));
+  room4.like(person('anhA'), 200, T); // 33% — qua mốc 25, nhịp tim rất cao
+  eq(room4.view(T).pose, 'faceSurprised', 'chạm mốc 25: mặt NGẠC NHIÊN (beat thắng pose mood)');
+  eq(room4.view(T + 900).pose, 'maxstrain', 'hết beat ngạc nhiên: về pose theo nhịp tim (gồng tối đa)');
+
+  // Mốc 75: Sen ló vào + mặt ngạc nhiên cùng lúc
+  const room5 = new WcRoom(T, mulberry32(20));
+  room5.like(person('anhA'), 460, T); // 76,6% — qua cả 3 mốc trong 1 nhịp
+  eq(room5.view(T).senPeek, true, 'mốc 75: Sen ló vào');
+  eq(room5.view(T).pose, 'faceSurprised', 'mốc 75: mặt ngạc nhiên kèm Sen ló');
+
+  // Beat KHÔNG bao giờ đè pose dỗi: quà lúc đang dỗi không bật mặt vui
+  const room6 = new WcRoom(T, mulberry32(20));
+  room6.forceSulk(T);
+  room6.giftFx('chiB', T);
+  eq(room6.view(T).pose, 'sulk', 'đang dỗi: quà tới vẫn pose quay lưng dỗi, không mặt vui');
+  room6.forceFace('happy', T);
+  eq(room6.view(T).pose, 'sulk', 'đang dỗi: ép mặt vui từ trang điều khiển cũng không đè được pose dỗi');
+
+  // Beat KHÔNG bao giờ đè nhịp ăn mừng: thắng ngay sau khi bật mặt vui -> reliefSit
+  const room7 = new WcRoom(T, mulberry32(20));
+  room7.giftFx('chiB', T);
+  room7.like(person('anhA'), 600, T);
+  eq(room7.view(T).phase, 'success', 'đủ lực: thắng');
+  eq(room7.view(T).pose, 'reliefSit', 'đang ăn mừng: pose phè phỡn thắng mặt vui');
+
+  // Móc điều khiển ép mặt ngạc nhiên
+  const room8 = new WcRoom(T, mulberry32(20));
+  room8.forceFace('surprised', T);
+  eq(room8.view(T).pose, 'faceSurprised', 'ép mặt ngạc nhiên từ trang điều khiển');
+  eq(room8.view(T + 900).pose, 'strain', 'mặt ngạc nhiên ép cũng hết hạn sau 0,8s');
 }
 
 if (failures) {

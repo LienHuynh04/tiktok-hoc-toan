@@ -183,8 +183,63 @@ const GRUMBLE_BUG = [
   'Đi vệ sinh cũng không yên với mấy người! 💢',
   'Chọc hoài, tui nhớ mặt hết rồi đó! 😾',
 ];
+// Bug gật gù ngủ gật (bong bóng thoại của chính Bug, không phải lời MC)
+const SLEEPY_BUG = [
+  'Zzz… buồn ngủ quá… 😴',
+  'Hửm… mơ thấy cá nướng… 💤',
+  'Ngủ tí thôi… ai rặn giùm đi… 😪',
+  'Mắt díu lại rồi nè… Zzz 💤',
+  'Gật gù… gật gù… sắp gục… 😴',
+];
+// Tim/chat đầu tiên đánh thức Bug khỏi cơn gật gù
+const WAKE_BUG = [
+  'Hả?! Đang rặn đây, đang rặn đây! 😳',
+  'Giật cả mình! Ai gọi tui đó?! 😱',
+  'Ơ ơ… chưa ngủ, tui chưa ngủ nha! 😳',
+  'Dậy rồi dậy rồi! Rặn tiếp nè! 💪',
+  'Hả? Có tim hả? Vào vị trí, rặn tiếp! 😤',
+];
+// NGOẠI LỆ USER DUYỆT RIÊNG CHO GAME NÀY (2026-11-14): câu xin follow dưới đây được phép
+// dùng trong Bug Đi WC (ghi chú xoay vòng ở chân sân khấu + MC đọc thưa trong giờ nghỉ giữa lượt).
+// Các game khác vẫn giữ luật không-CTA trên bề mặt phát sóng. GIỮ NGUYÊN VĂN, không viết lại.
+export const FOLLOW_NOTE = 'hãy cho tôi 1 follow để ủng hộ ra clip và game về mèo nha';
+// MC nói 1 câu trong giờ nghỉ giữa lượt (mỗi giờ nghỉ tối đa 1 câu) — câu follow nằm thưa trong pool (1/6)
+const INTERMISSION_LINES = [
+  'Nghỉ xả hơi mười giây! Bug đang rửa chân tay, vuốt lại bộ lông cho đẹp, chuẩn bị vào lượt rặn mới hoành tráng hơn!',
+  'Giải lao giữa hiệp! Sen tranh thủ dọn dẹp, còn MC thì tranh thủ uống ngụm nước, tí nữa gào cổ vũ tiếp!',
+  'Mười giây nạp năng lượng! Cả phòng thả lỏng ngón tay đi, tí nữa rặn tiếp là phải sung gấp đôi mới được!',
+  'Bug đang xoa bụng làm nóng người trong kia. Lượt sau khó hơn một cấp, cả phòng giữ vững phong độ nha!',
+  'Khoảng lặng trước cơn bão rặn! Ai chưa kịp uống nước thì uống đi, tí nữa là gồng hết công suất đấy!',
+  FOLLOW_NOTE,
+];
+// Bug đang hăng (nhịp tim cao): tự cổ vũ chính mình
+const PUMPED_BUG = [
+  'Hự hự! Sắp ra rồi, tui cảm thấy rồi! 💪',
+  'Rặn tới bến luôn nè! 🔥',
+  'Đừng dừng tim, tui đang đà này! 😤',
+  'Cả phòng mạnh quá, tui gồng theo muốn ná thở! 💪',
+  'Một chút nữa thôi… một chút nữa…! 🔥',
+];
 
 // ================= ENGINE =================
+
+/** Tâm trạng của Bug — suy từ tín hiệu sẵn có (nhịp tim, độ quạu, dỗi, im lặng, phase) */
+export type BugMood = 'focused' | 'pumped' | 'annoyed' | 'furious' | 'sulking' | 'sleepy' | 'bliss';
+/**
+ * Tư thế sprite của Bug trên sân khấu (stage map sang file ảnh, crossfade 120ms).
+ * Ngoài các pose theo mood còn 2 FACE BEAT theo sự kiện (faceHappy/faceSurprised):
+ * beat đang chạy thắng pose mood — trừ lúc dỗi (sulk) và ăn mừng (relief*) luôn thắng beat.
+ */
+export type BugPose =
+  | 'strain'
+  | 'maxstrain'
+  | 'sulk'
+  | 'reliefJump'
+  | 'reliefSit'
+  | 'faceHappy'
+  | 'faceSurprised'
+  | 'faceAnnoyed'
+  | 'faceSleepy';
 
 export interface BoardRow {
   username: string;
@@ -213,6 +268,9 @@ export interface WcView {
   annoyance: number; // 0..100
   sulking: boolean;
   sulkSec: number;
+  mood: BugMood; // tâm trạng hiện tại của Bug (lớp "thái độ")
+  pose: BugPose; // tư thế sprite stage cần hiện
+  strainActive: boolean; // đang gồng thật (stage mới rung; ngủ gật/dỗi thì đứng yên)
   bugBubble: string | null; // bong bóng thoại của chính Bug (càu nhàu / "Hứ! 😤")
   giftFx: boolean;
   topNow: { nickname: string; power: number } | null;
@@ -248,8 +306,14 @@ export class WcRoom {
   private progress = 0;
   private attemptStartedAt: number;
   private phaseEndsAt = 0;
+  private phaseStartedAt: number; // mốc vào phase hiện tại (nhịp reliefSit -> reliefJump khi thắng)
   private lastTickAt: number;
   private lastLikeAt = -Infinity;
+  private lastActivityAt: number; // tim HOẶC chat gần nhất (đồng hồ "phòng còn người" cho ngủ gật)
+  private sleepyFlag = false; // đã vào trạng thái gật gù (tick theo dõi chuyển trạng thái)
+  private intermSayAt = 0; // mốc MC nói câu giờ nghỉ giữa lượt (0 = đã nói/không hẹn)
+  private lastPumpedBubbleAt = -Infinity;
+  private lastSleepyBubbleAt = -Infinity;
   private likeEvents: { at: number; count: number }[] = [];
   private waterUntil = 0;
   private fiberUntil = 0;
@@ -267,6 +331,7 @@ export class WcRoom {
   private bubbleId = 0;
   private annoyance = 0;
   private sulkUntil = 0;
+  private faceBeat: { pose: 'faceHappy' | 'faceSurprised'; until: number } | null = null; // khuôn mặt phản ứng theo sự kiện
   private hissArmed = true;
   private bugBubble: { text: string; until: number } | null = null;
   private lastTeaseSayAt = -Infinity;
@@ -282,8 +347,10 @@ export class WcRoom {
     private rng: () => number = Math.random,
   ) {
     this.attemptStartedAt = now;
+    this.phaseStartedAt = now;
     this.lastTickAt = now;
     this.lastIdleAt = now;
+    this.lastActivityAt = now;
   }
 
   // ---------- Tiện ích ----------
@@ -315,6 +382,66 @@ export class WcRoom {
     let s = pool[i];
     for (const [k, v] of Object.entries(vars)) s = s.split(`{${k}}`).join(String(v));
     return F(s);
+  }
+  /** Bốc 1 câu thoại CỦA BUG (bong bóng trên sân khấu), không lặp câu đang hiện */
+  private pickBug(pool: readonly string[]): string {
+    let line = pool[Math.floor(this.rng() * pool.length)];
+    if (pool.length > 1 && line === this.bugBubble?.text) {
+      line = pool[(pool.indexOf(line) + 1) % pool.length];
+    }
+    return line;
+  }
+  /** Đang gật gù? Lượt đang chạy, không dỗi, phòng im (không tim + không chat) đủ lâu và nhịp tim ~0 */
+  private sleepyAt(now: number): boolean {
+    return (
+      this.phase === 'attempt' &&
+      !this.sulking(now) &&
+      now - this.lastActivityAt >= GAME.sleepyAfterMs &&
+      this.likeRateAt(now) < 0.5
+    );
+  }
+  /** Tâm trạng suy từ tín hiệu sẵn có. Thứ tự ưu tiên: bliss > sulking > sleepy > furious > annoyed > pumped > focused */
+  private moodAt(now: number): BugMood {
+    if (this.phase !== 'attempt') return 'bliss';
+    if (this.sulking(now)) return 'sulking';
+    if (this.sleepyAt(now)) return 'sleepy';
+    if (this.annoyance >= 80) return 'furious';
+    if (this.annoyance >= 30) return 'annoyed';
+    if (this.likeRateAt(now) >= GAME.pumpedRate) return 'pumped';
+    return 'focused';
+  }
+  /** Bật 1 face beat (khuôn mặt phản ứng theo sự kiện); beat tự hết hạn theo ms */
+  private setFaceBeat(pose: 'faceHappy' | 'faceSurprised', ms: number, now: number) {
+    this.faceBeat = { pose, until: now + ms };
+  }
+  /**
+   * Tư thế sprite suy từ mood/phase. Thứ tự phân giải (cao -> thấp):
+   * ăn mừng (reliefSit/reliefJump) > dỗi (sulk) > FACE BEAT đang chạy > mặt buồn ngủ
+   * (sleepy) > mặt quạu (annoyed/furious) > gồng tối đa > rặn thường.
+   * Mặt rặn gốc `strain` vẫn là nền của mọi lúc rặn bình thường.
+   */
+  private poseAt(now: number): BugPose {
+    if (this.phase === 'success') {
+      return now - this.phaseStartedAt < GAME.reliefSitMs ? 'reliefSit' : 'reliefJump';
+    }
+    if (this.phase === 'intermission') return 'reliefSit';
+    if (this.sulking(now)) return 'sulk';
+    if (this.faceBeat && now < this.faceBeat.until) return this.faceBeat.pose;
+    if (this.sleepyAt(now)) return 'faceSleepy';
+    if (this.annoyance >= 30) return 'faceAnnoyed';
+    if (this.likeRateAt(now) >= GAME.pumpedRate || this.pct() >= GAME.maxProgressPct || this.comboAt(now) >= GAME.maxCombo) {
+      return 'maxstrain';
+    }
+    return 'strain';
+  }
+  /** Tim/chat đầu tiên khi Bug đang gật gù: giật mình tỉnh dậy (mặt ngạc nhiên + bong bóng + tiếng meow lớn) */
+  private wakeIfSleepy(now: number): boolean {
+    if (!this.sleepyAt(now)) return false;
+    this.sleepyFlag = false;
+    this.setFaceBeat('faceSurprised', GAME.faceBeatSurprisedMs, now); // mặt NGẠC NHIÊN trong khoảnh khắc tỉnh dậy, rồi về mặt rặn
+    this.bugBubble = { text: this.pickBug(WAKE_BUG), until: now + 3000 };
+    this.cues.push('meowBig');
+    return true;
   }
   private contrib(p: Person): Contributor {
     let c = this.contributors.get(p.username);
@@ -384,6 +511,11 @@ export class WcRoom {
   /** Giấy vệ sinh + tim bay khi có quà (hình ảnh thuần tuý, không tác dụng gameplay) */
   giftFx(_username: string, now: number) {
     this.giftFxUntil = now + GAME.giftFxMs;
+    // Face beat MẶT VUI kèm lời cảm ơn (chỉ là biểu cảm, quà vẫn không tác dụng gameplay).
+    // Đang dỗi/ngoài lượt thì không bật — beat cũng không bao giờ đè pose dỗi.
+    if (this.phase === 'attempt' && !this.sulking(now)) {
+      this.setFaceBeat('faceHappy', GAME.faceBeatHappyMs, now);
+    }
   }
 
   chatterWindow(_now: number): boolean {
@@ -393,6 +525,8 @@ export class WcRoom {
   // ---------- Tim: lực rặn CHUNG của cả phòng ----------
   like(p: Person, count: number, now: number): Say[] {
     if (count <= 0 || this.phase !== 'attempt') return [];
+    this.wakeIfSleepy(now); // tim đầu tiên sau cơn gật gù: Bug giật mình tỉnh dậy
+    this.lastActivityAt = now;
     this.likeEvents.push({ at: now, count }); // nhịp tim vẫn hiển thị kể cả khi Bug dỗi
     if (this.sulking(now)) return []; // đang dỗi: tim không thành lực, mốc tụt vẫn chạy vì lastLikeAt đứng yên
     const mult = now < this.waterUntil ? GAME.waterMult : 1;
@@ -417,6 +551,8 @@ export class WcRoom {
     // Mọi chat đều lên sân khấu thành bong bóng thoại (đã lọc + cắt), kể cả chat thường
     this.addBubble(p, comment, now);
     if (this.phase !== 'attempt') return this.drainSays();
+    this.wakeIfSleepy(now); // chat đầu tiên sau cơn gật gù cũng đánh thức Bug
+    this.lastActivityAt = now;
     const t = plain(comment);
     const c = this.contrib(p);
 
@@ -445,6 +581,10 @@ export class WcRoom {
         c.attemptPower += gain;
         c.sessionPower += gain;
         this.ranUsers.set(p.username, now);
+        // Combo RẶN chạm mốc 5 / 10 người khác nhau: Bug cười toe toét (face beat mặt vui)
+        if (GAME.faceHappyCombo.includes(this.comboAt(now))) {
+          this.setFaceBeat('faceHappy', GAME.faceBeatHappyMs, now);
+        }
         this.popups.push({ id: ++this.popupId, nickname: p.nickname, until: now + 1600 });
         if (this.popups.length > 6) this.popups.shift();
       }
@@ -540,6 +680,8 @@ export class WcRoom {
       if (pct >= m && !this.milestonesHit.has(m)) {
         this.milestonesHit.add(m);
         this.cues.push('meowBig');
+        // Face beat MẶT NGẠC NHIÊN mỗi lần chạm mốc (ở mốc 75 cũng là lúc Sen ló vào gõ cửa)
+        this.setFaceBeat('faceSurprised', GAME.faceBeatSurprisedMs, now);
         if (m === 25) {
           this.cheatFxUntil.wobble = now + 3000;
           this.say({ text: this.pick(MILE25), main: true });
@@ -558,6 +700,7 @@ export class WcRoom {
     if (this.phase !== 'attempt') return;
     this.progress = this.need();
     this.phase = 'success';
+    this.phaseStartedAt = now;
     this.phaseEndsAt = now + GAME.successBeatMs;
     this.totals.successes++;
     const top = this.topAttempt();
@@ -584,12 +727,16 @@ export class WcRoom {
 
   private startAttempt(now: number, carryPct = 0) {
     this.phase = 'attempt';
+    this.phaseStartedAt = now;
     this.attempt++;
     this.attemptStartedAt = now;
+    this.lastActivityAt = now; // lượt mới: đồng hồ ngủ gật tính lại từ đầu
+    this.sleepyFlag = false;
     this.progress = (carryPct / 100) * this.need();
     this.milestonesHit = new Set(GAME.milestones.filter((m) => m <= carryPct));
     this.ranUsers.clear();
     this.likeEvents = [];
+    this.faceBeat = null; // lượt mới: hết hạn mọi face beat của lượt cũ
     this.lastLikeAt = -Infinity;
     this.waterUntil = 0;
     this.fiberUntil = 0;
@@ -616,6 +763,39 @@ export class WcRoom {
   forceBuff(kind: 'water' | 'fiber', now: number): Say[] {
     if (kind === 'water') this.waterUntil = now + GAME.waterMs;
     else this.fiberUntil = now + GAME.fiberMs;
+    return [];
+  }
+
+  /** Trang điều khiển: ép Bug ngủ gật ngay (test) — lùi đồng hồ hoạt động quá ngưỡng 20s */
+  forceSleepy(now: number): Say[] {
+    if (this.phase === 'attempt' && !this.sulking(now)) {
+      this.likeEvents = [];
+      this.lastActivityAt = now - GAME.sleepyAfterMs;
+    }
+    return [];
+  }
+
+  /** Trang điều khiển: ép khoảnh khắc gồng tối đa (test) — đẩy tiến độ qua ngưỡng về đích 90% */
+  forceMaxstrain(now: number): Say[] {
+    if (this.phase === 'attempt') {
+      const target = ((GAME.maxProgressPct + 2) / 100) * this.need();
+      if (this.progress < target) this.progress = target;
+      this.lastActivityAt = now;
+      this.checkMilestones(now);
+    }
+    return this.drainSays();
+  }
+
+  /** Trang điều khiển: đánh thức Bug (test) — chạy đúng đường tỉnh dậy như tim/chat thật */
+  wakeBug(now: number): Say[] {
+    if (this.wakeIfSleepy(now)) this.lastActivityAt = now;
+    return this.drainSays();
+  }
+
+  /** Trang điều khiển: ép 1 face beat (test) — poseAt vẫn giữ luật: beat không đè dỗi/ăn mừng */
+  forceFace(kind: 'happy' | 'surprised', now: number): Say[] {
+    if (kind === 'happy') this.setFaceBeat('faceHappy', GAME.faceBeatHappyMs, now);
+    else this.setFaceBeat('faceSurprised', GAME.faceBeatSurprisedMs, now);
     return [];
   }
 
@@ -655,11 +835,18 @@ export class WcRoom {
     if (this.phase === 'success') {
       if (now >= this.phaseEndsAt) {
         this.phase = 'intermission';
+        this.phaseStartedAt = now;
         this.phaseEndsAt = now + GAME.intermissionMs;
+        this.intermSayAt = now + GAME.intermissionLineDelayMs; // hẹn 1 câu MC giữa giờ nghỉ
       }
       return this.drainSays();
     }
     if (this.phase === 'intermission') {
+      // MC nói ĐÚNG 1 câu pool nghỉ mỗi giờ nghỉ (câu follow xuất hiện thưa 1/6, tối đa 1 lần/giờ nghỉ)
+      if (this.intermSayAt > 0 && now >= this.intermSayAt) {
+        this.intermSayAt = 0;
+        this.say({ text: this.pick(INTERMISSION_LINES) });
+      }
       if (now >= this.phaseEndsAt) {
         this.level++;
         this.totals.attempts++;
@@ -692,6 +879,23 @@ export class WcRoom {
     this.popups = this.popups.filter((p) => p.until > now);
     this.chatBubbles = this.chatBubbles.filter((b) => b.until > now);
     if (this.bugBubble && this.bugBubble.until <= now) this.bugBubble = null;
+
+    // Bug "sống": bong bóng thoại theo tâm trạng (ngủ gật "Zzz" / đang hăng tự cổ vũ).
+    // Không đè lên bong bóng đang hiện (càu nhàu, "Hứ!", giật mình tỉnh dậy...).
+    const moodNow = this.moodAt(now);
+    if (moodNow === 'sleepy') {
+      this.sleepyFlag = true;
+      if ((!this.bugBubble || this.bugBubble.until <= now) && now - this.lastSleepyBubbleAt >= GAME.sleepyBubbleEveryMs) {
+        this.lastSleepyBubbleAt = now;
+        this.bugBubble = { text: this.pickBug(SLEEPY_BUG), until: now + 4000 };
+      }
+    } else {
+      this.sleepyFlag = false;
+      if (moodNow === 'pumped' && (!this.bugBubble || this.bugBubble.until <= now) && now - this.lastPumpedBubbleAt >= GAME.pumpedBubbleEveryMs) {
+        this.lastPumpedBubbleAt = now;
+        this.bugBubble = { text: this.pickBug(PUMPED_BUG), until: now + 3000 };
+      }
+    }
 
     // MC cổ vũ theo nhịp tim (throttle)
     const rate = this.likeRateAt(now);
@@ -739,6 +943,9 @@ export class WcRoom {
       annoyance: Math.round(this.annoyance),
       sulking: sulk,
       sulkSec: sulk ? Math.ceil((this.sulkUntil - now) / 1000) : 0,
+      mood: this.moodAt(now),
+      pose: this.poseAt(now),
+      strainActive: this.phase === 'attempt' && !sulk && !this.sleepyAt(now),
       bugBubble: this.bugBubble && this.bugBubble.until > now ? this.bugBubble.text : null,
       giftFx: now < this.giftFxUntil,
       topNow: top ? { nickname: top.c.nickname, power: Math.round(top.c.attemptPower) } : null,

@@ -1,6 +1,97 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import './wc.css';
 import type { WcState } from './useWc';
+import { FOLLOW_NOTE, type BugPose } from './wc';
+
+/**
+ * Ghi chú xoay vòng trên chân sân khấu: mỗi ghi chú hiện ~6 giây, vòng 4 ghi chú ~24 giây.
+ * Ghi chú follow (ngoại lệ user duyệt riêng cho game này, 2026-11-14) là ghi chú "ấm" màu hồng-vàng,
+ * nguyên văn không sửa chữ; các ghi chú còn lại là thông tin trung tính về game.
+ */
+const FOOTER_NOTES: { emoji: string; text: string; warm?: boolean }[] = [
+  { emoji: '😴', text: 'Phòng im 20 giây là Bug gật gù ngủ gật — tim hoặc chat đầu tiên sẽ đánh thức Bug dậy rặn tiếp!' },
+  { emoji: '🐱', text: FOLLOW_NOTE, warm: true },
+  { emoji: '🎁', text: 'Quà chỉ để cảm ơn thôi nha: giấy vệ sinh bay trang trí, không cộng lực rặn đâu!' },
+  { emoji: '😾', text: 'Bug cũng có tâm trạng: tim càng dồn dập Bug càng gồng dữ, chọc nhiều quá là quạu dỗi quay lưng luôn!' },
+];
+
+/** Bộ tư thế của Bug: engine chọn pose, stage map sang ảnh và crossfade 120ms giữa các pose */
+const POSE_SRC: Record<BugPose, string> = {
+  strain: '/assets/bug-wc.png',
+  maxstrain: '/assets/bug-wc-max.png',
+  sulk: '/assets/bug-wc-sulk.png',
+  reliefJump: '/assets/bug-relief.png',
+  reliefSit: '/assets/bug-wc-relief-sit.png',
+  faceHappy: '/assets/bug-wc-face-happy.png',
+  faceSurprised: '/assets/bug-wc-face-surprised.png',
+  faceAnnoyed: '/assets/bug-wc-face-annoyed.png',
+  faceSleepy: '/assets/bug-wc-face-sleepy.png',
+};
+const POSE_ORDER: BugPose[] = ['strain', 'maxstrain', 'faceAnnoyed', 'faceSleepy', 'faceHappy', 'faceSurprised', 'sulk', 'reliefSit', 'reliefJump'];
+
+/**
+ * Chuyển động vi mô (thuần trình diễn, không qua engine): giật tai/đuôi ngẫu nhiên,
+ * chớp mắt (micro-squash 0,5%), và LIẾC ĐỌC CHAT — bong bóng chat mới nhất ở cột trái
+ * thì Bug nghiêng đầu sang trái 0,8s như đang đọc comment.
+ */
+function useMicroMotion(glanceKey: number, glanceAllowed: boolean) {
+  const [twitch, setTwitch] = useState(0);
+  const [blink, setBlink] = useState(false);
+  const [glance, setGlance] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    let t1 = 0;
+    let t2 = 0;
+    const loop = () => {
+      t1 = window.setTimeout(() => {
+        if (!alive) return;
+        setTwitch(Math.random() < 0.5 ? -2.5 : 2.5);
+        t2 = window.setTimeout(() => {
+          if (!alive) return;
+          setTwitch(0);
+          loop();
+        }, 250);
+      }, 4000 + Math.random() * 5000);
+    };
+    loop();
+    return () => {
+      alive = false;
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, []);
+  useEffect(() => {
+    let alive = true;
+    let t1 = 0;
+    let t2 = 0;
+    const loop = () => {
+      t1 = window.setTimeout(() => {
+        if (!alive) return;
+        setBlink(true);
+        t2 = window.setTimeout(() => {
+          if (!alive) return;
+          setBlink(false);
+          loop();
+        }, 120);
+      }, 3000 + Math.random() * 3000);
+    };
+    loop();
+    return () => {
+      alive = false;
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, []);
+  const lastGlanceKey = useRef(0);
+  useEffect(() => {
+    if (!glanceAllowed || glanceKey === 0 || glanceKey === lastGlanceKey.current) return;
+    lastGlanceKey.current = glanceKey;
+    setGlance(-2.6);
+    const t = window.setTimeout(() => setGlance(0), 800);
+    return () => window.clearTimeout(t);
+  }, [glanceKey, glanceAllowed]);
+  return { twitch, blink, glance };
+}
 
 /** Cục vàng hoạt hình (xoáy ốc vàng + lấp lánh) — SVG inline, dễ thương, không tả thực */
 function GoldenSwirl({ size }: { size: number }) {
@@ -57,10 +148,13 @@ const TP_POS = [
 
 export function WcStage({ game }: { game: WcState }) {
   const v = game.view;
-  // Emoji dự phòng CHỈ hiện khi ảnh sprite chưa tải xong hoặc lỗi — ảnh tải xong là ẩn hẳn
-  // (sprite nền trong suốt, để emoji nằm dưới sẽ lòi viền vàng quanh nhân vật)
-  const [bugOk, setBugOk] = useState(false);
-  const [reliefOk, setReliefOk] = useState(false);
+  // Ảnh pose nào đã tải xong / đã lỗi — pose lỗi thì lùi về pose strain, chưa tải thì emoji dự phòng
+  // (sprite nền trong suốt, để emoji nằm dưới ảnh đã tải sẽ lòi viền vàng quanh nhân vật)
+  const [poseLoaded, setPoseLoaded] = useState<Partial<Record<BugPose, boolean>>>({});
+  const [poseFailed, setPoseFailed] = useState<Partial<Record<BugPose, boolean>>>({});
+  // Liếc đọc chat: chỉ khi đang rặn thường (không liếc lúc gồng tối đa / dỗi / ngủ gật)
+  const glanceKey = v && v.chatBubbles.length ? v.chatBubbles[v.chatBubbles.length - 1].id : 0;
+  const micro = useMicroMotion(glanceKey, !!v && v.phase === 'attempt' && v.pose === 'strain');
   const confetti = useMemo(
     () =>
       Array.from({ length: 26 }, (_, i) => ({
@@ -70,6 +164,12 @@ export function WcStage({ game }: { game: WcState }) {
       })),
     [],
   );
+  // Vòng xoay ghi chú chân sân khấu (~6s/ghi chú, vòng ~24s)
+  const [noteIdx, setNoteIdx] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => setNoteIdx((i) => (i + 1) % FOOTER_NOTES.length), 6000);
+    return () => window.clearInterval(t);
+  }, []);
 
   if (!v) {
     return (
@@ -84,8 +184,13 @@ export function WcStage({ game }: { game: WcState }) {
 
   const giftFresh = game.lastGift && Date.now() - game.lastGift.at < 6000 ? game.lastGift : null;
   const rate = v.likeRate;
-  const shakeCls = v.phase !== 'attempt' || v.sulking ? '' : rate >= 8 ? 'wc-shake-lg' : rate >= 3 ? 'wc-shake-md' : rate >= 0.8 ? 'wc-shake-sm' : '';
-  const sweatCount = rate >= 8 ? 4 : rate >= 3 ? 2 : 0;
+  // Pose hiệu dụng: ảnh pose lỗi -> lùi về strain; strain cũng lỗi -> emoji dự phòng như cũ
+  const pose: BugPose = v.pose !== 'strain' && poseFailed[v.pose] ? 'strain' : v.pose;
+  const dozing = pose === 'faceSleepy';
+  // Rung chỉ khi Bug đang gồng thật (strainActive) — ngủ gật/dỗi/nghỉ là đứng yên
+  const shakeCls =
+    v.phase !== 'attempt' || !v.strainActive ? '' : rate >= 8 ? 'wc-shake-lg' : rate >= 3 ? 'wc-shake-md' : rate >= 0.8 ? 'wc-shake-sm' : '';
+  const sweatCount = pose !== 'strain' && pose !== 'maxstrain' ? 0 : rate >= 8 ? 4 : rate >= 3 ? 2 : 0;
   const annoyColor = v.annoyance >= 80 ? '#d92b1f' : v.annoyance >= 50 ? '#e2703a' : '#f0a13c';
   const success = v.phase === 'success';
 
@@ -105,62 +210,72 @@ export function WcStage({ game }: { game: WcState }) {
             (e.target as HTMLImageElement).style.display = 'none';
           }}
         />
-        {/* Bug ngồi bồn cầu (hoặc nhảy sung sướng khi thành công) */}
-        <div className="absolute" style={{ left: success ? 300 : 230, bottom: success ? 400 : 296, width: success ? 480 : 620 }}>
+        {/* Bug ngồi bồn cầu — bộ tư thế theo tâm trạng (crossfade 120ms) trong khung chuyển động vi mô */}
+        <div className="absolute" style={{ left: 230, bottom: 296, width: 620 }}>
           <div className={`${v.wobble ? 'wc-wobble' : ''}`}>
-            <div className={`relative ${success ? 'wc-bounce' : shakeCls}`} style={{ height: success ? 480 : 687 }}>
-              {!success && (
-                <>
-                  {!bugOk && <div className="absolute inset-0 flex items-center justify-center text-[230px]">🐱</div>}
-                  <img
-                    src="/assets/bug-wc.png"
-                    alt="Bug đang rặn"
-                    className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_14px_18px_rgba(91,58,30,0.35)]"
-                    draggable={false}
-                    onLoad={() => setBugOk(true)}
-                    style={v.sulking ? { transform: 'scaleX(-1)', filter: 'brightness(0.92) saturate(0.8)' } : undefined}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                  {/* mồ hôi + đường rặn theo nhịp tim */}
-                  {SWEAT_POS.slice(0, sweatCount).map((p, i) => (
-                    <span key={i} className="wc-sweat absolute text-[44px]" style={{ left: p.left, top: p.top, animationDelay: `${i * 0.22}s` }}>
-                      💧
+            <div className={`relative ${pose === 'reliefJump' ? 'wc-bounce' : shakeCls}`} style={{ height: 687 }}>
+              {/* Lắc thân qua lại khi gồng TỐI ĐA */}
+              <div className={pose === 'maxstrain' ? 'wc-rock h-full' : 'h-full'}>
+                {/* Hô hấp: phồng xẹp nhẹ liên tục; đang dỗi thì chậm và nông hơn */}
+                <div className={`h-full ${v.sulking ? 'wc-breathe-sulk' : 'wc-breathe'}`}>
+                  {/* Nghiêng: gật gù khi ngủ gật; còn lại = liếc đọc chat + giật tai/đuôi + chớp mắt */}
+                  <div
+                    className={`relative h-full ${dozing ? 'wc-nod' : ''}`}
+                    style={
+                      dozing
+                        ? undefined
+                        : {
+                            transform: `rotate(${micro.glance + micro.twitch}deg) scaleY(${micro.blink ? 0.995 : 1})`,
+                            transition: 'transform 160ms ease-out',
+                          }
+                    }
+                  >
+                    {!poseLoaded[pose] && <div className="absolute inset-0 flex items-center justify-center text-[230px]">🐱</div>}
+                    {POSE_ORDER.filter((p) => !poseFailed[p]).map((p) => (
+                      <img
+                        key={p}
+                        src={POSE_SRC[p]}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_14px_18px_rgba(91,58,30,0.35)]"
+                        draggable={false}
+                        onLoad={() => setPoseLoaded((s) => ({ ...s, [p]: true }))}
+                        onError={() => setPoseFailed((s) => ({ ...s, [p]: true }))}
+                        style={{ opacity: pose === p ? 1 : 0, transition: 'opacity 120ms ease-in-out' }}
+                      />
+                    ))}
+                    {/* mồ hôi + đường rặn theo nhịp tim (chỉ khi đang gồng) */}
+                    {SWEAT_POS.slice(0, sweatCount).map((p, i) => (
+                      <span key={i} className="wc-sweat absolute text-[44px]" style={{ left: p.left, top: p.top, animationDelay: `${i * 0.22}s` }}>
+                        💧
+                      </span>
+                    ))}
+                    {rate >= 5 && (pose === 'strain' || pose === 'maxstrain') && (
+                      <>
+                        <div className="wc-wave absolute" style={{ left: 8, top: 60 }}>
+                          <StrainWaves />
+                        </div>
+                        <div className="wc-wave absolute" style={{ right: 8, top: 60, animationDelay: '0.3s' }}>
+                          <StrainWaves flip />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {/* Zzz bay lên khi Bug ngủ gật (dấu 💢 khi dỗi đã nằm sẵn trong sprite quay lưng) */}
+              {dozing && (
+                <div className="pointer-events-none absolute" style={{ right: 170, top: -64 }}>
+                  {[0, 1, 2].map((i) => (
+                    <span key={i} className="wc-zzz absolute font-black text-[#7d9fc4]" style={{ left: i * 36, fontSize: 38 + i * 11, animationDelay: `${i * 0.85}s` }}>
+                      Z
                     </span>
                   ))}
-                  {rate >= 5 && (
-                    <>
-                      <div className="wc-wave absolute" style={{ left: 8, top: 60 }}>
-                        <StrainWaves />
-                      </div>
-                      <div className="wc-wave absolute" style={{ right: 8, top: 60, animationDelay: '0.3s' }}>
-                        <StrainWaves flip />
-                      </div>
-                    </>
-                  )}
-                  {v.sulking && <div className="wc-anger absolute text-[92px]" style={{ right: 30, top: -30 }}>💢</div>}
-                </>
-              )}
-              {success && (
-                <>
-                  {!reliefOk && <div className="absolute inset-0 flex items-center justify-center text-[230px]">🐱</div>}
-                  <img
-                    src="/assets/bug-relief.png"
-                    alt="Bug nhẹ nhõm"
-                    className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_14px_18px_rgba(91,58,30,0.35)]"
-                    draggable={false}
-                    onLoad={() => setReliefOk(true)}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </>
+                </div>
               )}
             </div>
           </div>
           {/* Bong bóng thoại của chính Bug */}
-          {!success && v.bugBubble && (
+          {v.phase === 'attempt' && v.bugBubble && (
             <div className="wc-pop absolute z-30" style={{ left: 268, top: -118 }}>
               <div className="relative rounded-[26px] bg-white px-[22px] py-[10px] text-[30px] font-extrabold whitespace-nowrap text-[#8f1d14] shadow-lg ring-2 ring-[#e2703a]">
                 {v.bugBubble}
@@ -330,10 +445,10 @@ export function WcStage({ game }: { game: WcState }) {
           <div className="absolute" style={{ left: 190, top: 520 }}>
             <RainbowArc width={700} />
           </div>
-          <div className="wc-drop absolute" style={{ left: 472, top: 1080 }}>
+          <div className="wc-drop absolute" style={{ left: 838, top: 1180 }}>
             <GoldenSwirl size={136} />
           </div>
-          <div className="wc-spin absolute" style={{ left: 452, top: 1230 }}>
+          <div className="wc-spin absolute" style={{ left: 716, top: 1470 }}>
             <svg width="176" height="176" viewBox="0 0 100 100">
               <path d="M50 12 a38 38 0 1 1 -26 11" stroke="#7fc4de" strokeWidth="9" fill="none" strokeLinecap="round" />
               <path d="M14 12 L26 24 L36 10 Z" fill="#7fc4de" />
@@ -375,8 +490,22 @@ export function WcStage({ game }: { game: WcState }) {
         </div>
       )}
 
-      {/* ===== Chân trang: luật chơi (mô tả trung tính) ===== */}
+      {/* ===== Chân trang: ghi chú xoay vòng + luật chơi (mô tả trung tính) ===== */}
       <div className="absolute inset-x-0 bottom-0 z-30 px-[26px] pb-[18px]">
+        <div className="mb-[10px] flex justify-center">
+          {(() => {
+            const note = FOOTER_NOTES[noteIdx];
+            return (
+              <div
+                key={noteIdx}
+                className={`wc-pop rounded-full px-[24px] py-[9px] text-[24px] font-extrabold shadow-lg ${note.warm ? 'text-[#8a4b12]' : 'glass-pill'}`}
+                style={note.warm ? { background: 'linear-gradient(90deg,#ffd9e8,#ffe9a8)', border: '2px solid #e8a33d' } : undefined}
+              >
+                {note.emoji} {note.text}
+              </div>
+            );
+          })()}
+        </div>
         <div className="glass-panel px-[22px] py-[13px]">
           <div className="text-center text-[23px] font-bold leading-snug">
             ❤️ Tim của cả phòng cộng chung thành lực rặn · 💬 <b>RẶN</b> +0,6% · <b>NƯỚC</b> tăng lực tim · <b>RAU</b> chống tụt · <b>CHỌC</b> là Bug quạu, quạu đầy là dỗi — dỗ bằng <b>XIN LỖI</b>

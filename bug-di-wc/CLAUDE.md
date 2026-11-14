@@ -29,10 +29,39 @@
   ≥5 câu bằng `pick()` (không lặp câu vừa bốc trong cùng pool). Thêm sự kiện mới
   phải thêm pool ≥5 câu, không hardcode 1 câu. Văn phong trung tính trên bề mặt
   phát sóng: không kêu gọi thả tim/follow/share/tặng quà dạng mệnh lệnh.
+- **NGOẠI LỆ CTA — CHỈ GAME NÀY (user duyệt 2026-11-14, sau khi được báo rõ là
+  xung đột luật không-CTA)**: câu `hãy cho tôi 1 follow để ủng hộ ra clip và game
+  về mèo nha` (hằng số `FOLLOW_NOTE` trong wc.ts, GIỮ NGUYÊN VĂN) được phép ở
+  đúng 2 chỗ: (1) ghi chú xoay vòng chân sân khấu (~6s mỗi ~24s, pill ấm), (2)
+  pool MC giờ nghỉ giữa lượt `INTERMISSION_LINES` (MC nói đúng 1 câu/giờ nghỉ,
+  câu follow chiếm 1/6 pool nên xuất hiện thưa, tối đa 1 lần/giờ nghỉ). KHÔNG
+  thêm CTA nào khác, KHÔNG mang ngoại lệ này sang game khác.
+- **Bug SỐNG (mood + pose + vi mô)**: engine suy `mood` (focused/pumped/annoyed/
+  furious/sulking/sleepy/bliss) và `pose` từ tín hiệu sẵn có — thứ tự ưu tiên ở
+  `moodAt()`/`poseAt()`, đừng đổi ngưỡng bừa (config `GAME.pumpedRate/maxCombo/
+  maxProgressPct/sleepyAfterMs/reliefSitMs`). **Mặt rặn gốc `bug-wc.png` là nền**
+  (user chốt giữ mặt này); các mặt khác là phản ứng theo tương tác: quạu 30–79 và
+  80–99 (furious thêm rung + cue xì) dùng **mặt quạu liếc xéo** `faceAnnoyed`;
+  ngủ gật dùng **mặt buồn ngủ** `faceSleepy` (thay pose doze cũ — gật gù ở stage
+  đã giảm biên độ cho nhẹ). **FACE BEAT** (`faceBeat` trong engine, config
+  `faceBeatHappyMs/faceBeatSurprisedMs/faceHappyCombo`): beat đang chạy THẮNG
+  pose mood nhưng KHÔNG bao giờ đè pose dỗi (sulk) hay ăn mừng (relief*) — thứ
+  tự phân giải nằm ở `poseAt()`, đừng sắp xếp lại. Mặt VUI `faceHappy` 1,2s:
+  có quà (trong `giftFx`, chỉ biểu cảm — quà vẫn vô hiệu gameplay) + combo RẶN
+  chạm 5/10 người khác nhau. Mặt NGẠC NHIÊN `faceSurprised` 0,8s: chạm mốc
+  25/50/75 (mốc 75 = lúc Sen ló vào) + khoảnh khắc TỈNH DẬY trong
+  `wakeIfSleepy()` (xong beat tự về mặt rặn). Ngủ gật: lượt đang chạy + 20s
+  không tim/chat + nhịp tim <0,5 → sleepy; tim/chat đầu tiên = tỉnh dậy (mặt
+  ngạc nhiên + bong bóng WAKE_BUG + cue meowBig). Dỗi dùng sprite QUAY LƯNG
+  `bug-wc-sulk.png` — cấm quay lại trò lật ngang scaleX(-1). Chuyển động vi mô
+  (thở/giật tai/chớp/lếc chat/gật gù/lắc thân) là lớp TRÌNH DIỄN ở stage
+  (`useMicroMotion` + class wc-breathe/wc-rock/wc-nod/wc-zzz trong wc.css),
+  engine không biết; đổi pose crossfade 120ms.
 - **Tiếng mèo** (`src/live/catSounds.ts`): tổng hợp Web Audio, KHÔNG file mẫu.
   Engine chỉ phát tín hiệu qua `drainCues()` ('meow' | 'meowBig' | 'sadMeow' |
-  'hiss' | 'yowl' | 'chirp'); tiếng gằn/grừ liên tục do hook lái theo likeRate.
-  Đừng gọi Web Audio từ engine (engine phải thuần để test).
+  'hiss' | 'yowl' | 'chirp'); tiếng gằn/grừ liên tục do hook lái theo likeRate,
+  tiếng NGÁY do hook lái khi mood = sleepy (khi đó phải tắt purr). Đừng gọi
+  Web Audio từ engine (engine phải thuần để test).
 - **Bong bóng chat**: mọi chat lên sân khấu qua `addBubble()` — bắt buộc qua
   `maskBanned()` + cắt 40 ký tự + trần 5 cái + sống 5s. Đừng render chat thô ở
   bất kỳ chỗ nào khác trên stage.
@@ -41,7 +70,10 @@
   phát sau tương tác đầu tiên (luật trình duyệt); không hứa cách lách.
 - **Vỏ sân khấu**: glass kem "storybook glass" (`.glass-panel`/`.glass-pill` trong
   `wc.css`) — KHÔNG mảng tối (dark slab) trong chrome sân khấu.
-- **Ảnh nhị phân** `public/assets/wc-bg.png`, `bug-wc.png`, `bug-relief.png`,
-  `sen.png` KHÔNG đi qua đường đẩy chữ GitHub — phải chép/push từ Mac (gói zip).
-  Stage phải vẫn chạy khi thiếu ảnh (nền gradient + emoji 🐱 dự phòng) — đừng bỏ
-  lớp dự phòng khi sửa stage.
+- **Ảnh nhị phân** (11 file) `public/assets/wc-bg.png`, `bug-wc.png`,
+  `bug-wc-max.png`, `bug-wc-sulk.png`, `bug-wc-relief-sit.png`, `bug-relief.png`,
+  `sen.png`, `bug-wc-face-happy.png`, `bug-wc-face-surprised.png`,
+  `bug-wc-face-annoyed.png`, `bug-wc-face-sleepy.png` KHÔNG đi qua đường đẩy chữ
+  GitHub — phải chép/push từ Mac (gói zip).
+  Stage phải vẫn chạy khi thiếu ảnh (nền gradient + emoji 🐱 dự phòng; pose thiếu
+  ảnh thì lùi về pose strain) — đừng bỏ lớp dự phòng khi sửa stage.

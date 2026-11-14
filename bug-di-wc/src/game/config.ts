@@ -43,6 +43,21 @@ export const GAME = {
   likeRateWindowMs: 3_000, // cửa sổ trượt tính "tim/giây" (3 giây)
   popupSampleMs: 700, // tối đa 1 popup "RẶN!" ghi công người thả tim mỗi chừng này
 
+  // ----- Bug SỐNG: tâm trạng + bộ tư thế (mood/pose suy từ tín hiệu sẵn có) -----
+  pumpedRate: 8, // nhịp tim >= chừng này/giây: mood "pumped" + tư thế GỒNG TỐI ĐA
+  maxCombo: 8, // combo RẶN cùng lúc >= chừng này người: cũng vào tư thế gồng tối đa
+  maxProgressPct: 90, // tiến độ >= 90%: gồng tối đa (về đích)
+  sleepyAfterMs: 20_000, // lượt đang chạy mà 20s không tim + không chat: Bug ngủ gật (mặt buồn ngủ)
+  reliefSitMs: 1_200, // nhịp thắng: ngồi phè phỡn 1,2s đầu, sau đó mới nhảy nhẹ nhõm
+
+  // ----- FACE BEATS: khuôn mặt phản ứng theo sự kiện (beat thắng pose mood, trừ lúc dỗi/ăn mừng) -----
+  faceBeatHappyMs: 1_200, // mặt VUI TOÉT: có quà / combo RẶN chạm 5 và 10 người
+  faceBeatSurprisedMs: 800, // mặt NGẠC NHIÊN: qua mốc 25/50/75 (kèm Sen ló ở 75) / giật mình tỉnh dậy
+  faceHappyCombo: [5, 10], // combo RẶN (người khác nhau) chạm các mốc này thì bật mặt vui
+  pumpedBubbleEveryMs: 9_000, // đang pumped: tối đa 1 bong bóng thoại "hăng" của Bug mỗi chừng này
+  sleepyBubbleEveryMs: 7_000, // đang ngủ gật: tối đa 1 bong bóng "Zzz" của Bug mỗi chừng này
+  intermissionLineDelayMs: 3_000, // vào giờ nghỉ giữa lượt 3s: MC nói 1 câu của pool nghỉ (có câu follow thưa, ngoại lệ user duyệt)
+
   // ----- MC -----
   cheerCooldownMs: 18_000, // câu cổ vũ theo nhịp tim: tối đa 1 câu mỗi chừng này
   idleLineEveryMs: 80_000,
