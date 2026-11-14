@@ -30,6 +30,17 @@
   SVG trong `src/game/art.ts` là ĐƯỜNG DỰ PHÒNG khi file ảnh lỗi tải — đừng xoá.
   Nhân vật render ở lớp phủ toạ độ sân khấu (BugStage), KHÔNG nhét vào khung `overflow-hidden`.
   Ảnh là file NHỊ PHÂN: không qua được đường push chữ — chép/đẩy từ Mac (xem README).
+- **Vỏ giao diện sân khấu (từ 2026-11-14)**: chrome theo ngôn ngữ "storybook glass" —
+  class `.glass-panel` / `.glass-pill` trong `src/game/bug.css`: nền kem trong mờ
+  rgba(252,247,238,.88) + backdrop blur, viền nâu ấm 1.5px rgba(122,84,50,.35), bo 22px,
+  bóng mềm; chữ nâu đậm #5b3a1e, chữ phụ #96714e, nhấn vàng #f7c948→#f0a13c / viền #d9941c;
+  tiêu đề dùng class `.bug-display` (Baloo 2 + fallback cục bộ, KHÔNG tải webfont).
+  CẤM quay lại mảng tối (dark slab #4a3226) cho header/banner/footer. Thanh trên 1 hàng:
+  pill cân nặng chứa cả mốc cấp sau + thanh mini BÊN TRONG pill; pill Sen bắt / LÌ chỉ icon.
+  Chấm nhiệm vụ: xong = vàng + ✓, hiện tại = `.bug-dot-current`. Chip lệnh ở footer: lệnh
+  của nhiệm vụ hiện tại (suy từ hint "gõ X…") tô vàng. Banner ăn mừng giữ thêm ~330ms để
+  chạy `.bug-banner-out` (state thuần trình diễn trong BugStage). Ngân sách chiều cao:
+  chồng trên ≤ 300px, panel footer ≤ 190px — đừng phình chrome che tranh.
 - **Hình thức test emit** (POST /api/test/emit): like = `{type:'like', data:{likeCount:N}}`
   (để phẳng `{count:N}` chỉ tính 1 tim); chat = `{type:'chat', data:{comment:'ĐẨY'}}`.
   Lệnh điều khiển riêng: `/api/control {action:'custom', text:'demo_nao' | 'force_vote' | 'sim_viewers:N'}`.

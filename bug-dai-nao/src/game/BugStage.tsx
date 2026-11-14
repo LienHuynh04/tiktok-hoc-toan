@@ -8,6 +8,9 @@ import { ART, BOX_FRONT_RECT, PAINT_ANCHORS, SEN_SIZE, BUG_POSE_SIZE, resolveBug
 
 const fmtKg = (n: number) => n.toFixed(1).replace('.', ',');
 
+/** 8 lệnh chat — thứ tự hiển thị ở chân trang (chip của lệnh nhiệm vụ hiện tại được tô vàng). */
+const COMMANDS = ['ĐẨY', 'LEO', 'ĐU', 'NHẢY', 'CHẠY', 'NÉ', 'GIẢ NGỦ', 'ĂN VẠ'] as const;
+
 /** Ảnh tư thế có chuyển cảnh mờ chéo ~150ms khi đổi pose (tránh "giật" hình). */
 function PoseImg({ src, alt, onError }: { src: string; alt: string; onError: () => void }) {
   const [cur, setCur] = useState(src);
@@ -74,9 +77,30 @@ export function BugStage({ game }: { game: BugState }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // --- Banner ăn mừng: giữ lại ~330ms sau khi engine tắt banner để chạy hiệu ứng
+  // mờ dần (thuần trình diễn, không đụng engine) ---
+  const [shownBanner, setShownBanner] = useState<{ kind: string; title: string; sub: string } | null>(null);
+  const [bannerLeaving, setBannerLeaving] = useState(false);
+  useEffect(() => {
+    const b = v?.banner ?? null;
+    if (b) {
+      setShownBanner(b);
+      setBannerLeaving(false);
+      return;
+    }
+    if (!shownBanner) return;
+    setBannerLeaving(true);
+    const t = setTimeout(() => {
+      setShownBanner(null);
+      setBannerLeaving(false);
+    }, 330);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [v?.banner]);
+
   if (!v) {
     return (
-      <div className="relative h-[1920px] w-[1080px] overflow-hidden bg-[#f6f0e1] font-sans text-[#4a3226] select-none">
+      <div className="relative h-[1920px] w-[1080px] overflow-hidden bg-[#f6f0e1] font-sans text-[#5b3a1e] select-none">
         <div className="flex h-full items-center justify-center text-[38px] font-bold">Đang dựng nhà cho Bug… 🐱</div>
       </div>
     );
@@ -87,6 +111,8 @@ export function BugStage({ game }: { game: BugState }) {
   const shakePx = banner?.kind === 'levelup' ? 5 + v.fatStage * 2 : 0;
   const shakeStyle = shakePx ? ({ animation: `bugShake 0.5s ease-in-out infinite`, ['--shakePx' as string]: `${shakePx}px` } as React.CSSProperties) : undefined;
   const giftFresh = game.lastGift && Date.now() - game.lastGift.at < 6000 ? game.lastGift : null;
+  // Lệnh của nhiệm vụ hiện tại (suy từ dòng hint "gõ X khi Bug ở…") để tô vàng chip ở chân trang
+  const currentCmd = v.vote ? null : (COMMANDS.find((c) => v.hint.includes(`gõ ${c}`)) ?? null);
 
   const useRealRoom = !failed.has('room');
   // Zone của nhiệm vụ hiện tại (để vẽ vòng sáng trên vật trong tranh)
@@ -289,7 +315,7 @@ export function BugStage({ game }: { game: BugState }) {
   );
 
   return (
-    <div className="relative h-[1920px] w-[1080px] overflow-hidden bg-[#f6f0e1] font-sans text-[#4a3226] select-none">
+    <div className="relative h-[1920px] w-[1080px] overflow-hidden bg-[#f6f0e1] font-sans text-[#5b3a1e] select-none">
       {/* ===== Phòng khách: tranh thật (hoặc phòng SVG cũ khi mất file tranh) ===== */}
       {useRealRoom ? (
         <div className="absolute inset-0 z-10" style={shakeStyle}>
@@ -300,61 +326,55 @@ export function BugStage({ game }: { game: BugState }) {
         legacyRoomAndChars
       )}
 
-      {/* ===== HUD trên ===== */}
-      <div className="absolute inset-x-0 top-0 z-30 px-[26px] pt-[18px]">
-        <div className="flex items-center gap-[14px]">
-          <div className="rounded-2xl bg-[#4a3226] px-[16px] py-[6px] text-[38px]">🐱</div>
+      {/* ===== HUD trên: vỏ kính "storybook glass" ===== */}
+      <div className="absolute inset-x-0 top-0 z-30 px-[24px] pt-[16px]">
+        {/* Thanh trên — 1 hàng gọn: chip mèo + tiêu đề | pill cân nặng | pill Sen bắt | pill LÌ */}
+        <div className="glass-panel flex items-center gap-[10px] px-[16px] py-[10px]">
+          <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[16px] bg-gradient-to-b from-[#f7c948] to-[#f0a13c] text-[30px] shadow-inner ring-1 ring-[#d9941c]/50">🐱</div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[39px] font-extrabold leading-tight">BUG ĐẠI NÁO NHÀ SEN</div>
-            <div className="text-[23px] font-semibold text-[#8a6a52]">Chương {v.chapter} · cả phòng cùng lái Bug, Sen máy đuổi bắt</div>
+            <div className="bug-display truncate text-[28px] font-bold leading-[1.05] text-[#5b3a1e]">BUG ĐẠI NÁO NHÀ SEN</div>
+            <div className="truncate text-[18px] font-semibold text-[#96714e]">Chương {v.chapter} · Sen máy đuổi bắt</div>
           </div>
-          <div className="text-center">
-            <div className="text-[19px] font-bold tracking-wide text-[#8a6a52]">SEN ĐÃ BẮT</div>
-            <div className="text-[30px] leading-none">
-              {Array.from({ length: v.catchesGoal }, (_, i) => (
-                <span key={i} className={i < v.catches ? '' : 'opacity-25'}>🥅</span>
-              ))}
+          {/* Cân nặng: mọi chữ nằm TRONG pill — dòng 1 là cân + cấp, dòng 2 là thanh mini + mốc cấp sau */}
+          <div className="glass-pill shrink-0 px-[15px] py-[6px]">
+            <div className="whitespace-nowrap text-[19px] font-extrabold leading-tight text-[#5b3a1e]">⚖️ {fmtKg(v.kg)} kg · Cấp {v.fatStage}</div>
+            <div className="mt-[3px] flex items-center gap-[8px]">
+              <div className="h-[8px] w-[104px] overflow-hidden rounded-full bg-[#e9dcc3]">
+                <div className="h-full rounded-full bg-gradient-to-r from-[#f7c948] via-[#f79d3c] to-[#f27059] transition-all duration-500" style={{ width: `${kgPct}%` }} />
+              </div>
+              <span className="whitespace-nowrap text-[13px] font-semibold text-[#96714e]">{v.fatNextKg ? `sau: ${fmtKg(v.fatNextKg)} kg` : 'MAX CẤP!'}</span>
             </div>
           </div>
-          <div className="text-center">
-            <div className="text-[19px] font-bold tracking-wide text-[#8a6a52]">ĐỘ LÌ</div>
-            <div className="text-[27px] leading-none">
-              {Array.from({ length: v.liMax }, (_, i) => (
-                <span key={i} className={i < v.li ? '' : 'opacity-25'}>🐾</span>
-              ))}
-            </div>
+          {/* Sen đã bắt: chỉ icon, không nhãn dài */}
+          <div className="glass-pill flex shrink-0 items-center gap-[3px] px-[12px] py-[9px]" title="Sen đã bắt">
+            {Array.from({ length: v.catchesGoal }, (_, i) => (
+              <span key={i} className={`text-[22px] leading-none ${i < v.catches ? '' : 'opacity-25 grayscale'}`}>🥅</span>
+            ))}
+          </div>
+          {/* Độ lì: chỉ icon dấu chân */}
+          <div className="glass-pill flex shrink-0 items-center gap-[3px] px-[12px] py-[9px]" title="Độ lì">
+            {Array.from({ length: v.liMax }, (_, i) => (
+              <span key={i} className={`text-[20px] leading-none ${i < v.li ? '' : 'opacity-25 grayscale'}`}>🐾</span>
+            ))}
           </div>
         </div>
 
-        {/* Thanh cân nặng — tiến trình cả buổi */}
-        <div className="mt-[10px] flex items-center gap-[12px]">
-          <div className="whitespace-nowrap text-[25px] font-extrabold">
-            ⚖️ {fmtKg(v.kg)} kg · Cấp {v.fatStage}: {v.fatName}
-          </div>
-          <div className="relative h-[26px] flex-1 overflow-hidden rounded-full bg-white/70 ring-2 ring-[#d8c6a8]">
-            <div className="h-full rounded-full bg-gradient-to-r from-[#f7c948] via-[#f79d3c] to-[#f27059] transition-all duration-500" style={{ width: `${kgPct}%` }} />
-          </div>
-          <div className="whitespace-nowrap text-[21px] font-semibold text-[#8a6a52]">
-            {v.fatNextKg ? `cấp sau: ${fmtKg(v.fatNextKg)} kg` : 'MAX CẤP!'}
-          </div>
-        </div>
-
-        {/* Nhiệm vụ hiện tại + danh sách phá */}
-        <div className="mt-[10px] rounded-[22px] bg-white/75 px-[18px] py-[10px] shadow ring-1 ring-[#e2d3b8]">
+        {/* Thẻ nhiệm vụ — mỏng, ngay dưới thanh trên */}
+        <div className="glass-panel mt-[10px] px-[18px] py-[11px]">
           {v.vote ? (
             <div>
-              <div className="text-center text-[30px] font-extrabold text-[#7b4fa6]">🗳️ VOTE — còn {v.vote.remainSec}s · gõ {v.vote.aWord} hoặc {v.vote.bWord}!</div>
-              <div className="mt-[6px] space-y-[5px]">
+              <div className="bug-display text-center text-[27px] font-bold text-[#7b4fa6]">🗳️ VOTE — còn {v.vote.remainSec}s · gõ {v.vote.aWord} hoặc {v.vote.bWord}!</div>
+              <div className="mt-[7px] space-y-[6px]">
                 {[
                   { label: v.vote.aLabel, n: v.vote.a, word: v.vote.aWord, color: '#5b9bd5' },
                   { label: v.vote.bLabel, n: v.vote.b, word: v.vote.bWord, color: '#f27059' },
                 ].map((o) => (
                   <div key={o.word} className="flex items-center gap-[10px]">
-                    <div className="w-[300px] truncate text-[24px] font-bold">{o.label} ({o.word})</div>
-                    <div className="relative h-[24px] flex-1 overflow-hidden rounded-full bg-[#e8dcc4]">
-                      <div className="h-full transition-all duration-300" style={{ width: `${Math.min(100, o.n * 12)}%`, backgroundColor: o.color }} />
+                    <div className="w-[322px] truncate text-[21px] font-bold text-[#5b3a1e]">{o.label} ({o.word})</div>
+                    <div className="h-[20px] flex-1 overflow-hidden rounded-full bg-[#e9dcc3]">
+                      <div className="h-full rounded-full transition-all duration-300" style={{ width: `${Math.min(100, o.n * 12)}%`, backgroundColor: o.color }} />
                     </div>
-                    <div className="w-[52px] text-right text-[24px] font-extrabold">{o.n}</div>
+                    <div className="w-[46px] text-right text-[22px] font-extrabold text-[#5b3a1e]">{o.n}</div>
                   </div>
                 ))}
               </div>
@@ -362,15 +382,23 @@ export function BugStage({ game }: { game: BugState }) {
           ) : (
             <>
               <div className="flex items-center gap-[12px]">
-                <div className="min-w-0 flex-1 truncate text-[30px] font-extrabold">
-                  🎯 Nhiệm vụ {Math.min(v.missionIdx + 1, 10)}/10: {v.missionLabel}
+                <div className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#f7c948] to-[#f0a13c] text-[24px] shadow ring-1 ring-[#d9941c]/50">🎯</div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[28px] font-extrabold leading-tight text-[#5b3a1e]">
+                    Nhiệm vụ {Math.min(v.missionIdx + 1, 10)}/10: {v.missionLabel}
+                  </div>
+                  {!v.combo && <div className="truncate text-[20px] font-semibold text-[#96714e]">{v.hint}</div>}
                 </div>
-                <div className="flex gap-[5px]">
+                <div className="flex shrink-0 gap-[5px]">
                   {v.missions.map((m, i) => (
                     <span
                       key={i}
-                      className={`flex h-[30px] w-[30px] items-center justify-center rounded-full text-[19px] font-extrabold ${
-                        m.done ? 'bg-[#7bc47f] text-white' : i === v.missionIdx ? 'bug-pulse bg-[#f79d3c] text-white' : 'bg-[#e8dcc4] text-[#8a6a52]'
+                      className={`flex h-[27px] w-[27px] items-center justify-center rounded-full text-[15px] font-extrabold ${
+                        m.done
+                          ? 'bg-gradient-to-b from-[#ffd968] to-[#f0a13c] text-[#6b4305] ring-1 ring-[#d9941c]/60'
+                          : i === v.missionIdx
+                            ? 'bug-dot-current border-2 border-[#d9941c] bg-[#fff7e6] text-[#b97a1e]'
+                            : 'border-[1.5px] border-[rgba(122,84,50,0.25)] bg-[rgba(255,255,255,0.5)] text-[#96714e]'
                       }`}
                     >
                       {m.done ? '✓' : i + 1}
@@ -378,74 +406,94 @@ export function BugStage({ game }: { game: BugState }) {
                   ))}
                 </div>
               </div>
-              {v.combo ? (
-                <div className="mt-[7px] flex items-center gap-[10px]">
-                  <div className="whitespace-nowrap text-[24px] font-extrabold text-[#d35450]">🔥 COMBO {v.combo.have}/{v.combo.need} · còn {v.combo.remainSec}s</div>
-                  <div className="relative h-[22px] flex-1 overflow-hidden rounded-full bg-[#e8dcc4]">
-                    <div className="h-full bg-gradient-to-r from-[#f27059] to-[#d35450] transition-all duration-200" style={{ width: `${(v.combo.have / v.combo.need) * 100}%` }} />
+              {v.combo && (
+                <div className="mt-[8px] flex items-center gap-[10px]">
+                  <div className="whitespace-nowrap text-[22px] font-extrabold text-[#c2452d]">🔥 COMBO {v.combo.have}/{v.combo.need} · còn {v.combo.remainSec}s</div>
+                  <div className="h-[16px] flex-1 overflow-hidden rounded-full bg-[#e9dcc3]">
+                    <div className="h-full rounded-full bg-gradient-to-r from-[#f7c948] via-[#f27059] to-[#d35450] transition-all duration-200" style={{ width: `${(v.combo.have / v.combo.need) * 100}%` }} />
                   </div>
                 </div>
-              ) : (
-                <div className="mt-[2px] truncate text-[23px] font-semibold text-[#8a6a52]">{v.hint}</div>
               )}
             </>
           )}
         </div>
 
-        {v.credit && (
-          <div className="bug-pop mx-auto mt-[8px] w-fit rounded-full bg-[#f7c948] px-[20px] py-[5px] text-[25px] font-extrabold shadow">
-            ⭐ {v.credit.nickname} — lệnh quyết định: {v.credit.label}!
-          </div>
-        )}
-        {giftFresh && (
-          <div className="bug-pop mx-auto mt-[8px] w-fit rounded-full bg-[#ffd9e8] px-[20px] py-[5px] text-[25px] font-extrabold shadow">
-            🎁 {giftFresh.nickname} tặng {giftFresh.giftName} — cảm ơn bạn! 💖
+        {/* Ribbon ghi công + cảm ơn quà: dải nhỏ gắn dưới thẻ nhiệm vụ */}
+        {(v.credit || giftFresh) && (
+          <div className="mt-[8px] flex flex-wrap items-start gap-[8px] pl-[16px]">
+            {v.credit && (
+              <div className="bug-pop rounded-full bg-gradient-to-b from-[#ffd968] to-[#f7b733] px-[18px] py-[5px] text-[22px] font-extrabold text-[#6b4305] shadow-md ring-1 ring-[#d9941c]/60">
+                ⭐ {v.credit.nickname} — lệnh quyết định: {v.credit.label}!
+              </div>
+            )}
+            {giftFresh && (
+              <div className="bug-pop glass-pill px-[18px] py-[5px] text-[22px] font-extrabold text-[#a03d63]">
+                🎁 {giftFresh.nickname} tặng {giftFresh.giftName} — cảm ơn bạn! 💖
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Banner sự kiện */}
-      {banner && (
+      {/* Banner sự kiện — thẻ kính kem viền vàng, bung vào rồi mờ dần (không mảng tối) */}
+      {shownBanner && (
         <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
-          {banner.kind === 'levelup' &&
+          {shownBanner.kind === 'levelup' &&
             fish.map((f, i) => (
               <span key={i} className="bug-fish" style={{ left: f.left, animationDelay: f.delay, fontSize: f.size }}>🐟</span>
             ))}
-          {(banner.kind === 'mission' || banner.kind === 'chapterwin') &&
+          {(shownBanner.kind === 'mission' || shownBanner.kind === 'chapterwin') &&
             confetti.map((c, i) => (
               <span key={i} className="bug-confetti" style={{ left: c.left, animationDelay: c.delay, backgroundColor: c.color, transform: `rotate(${c.rot}deg)` }} />
             ))}
-          <div className="bug-pop rounded-[30px] bg-[#4a3226]/92 px-[36px] py-[22px] text-center shadow-2xl">
-            <div className="text-[52px] font-extrabold text-[#ffd166]">{banner.title}</div>
-            <div className="mt-[4px] max-w-[860px] text-[30px] font-bold text-white">{banner.sub}</div>
+          <div
+            className={`glass-panel px-[42px] py-[24px] text-center ${bannerLeaving ? 'bug-banner-out' : 'bug-banner-in'}`}
+            style={{ border: '2.5px solid rgba(217, 148, 28, 0.75)', borderRadius: 28 }}
+          >
+            <div className="bug-display text-[54px] font-bold leading-[1.05] text-[#b97a1e]">{shownBanner.title}</div>
+            <div className="mx-auto mt-[6px] max-w-[860px] text-[29px] font-bold leading-snug text-[#5b3a1e]">{shownBanner.sub}</div>
           </div>
         </div>
       )}
 
-      {/* ===== Chân trang: kết quả lệnh + hướng dẫn ===== */}
-      <div className="absolute inset-x-0 bottom-0 z-30 px-[26px] pb-[20px]">
-        <div className="mb-[10px] flex h-[54px] items-center justify-center">
+      {/* ===== Chân trang: kết quả lệnh + panel kính hướng dẫn ===== */}
+      <div className="absolute inset-x-0 bottom-0 z-30 px-[24px] pb-[18px]">
+        <div className="mb-[8px] flex h-[48px] items-center justify-center">
           {v.lastAction && (
             <div
-              className={`bug-pop rounded-full px-[22px] py-[8px] text-[27px] font-bold shadow ${
-                v.lastAction.kind === 'ok' ? 'bg-[#dff2d8] text-[#2e6b2e]' : v.lastAction.kind === 'fail' ? 'bg-[#ffe3d3] text-[#9c4a1f]' : 'bg-white/85 text-[#6b5138]'
-              }`}
+              className="bug-pop glass-pill px-[20px] py-[6px] text-[24px] font-bold"
+              style={
+                v.lastAction.kind === 'ok'
+                  ? { background: 'rgba(223, 242, 216, 0.92)', color: '#2e6b2e' }
+                  : v.lastAction.kind === 'fail'
+                    ? { background: 'rgba(255, 227, 211, 0.92)', color: '#9c4a1f' }
+                    : { color: '#5b3a1e' }
+              }
             >
               {v.lastAction.kind === 'ok' ? '✅ ' : v.lastAction.kind === 'fail' ? '😹 ' : '🐾 '}
               {v.lastAction.text}
             </div>
           )}
         </div>
-        <div className="rounded-[22px] bg-[#4a3226] px-[20px] py-[14px] text-[#f6f0e1] shadow-xl">
-          <div className="flex flex-wrap items-center justify-center gap-[8px] text-[25px] font-extrabold">
-            {['ĐẨY', 'LEO', 'ĐU', 'NHẢY', 'CHẠY', 'NÉ', 'GIẢ NGỦ', 'ĂN VẠ'].map((c) => (
-              <span key={c} className="rounded-full bg-[#f7c948] px-[14px] py-[3px] text-[#4a3226]">{c}</span>
+        <div className="glass-panel px-[18px] py-[12px]">
+          <div className="flex flex-wrap items-center justify-center gap-[7px]">
+            {COMMANDS.map((c) => (
+              <span
+                key={c}
+                className={`rounded-full px-[13px] py-[2px] text-[23px] font-extrabold ${
+                  c === currentCmd
+                    ? 'bg-gradient-to-b from-[#ffd968] to-[#f7b733] text-[#6b4305] shadow ring-1 ring-[#d9941c]/70'
+                    : 'border-[1.5px] border-[rgba(122,84,50,0.3)] bg-[rgba(255,255,255,0.55)] text-[#5b3a1e]'
+                }`}
+              >
+                {c}
+              </span>
             ))}
           </div>
-          <div className="mt-[8px] text-center text-[23px] font-semibold leading-snug">
+          <div className="mt-[7px] text-center text-[21px] font-semibold leading-snug text-[#5b3a1e]">
             Gõ lệnh đúng lúc Bug ở đúng chỗ: ĐẨY cạnh đồ dễ vỡ · LEO ở rèm · ĐU trên đèn chùm · NÉ / GIẢ NGỦ / ĂN VẠ khi Sen tới gần
           </div>
-          <div className="mt-[5px] text-center text-[21px] text-[#d8c6a8]">
+          <div className="mt-[3px] text-center text-[19px] font-medium text-[#96714e]">
             👥 {v.chatters} người đang lái · Sen tốc độ {v.senSpeed} · Đã phá {v.totals.missions} nhiệm vụ · Né được {v.totals.dodges} lần · Quà chỉ để cảm ơn, không mua được sức mạnh
           </div>
         </div>
