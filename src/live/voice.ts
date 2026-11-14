@@ -9,12 +9,16 @@ import { containsBanned } from './bannedWords';
  *   voice.say('M: Anh nói | F: Em nói')  -> 2 MC: "M:" giọng nam, "F:" giọng nữ (giữ tới khi đổi)
  *   voice.say('F: Đáp án là | E: cat')   -> "E:" giọng tiếng Anh, đọc từ tiếng Anh cho chuẩn
  * Câu nào chờ quá lâu (mặc định 60 giây) thì bỏ, để không đọc chuyện đã cũ.
+ * Hai mốc khác nhau, đừng lẫn: `start` = câu tới đầu hàng đợi (sổ sách), `playing` = TIẾNG THẬT
+ * bắt đầu phát ra loa. Hình ảnh phải bám `playing`: bám `start` là bảng chữ / đáp án hiện
+ * trước giọng vài giây (thời gian chờ tổng hợp + tải file), người xem thấy hình đi trước tiếng.
  */
 interface Line {
   text: string;
   at: number;
   done?: () => void;
-  start?: () => void; // gọi khi câu bắt đầu đọc (để camera lia tới người được nói tới)
+  start?: () => void; // gọi khi câu tới đầu hàng đợi (để camera lia tới người được nói tới)
+  playing?: () => void; // gọi khi đoạn đầu tiên THẬT SỰ phát ra tiếng (audio.onplaying): cổng hiện hình bám tín hiệu này
   valid?: () => boolean; // tới lượt đọc mà trả về false thì bỏ câu (chuyện đã cũ, vd. đã bị cướp mà vẫn "sắp trả lời")
   keep?: boolean; // không bỏ dù chờ lâu (lời dẫn khai mạc dài)
 }
@@ -38,14 +42,16 @@ class Voice {
   onSpeaker?: (who: 'M' | 'F' | null) => void;
 
   /** `done`: gọi khi câu đọc xong, bị bỏ, hoặc trang này không phát tiếng */
-  say(text: string, priority = false, done?: () => void, keep = false, start?: () => void, valid?: () => boolean) {
+  say(text: string, priority = false, done?: () => void, keep = false, start?: () => void, valid?: () => boolean, playing?: () => void) {
     if (!this.enabled || !text.trim()) {
+      // trang này không phát tiếng: coi như tiếng đã vang (hình không được chờ giọng câm)
       if (start) setTimeout(start, 0);
+      if (playing) setTimeout(playing, 0);
       if (done) setTimeout(done, 0);
       return;
     }
     const q = priority ? this.priority : this.normal;
-    q.push({ text: text.trim(), at: Date.now(), done, keep, start, valid });
+    q.push({ text: text.trim(), at: Date.now(), done, keep, start, valid, playing });
     // câu ưu tiên: tạo giọng sẵn ngay lúc xếp hàng, tới lượt là phát liền không phải chờ server
     if (priority) for (const p of this.parts(text)) fetch(this.urlOf(p)).catch(() => {});
     if (q.length > MAX_QUEUE) q.shift()?.done?.();
@@ -117,9 +123,9 @@ class Voice {
     if (!line) return;
     this.playing = true;
     line.start?.();
+    let heard = false; // tiếng thật đã vang lên chưa: chỉ đoạn đầu tiên nghe được mới kích cổng hiện hình
     try {
       for (const part of this.parts(line.text)) {
-        this.onSpeaker?.(part.who === 'E' ? 'F' : part.who); // giọng tiếng Anh là cô đọc
         const audio = new Audio(this.urlOf(part));
         audio.volume = this.volume;
         this.current = audio;
@@ -136,6 +142,13 @@ class Voice {
             clearTimeout(guard);
             const ms = Number.isFinite(audio.duration) ? audio.duration * 1000 + 4000 : 40_000;
             guard = setTimeout(finish, ms);
+            // Tới đây tiếng mới THẬT SỰ ra loa: MC mới "đang nói" (báo lúc nạp file là nhân vật nhún nhảy trong im lặng),
+            // và cổng hiện hình (bảng chữ / đáp án) mới mở — hình bám tiếng, không đi trước.
+            this.onSpeaker?.(part.who === 'E' ? 'F' : part.who); // giọng tiếng Anh là cô đọc
+            if (!heard) {
+              heard = true;
+              line.playing?.();
+            }
           };
           audio.onended = finish;
           audio.onerror = finish;

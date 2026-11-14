@@ -67,14 +67,21 @@ export function useGame() {
     for (const l of lines) {
       if (l.main) {
         mainSpeaking.current++;
-        // câu hô bắt đầu: cô vừa mở miệng hô thì hiện bảng chữ
-        const onStart = l.go
+        // Câu hô bắt đầu / câu công bố đáp án: hình bám theo lúc TIẾNG THẬT bắt đầu phát
+        // (callback `playing` của voice, kích từ audio.onplaying), KHÔNG bám lúc câu mới xếp
+        // hàng — bám sớm là bảng chữ / đáp án lộ trước giọng vài giây, hình đi trước tiếng.
+        const onPlaying = l.go
           ? () => {
               roomRef.current?.showBoard();
               dirty.current = true;
             }
-          : undefined;
-        voice.say(l.text, true, () => mainSpeaking.current--, false, onStart);
+          : l.announce
+            ? () => {
+                roomRef.current?.showReveal();
+                dirty.current = true;
+              }
+            : undefined;
+        voice.say(l.text, true, () => mainSpeaking.current--, false, undefined, undefined, onPlaying);
       } else if (l.warn) {
         voice.say(l.text, true); // nhắc sắp hết giờ: chen lên đọc liền, đồng hồ vẫn chạy
       } else {

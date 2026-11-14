@@ -2,7 +2,7 @@
 // Toán do math.ts tự sinh; các môn khác lấy từ ngân hàng cau-hoi/ (parseBank đọc trực tiếp
 // file .txt ở đây vì import.meta.glob chỉ chạy trong bản build Vite).
 import assert from 'node:assert/strict';
-import { Classroom, LineBag, compactVi, dayPeriod, plain, scramble, topicName, wishKind } from './quiz';
+import { Classroom, FOLLOW_LINE, LineBag, compactVi, dayPeriod, plain, scramble, topicName, wishKind, type Say } from './quiz';
 import type { Question } from './questions';
 import { GAME } from './config';
 import { parseBank } from './questions';
@@ -687,6 +687,90 @@ const recessOf = (game: 'rps' | 'callup' | 'pick' | 'roll' | 'heart', seed = 0.1
   const hist = (c as unknown as { history: Record<string, number> }).history;
   const afterIds = new Set(after.map((q) => q.id));
   assert.ok(Object.keys(hist).every((id) => afterIds.has(id)), 'lịch sử đã hỏi cũ được xoá: chỉ còn dấu của bộ câu mới bốc');
+}
+
+// ---------- hình bám TIẾNG THẬT (bảng chữ / đáp án) + câu follow của cô ----------
+{
+  assert.equal(FOLLOW_LINE, 'hãy follow cô để có thông báo khi lớp học mở nha', 'câu follow nguyên văn từng chữ');
+  const followText = `F: ${FOLLOW_LINE}`;
+  const followCount = (lines: Say[]) => lines.filter((l) => l.text === followText).length;
+
+  // mở lớp tiết 1: câu follow đúng 1 lần, đọc cuối phần mở đầu (sau lời chào + giới thiệu)
+  const c = new Classroom([], t);
+  const open = c.newRound(t);
+  assert.equal(c.round, 1);
+  assert.equal(followCount(open), 1, 'mở lớp (tiết 1): cô nói câu follow đúng 1 lần');
+  assert.equal(open[open.length - 1].text, followText, 'câu follow đọc sau lời mở lớp, không đè lên câu hỏi đầu');
+
+  // bảng chữ: chưa có tín hiệu "tiếng thật bắt đầu" thì chưa hiện — kể cả đã qua mốc 1 giây của chốt cũ
+  const qLines = c.tick((t += GAME.introSec * 1000));
+  assert.equal(c.phase, 'question');
+  assert.ok(qLines.some((l) => l.go), 'ra đề có câu hô bắt đầu');
+  c.tick((t += 2000));
+  assert.equal(c.boardShown, false, 'tiếng hô chưa bắt đầu: bảng chữ chưa hiện (chốt cũ 1 giây đã bỏ)');
+  assert.equal(c.view(t).boardShown, false);
+  c.showBoard(); // tín hiệu tiếng thật bắt đầu (voice gọi qua callback playing)
+  assert.equal(c.view(t).boardShown, true, 'tiếng hô bắt đầu: bảng chữ hiện');
+  // chốt dự phòng: tiếng chết hẳn thì quá boardFallbackMs vẫn hiện, không kẹt
+  const cDead = new Classroom([], t);
+  cDead.newRound(t);
+  cDead.tick((t += GAME.introSec * 1000));
+  cDead.tick((t += 2000));
+  assert.equal(cDead.boardShown, false, 'TTS mới chậm 2 giây: chốt dự phòng chưa giành quyền hiện');
+  cDead.tick((t += GAME.boardFallbackMs));
+  assert.equal(cDead.boardShown, true, 'quá chốt dự phòng: bảng chữ tự hiện');
+
+  // đáp án: vào pha reveal mà tiếng công bố chưa bắt đầu thì đáp án chưa lộ
+  chat(c, 1, c.q!.answer, t, t);
+  let revealLines: Say[] = [];
+  for (let k = 0; k < 6 && (c.phase as string) !== 'reveal'; k++) revealLines = c.tick((t = c.phaseEndsAt));
+  assert.equal(c.phase, 'reveal');
+  const ann = revealLines.filter((l) => l.announce);
+  assert.equal(ann.length, 1, 'pha reveal có đúng 1 câu công bố gắn cờ announce');
+  assert.ok(ann[0].main, 'câu công bố là câu chính');
+  assert.equal(followCount(revealLines), 0, 'không nói câu follow lúc công bố đáp án');
+  assert.equal(c.revealShown, false);
+  assert.equal(c.view(t).revealShown, false);
+  assert.ok(c.view(t).slots.some((s) => s === null), 'tiếng công bố chưa bắt đầu: đáp án chưa lộ trên bảng');
+  c.showReveal(); // tín hiệu tiếng công bố thật bắt đầu
+  assert.equal(c.view(t).revealShown, true);
+  assert.ok(c.view(t).slots.every((s) => s !== null), 'tiếng công bố bắt đầu: đáp án hiện đủ');
+
+  // chốt dự phòng cho reveal: không tín hiệu gì thì quá boardFallbackMs đáp án vẫn hiện
+  const c2 = new Classroom([], t);
+  c2.newRound(t);
+  c2.tick((t += GAME.introSec * 1000));
+  chat(c2, 1, c2.q!.answer, t, t);
+  for (let k = 0; k < 6 && c2.phase !== 'reveal'; k++) c2.tick((t = c2.phaseEndsAt));
+  assert.equal(c2.phase, 'reveal');
+  assert.equal(c2.revealShown, false, 'vừa vào reveal: chưa hiện đáp án');
+  c2.tick((t += 2000));
+  assert.equal(c2.revealShown, false, 'chưa tới chốt dự phòng: đáp án vẫn giấu');
+  c2.tick((t += GAME.boardFallbackMs));
+  assert.equal(c2.revealShown, true, 'quá chốt dự phòng: đáp án tự hiện, không kẹt pha');
+
+  // hết tiết 1: câu follow đúng 1 lần ở phần tổng kết, không lọt vào pha nào khác;
+  // mở đầu tiết 2 không lặp lại câu follow
+  const c3 = new Classroom([], t);
+  assert.equal(followCount(c3.newRound(t)), 1, 'tiết 1 mở lớp: 1 câu follow');
+  let resultsFollows = -1;
+  let guard = 0;
+  while ((c3.phase as string) !== 'results' && guard++ < 300) {
+    if ((c3.phase === 'question' || c3.phase === 'bonus') && c3.q) chat(c3, 1, c3.q.answer, t, t);
+    const lines = c3.tick((t = c3.phaseEndsAt));
+    if (c3.phase === 'results') resultsFollows = followCount(lines);
+    else assert.equal(followCount(lines), 0, `không nói câu follow giữa pha ${c3.phase}`);
+  }
+  assert.equal(c3.phase, 'results');
+  assert.equal(resultsFollows, 1, 'tổng kết tiết 1: đúng 1 câu follow');
+  let open2: Say[] = [];
+  guard = 0;
+  while (!((c3.phase as string) === 'intro' && c3.round === 2) && guard++ < 300) {
+    const lines = c3.tick((t = c3.phaseEndsAt + 1));
+    if ((c3.phase as string) === 'intro' && c3.round === 2) open2 = lines;
+  }
+  assert.equal(c3.round, 2);
+  assert.equal(followCount(open2), 0, 'tiết 2 mở lớp: không lặp câu follow');
 }
 
 console.log('quiz.check: tất cả đều đúng');

@@ -134,4 +134,5 @@ export const GAME = {
   chatterMaxWaitMs: 35_000, // câu chào chờ được qua 1 vòng câu hỏi, quá thì bỏ
   giftLineMaxWaitMs: 45_000, // cảm ơn quà chờ lâu hơn
   maxHoldMs: 25_000, // mỗi phần dừng đồng hồ tối đa chừng này (phòng giọng bị kẹt)
+  boardFallbackMs: 3500, // chốt dự phòng: hình (bảng chữ / đáp án) bám theo lúc TIẾNG THẬT bắt đầu phát; tiếng mãi không bắt đầu (TTS chết) thì chừng này ms sau đầu pha vẫn hiện, không kẹt pha
 };

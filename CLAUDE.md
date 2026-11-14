@@ -22,6 +22,18 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài ra phép tính trên bảng �
 - Ý muốn của người xem (bảng trong LIVE Studio, chủ kênh tự bật): Hoa hồng 1 xu = "Tham gia vào lớp học" (cô chào mừng vào lớp), Cử chỉ thả tim 5 xu = "Lên bàn đầu" (ngồi ghế đầu + huy hiệu ⭐ BÀN ĐẦU + cả lớp vỗ tay, chỉ trong 1 tiết), Cỏ bốn lá 10 xu = "Lên Bảng May Mắn" (ghim tên góc dưới phải sân khấu, tối đa 6 tên, giữ cả buổi). Nhận diện bằng `wishKind(tên quà, giá 1 món)` trong quiz.ts, khớp tên Anh/Việt. Cả 3 chỉ VINH DANH: không điểm, không gợi ý, không miễn phạt. Trang điều khiển có 3 nút thử phát quà giả đúng tên/giá này. Sân khấu tự vẽ thanh Ý MUỐN nằm ngang dưới đáy (3 món + giá + số lần đã thực hiện `wishCounts`, đếm trong engine) vì panel gốc của TikTok nằm góc trên phải ngoài tầm kiểm soát; Bảng May Mắn dời lên trên thanh này (bottom 112px) để không chồng.
 - 300 tim: cả lớp vỗ tay.
 
+## Đồng bộ giọng – hình (chốt 2026-11-14, đừng sửa ngược lại)
+
+- Hình PHẢI bám lúc TIẾNG THẬT bắt đầu phát, không bám lúc câu thoại mới xếp hàng. `voice.say(...)` có 2 mốc riêng: `start` = câu tới đầu hàng đợi (chỉ để sổ sách/camera), `playing` = đoạn đầu tiên thật sự phát ra loa (kích từ `audio.onplaying` trong `src/live/voice.ts`). Bám `start` là bảng chữ/đáp án hiện trước giọng vài giây (thời gian tổng hợp + tải TTS).
+- Câu hô bắt đầu (`Say.go`) → `playing` gọi `Classroom.showBoard()`; câu công bố đáp án (`Say.announce`, gắn ở `reveal()`) → `playing` gọi `Classroom.showReveal()`. `view()` chỉ lộ ô đáp án đầy đủ khi `phase === 'reveal' && revealShown`. `voice.onSpeaker` (nhân vật MC nhún nhảy) cũng chỉ bắn từ `onplaying` — báo lúc nạp file là MC nhảy trong im lặng.
+- Chốt dự phòng: TTS chết hẳn thì quá `GAME.boardFallbackMs` (3,5 giây) sau đầu pha, `tick()` tự mở `boardShown`/`revealShown` để không kẹt pha. Ngưỡng cố ý cao: TTS chỉ chậm thì chốt không được giành quyền hiện trước giọng.
+- Trang không phát tiếng (voice tắt) thì `say()` bắn `playing` ngay (setTimeout 0): hình không chờ giọng câm.
+
+## Ngoại lệ CTA (chủ kênh duyệt riêng game này, 2026-11-14)
+
+- Cô giáo có câu mời follow NGUYÊN VĂN `FOLLOW_LINE` trong quiz.ts: "hãy follow cô để có thông báo khi lớp học mở nha". Đây là ngoại lệ có chủ đích so với luật chung "không kêu gọi follow trên bề mặt phát sóng" (mở rộng từ ngoại lệ của Bug Đi WC cùng ngày); game khác vẫn giữ luật cũ nếu chủ kênh chưa duyệt riêng.
+- Chỉ nói ở 2 nhịp tự nhiên, tần suất thấp: (1) mở lớp — tiết 1 của buổi, đọc sau lời chào + giới thiệu, trước câu hỏi đầu; (2) tan tiết — cuối phần tổng kết (`startResults`) mỗi tiết đúng 1 lần. KHÔNG chèn vào giữa pha hỏi/công bố đáp án. Sân khấu cũng hiện câu này nguyên văn trong vòng xoay dòng nhắc `SEAT_HINTS` (GameStage.tsx).
+
 ## Khác bản chữ (điểm dễ làm sai khi sửa code)
 
 - KHÔNG còn bộ câu hỏi chữ: `src/game/cau-hoi/` đã xoá, `bank.ts` trả bank rỗng. Đừng thêm lại file .txt; thêm dạng toán thì sửa `math.ts`.
@@ -41,6 +53,7 @@ Lớp học 2D cho TikTok LIVE. Cô giáo áo dài ra phép tính trên bảng �
 - Chạy thử không đụng sổ lớp thật: đặt biến `DATA_DIR` sang thư mục khác.
 - `src/game/GameStage.tsx`: màn hình. Toạ độ bàn đo trên ảnh nền gốc 941x1672 (`ROWS`). Bảng hiện đề chữ nhỏ cho các dạng Toán đố / Dãy số / Hình học / Tìm số thiếu (người xem đọc được đề, không chỉ nghe giọng).
 - `src/game/GameControls.tsx`: nút thử ở trang điều khiển, có "1000 người cùng đoán" để đo bot nhận đủ comment không.
+- `src/live/fakeNames.ts`: kho `FAKE_NAME_POOL` (50 tên kiểu username TikTok, chủ kênh đưa 2026-11-14) cho MỌI khách giả lập (nút giả lập ở Dashboard + GameControls). Bốc ngẫu nhiên không lặp trong buổi, hết kho thì thêm hậu tố số kín đáo — TUYỆT ĐỐI không quay lại mẫu `hs0/hs1...` hay nickname lặp + số (hiện username lên sân khấu là lộ bot ngay). Muốn thêm/bớt tên thì sửa pool này. Test: `npx tsx src/live/fakeNames.check.ts`.
 - `tools/tach-nen.py`: tách nền xám ảnh trong `nhan-vat/` ra `public/assets/nv/`. Thay ảnh thì chạy lại.
 - Trang stage chạy game thật và gửi ảnh chụp trạng thái lên `/api/game/state`; trang điều khiển chỉ vẽ lại ảnh chụp đó.
 - `?view=stage&mute=1`: xem stage không phát tiếng (để thử).

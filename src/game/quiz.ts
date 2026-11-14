@@ -66,9 +66,18 @@ export interface Say {
   ttl?: number;
   /** nhắc sắp hết giờ: nói liền nhưng KHÔNG dừng đồng hồ */
   warn?: boolean;
-  /** câu cô hô bắt đầu: lúc bắt đầu đọc câu này thì hiện bảng chữ (gọi showBoard) */
+  /** câu cô hô bắt đầu: lúc TIẾNG hô thật bắt đầu phát thì hiện bảng chữ (gọi showBoard) */
   go?: boolean;
+  /** câu công bố đáp án: lúc TIẾNG công bố thật bắt đầu phát thì mới hiện đáp án (gọi showReveal) */
+  announce?: boolean;
 }
+
+/**
+ * Câu cô mời follow — ngoại lệ CTA do chủ kênh duyệt riêng cho game này (2026-11-14, mở rộng từ
+ * ngoại lệ của Bug Đi WC): chỉ nói lúc mở lớp (tiết 1) và cuối mỗi tiết (phần tổng kết), kèm dòng
+ * nhắc xoay vòng trên sân khấu. Các game khác vẫn giữ luật không kêu gọi follow trên bề mặt phát sóng.
+ */
+export const FOLLOW_LINE = 'hãy follow cô để có thông báo khi lớp học mở nha';
 
 export interface ChatIn {
   username: string;
@@ -534,6 +543,13 @@ export class Classroom {
     this.boardShown = true;
   }
 
+  /** Đã hiện đáp án (pha reveal) chưa: tiếng công bố THẬT bắt đầu phát mới hiện — hiện từ lúc câu
+   * mới xếp hàng là đáp án lộ trên hình vài giây trước khi cô đọc tới (hình đi trước giọng) */
+  revealShown = false;
+  showReveal() {
+    this.revealShown = true;
+  }
+
   /** Lúc được nói thêm (chào, cảm ơn, cà khịa): đang chờ học sinh trả lời (hoặc lúc cô dừng giữa tiết) và còn đủ giờ */
   chatterWindow(now: number) {
     const left = this.phaseEndsAt - now;
@@ -778,6 +794,7 @@ export class Classroom {
 
   private reveal(now: number): Say[] {
     this.setPhase('reveal', now, GAME.revealSec);
+    this.revealShown = false; // đáp án chỉ hiện khi tiếng công bố thật bắt đầu (xem showReveal)
     const q = this.q!;
     this.reportLog.push({ id: q.id, answer: q.answer, category: q.category, attempts: this.stats.attempts, correct: this.correct.length, at: now });
     const out: Say[] = [];
@@ -810,7 +827,8 @@ export class Classroom {
       main = this.line(math ? 'mathReveal' : riddle ? 'riddleReveal' : eng ? 'englishReveal' : this.q!.slot === 'su' ? 'historyReveal' : 'reveal', answer, rest);
       if (this.golden) out.unshift(this.t(this.rand() < 0.5 ? this.line('goldenGift', top.spoken, this.giveGift(top, now)) : this.line('goldenWinner', top.spoken)));
     } else main = this.line(math ? 'mathNobody' : riddle ? 'riddleNobody' : eng ? 'englishNobody' : 'revealNobody', answer);
-    out.unshift({ ...this.t(main), main: true });
+    // câu công bố: gắn cờ announce để trang stage mở cổng hiện đáp án đúng lúc tiếng công bố bắt đầu phát
+    out.unshift({ ...this.t(main), announce: true });
     // cà khịa 1 bạn trả lời sai (60% số câu, tên đọc được)
     const wrongs = [...this.wrong].map((u) => this.students.get(u)).filter((s): s is Student => !!s && s.spoken !== 'bạn');
     if (wrongs.length && this.rand() < GAME.roastChance) {
@@ -848,6 +866,8 @@ export class Classroom {
     if (outOfQuestions) lines.push(this.t('Hết câu hỏi rồi, cô tổng kết luôn nha.'));
     lines.push(best && best.score > 0 ? this.t(this.line('results', best.spoken, String(best.score))) : this.line0('resultsNobody'));
     if (this.weekLeader && this.round % 3 === 0) lines.push(this.t(this.line('weekBoard', this.weekLeader)));
+    // tan tiết: cô mời follow 1 lần (ngoại lệ CTA chủ kênh duyệt 2026-11-14) — chỉ ở phần tổng kết, không chen vào giờ hỏi bài
+    lines.push(this.t(FOLLOW_LINE));
     return this.mainOf(lines);
   }
 
@@ -1014,7 +1034,9 @@ export class Classroom {
     const period = dayPeriod(now);
     const greet = period !== this.lastPeriod || this.round % GAME.timeGreetEvery === 0 ? [this.line0(PERIOD_LINES[period])] : [];
     this.lastPeriod = period;
-    return this.mainOf([...voted, ...greet, this.review ? this.line0('reviewIntro') : this.line0('intro')]);
+    // mở lớp (tiết đầu của buổi): cô mời follow 1 lần, đọc SAU lời mở lớp, trước câu hỏi đầu (ngoại lệ CTA chủ kênh duyệt 2026-11-14)
+    const follow = this.round === 1 ? [this.t(FOLLOW_LINE)] : [];
+    return this.mainOf([...voted, ...greet, this.review ? this.line0('reviewIntro') : this.line0('intro'), ...follow]);
   }
 
   /** Bỏ qua phần đang chạy (nút "Qua phần tiếp" ở trang điều khiển) */
@@ -1047,8 +1069,11 @@ export class Classroom {
       this.warned = true;
       extra.push({ ...this.line0('timeWarn'), warn: true });
     }
-    // phòng giọng hỏng / tắt tiếng: đồng hồ đã chạy hơn 1 giây (cô đọc xong) thì vẫn hiện bảng chữ
-    if (asking && !this.boardShown && now - this.phaseStartedAt > 1000) this.boardShown = true;
+    // phòng giọng hỏng / chết hẳn: chốt dự phòng — tiếng mãi không bắt đầu phát thì quá
+    // GAME.boardFallbackMs vẫn hiện bảng chữ / đáp án, không kẹt pha. Ngưỡng để cao (3,5 giây)
+    // để TTS chỉ chậm thôi thì KHÔNG bị chốt này giành quyền hiện trước giọng.
+    if (asking && !this.boardShown && now - this.phaseStartedAt > GAME.boardFallbackMs) this.boardShown = true;
+    if (this.phase === 'reveal' && !this.revealShown && now - this.phaseStartedAt > GAME.boardFallbackMs) this.revealShown = true;
     if (now < this.phaseEndsAt) return extra;
     return [...extra, ...this.advance(now)];
   }
@@ -1147,7 +1172,8 @@ export class Classroom {
 
   /** Ảnh chụp trạng thái để vẽ (gọn, gửi được qua mạng cho trang điều khiển xem trước) */
   view(now: number) {
-    const showAnswer = this.phase === 'reveal';
+    // đáp án chỉ lộ khi tiếng công bố đã bắt đầu (revealShown) — vào pha reveal là chưa đủ
+    const showAnswer = this.phase === 'reveal' && this.revealShown;
     const asking = this.phase === 'question' || this.phase === 'bonus' || this.phase === 'reveal';
     let seated = this.seats(GAME.seats + GAME.standing);
     // Bạn THẬT mới vào lớp được ngồi vào bàn ngay: tối đa 5 bạn đang trong ân
@@ -1237,6 +1263,8 @@ export class Classroom {
       players: this.activePlayers(now),
       // cô đang đọc đề: chưa hiện chữ xáo / phép tính / ô đáp án, hô bắt đầu mới hiện
       boardShown: this.phase !== 'question' || this.boardShown,
+      // pha reveal: đáp án đã được phép lộ chưa (tiếng công bố đã bắt đầu hoặc chốt dự phòng đã mở)
+      revealShown: this.phase === 'reveal' && this.revealShown,
       // dừng giữa tiết: 3 bạn nhỏ điểm cao nhất kèm quà trên bàn
       praiseTop: this.phase === 'praise' ? this.seats(3).filter((s) => s.score > 0).map(({ username, nickname, score, desk }) => ({ username, nickname, score, desk })) : [],
       correctTop: this.correct.slice(0, 3).map(({ username, nickname, avatar, points }) => ({ username, nickname, avatar, points })),

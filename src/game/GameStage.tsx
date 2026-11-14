@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { GameState, StageView } from './useGame';
 import type { FigSpec } from './questions';
+import { FOLLOW_LINE } from './quiz';
 import { GAME } from './config';
 import { Hair } from './Hair';
 import './stage.css';
@@ -680,8 +681,9 @@ function Podium({ v }: { v: StageView }) {
   );
 }
 
-// Dòng nhắc dưới khung "Nhanh nhất", trên hàng ghế đầu: cách được vào lớp ngồi (đổi câu mỗi 8 giây, viết ngắn)
-const SEAT_HINTS = ['⭐ Tính nhanh, điểm cao được vào lớp ngồi!', '💬 Tương tác nhiều để giữ chỗ trong lớp nha!'];
+// Dòng nhắc dưới khung "Nhanh nhất", trên hàng ghế đầu: cách được vào lớp ngồi (đổi câu mỗi 8 giây, viết ngắn).
+// Câu cuối là lời mời follow nguyên văn (FOLLOW_LINE) — ngoại lệ CTA chủ kênh duyệt riêng cho game này 2026-11-14.
+const SEAT_HINTS = ['⭐ Tính nhanh, điểm cao được vào lớp ngồi!', '💬 Tương tác nhiều để giữ chỗ trong lớp nha!', FOLLOW_LINE];
 function SeatHint({ now }: { now: number }) {
   const i = Math.floor(now / 8000) % SEAT_HINTS.length;
   return (
