@@ -62,11 +62,17 @@
   (thở/giật tai/chớp/lếc chat/gật gù/lắc thân) là lớp TRÌNH DIỄN ở stage
   (`useMicroMotion` + class wc-breathe/wc-rock/wc-nod/wc-zzz trong wc.css),
   engine không biết; đổi pose crossfade 120ms.
-- **Tiếng mèo** (`src/live/catSounds.ts`): tổng hợp Web Audio, KHÔNG file mẫu.
-  Engine chỉ phát tín hiệu qua `drainCues()` ('meow' | 'meowBig' | 'sadMeow' |
-  'hiss' | 'yowl' | 'chirp'); tiếng gằn/grừ liên tục do hook lái theo likeRate,
-  tiếng NGÁY do hook lái khi mood = sleepy (khi đó phải tắt purr). Đừng gọi
-  Web Audio từ engine (engine phải thuần để test).
+- **Tiếng mèo + tiếng "bẹt/tủm"** (`src/live/catSounds.ts`): tổng hợp Web
+  Audio, KHÔNG file mẫu. Engine chỉ phát tín hiệu qua `drainCues()` ('meow' |
+  'meowBig' | 'sadMeow' | 'hiss' | 'yowl' | 'chirp' | 'fart' | 'fartBig' |
+  'fartTiny' | 'plop' | 'successPlop'); tiếng gằn/grừ liên tục do hook lái
+  theo likeRate, tiếng NGÁY do hook lái khi mood = sleepy (khi đó phải tắt
+  purr). Đừng gọi Web Audio từ engine (engine phải thuần để test). Luật cue
+  "bẹt/tủm" (config `strainFart*`/`fakePlopChance`): fart rặn chỉ khi đang
+  rặn thật + nhịp tim ≥5/s (hoặc tiến độ ≥90%), hẹn rng cách nhau 6–14s;
+  `fartBig` mỗi lần chạm mốc; `plop` GIẢ ở mốc 75 tối đa 1 lần/lượt (rng
+  50%); `fartTiny` khi dỗi bắt đầu; `successPlop` khi thắng (chuỗi hẹn giờ
+  nằm trong catSounds, khớp nhịp cục vàng rơi ~1,6s).
 - **Bong bóng chat**: mọi chat lên sân khấu qua `addBubble()` — bắt buộc qua
   `maskBanned()` + cắt 40 ký tự + trần 5 cái + sống 5s. Đừng render chat thô ở
   bất kỳ chỗ nào khác trên stage.

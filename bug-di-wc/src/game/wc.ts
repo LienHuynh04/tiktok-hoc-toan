@@ -29,8 +29,10 @@ export interface Person {
   avatar: string;
 }
 
-/** Tín hiệu tiếng mèo tổng hợp: stage nghe và phát qua module catSounds */
-export type CatCue = 'meow' | 'meowBig' | 'sadMeow' | 'hiss' | 'yowl' | 'chirp';
+/** Tín hiệu âm thanh tổng hợp: stage nghe và phát qua module catSounds.
+ *  fart = "bẹt bẹt" nhỏ lúc gồng · fartBig = bẹt lớn khi chạm mốc · fartTiny = "pẹt" phật ý lúc dỗi ·
+ *  plop = "tủm" giả ở mốc 75 · successPlop = fart anh hùng + chuỗi "tủm… tủm… TỦM" lúc thành công */
+export type CatCue = 'meow' | 'meowBig' | 'sadMeow' | 'hiss' | 'yowl' | 'chirp' | 'fart' | 'fartBig' | 'fartTiny' | 'plop' | 'successPlop';
 
 const F = (s: string) => `F: ${s}`;
 
@@ -334,6 +336,8 @@ export class WcRoom {
   private bubbleId = 0;
   private annoyance = 0;
   private sulkUntil = 0;
+  private nextStrainFartAt = 0; // mốc hẹn "bẹt bẹt" lúc gồng tiếp theo (0 = chưa hẹn)
+  private fakePlopUsed = false; // "tủm" giả ở mốc 75: tối đa 1 lần/lượt
   private faceBeat: { pose: 'faceHappy' | 'faceSurprised'; until: number } | null = null; // khuôn mặt phản ứng theo sự kiện
   private hissArmed = true;
   private bugBubble: { text: string; until: number } | null = null;
@@ -642,6 +646,7 @@ export class WcRoom {
     if (this.annoyance >= 100) {
       this.sulkUntil = now + GAME.sulkMs;
       this.cues.push('yowl');
+      this.cues.push('fartTiny'); // kèm 1 tiếng "pẹt" phật ý lúc quay lưng dỗi
       this.say({ text: this.pick(SULK_START_LINES), main: true });
     }
   }
@@ -668,6 +673,7 @@ export class WcRoom {
       this.annoyance = 100;
       this.sulkUntil = now + GAME.sulkMs;
       this.cues.push('yowl');
+      this.cues.push('fartTiny');
       this.say({ text: this.pick(SULK_START_LINES), main: true });
     }
     return this.drainSays();
@@ -684,6 +690,7 @@ export class WcRoom {
       if (pct >= m && !this.milestonesHit.has(m)) {
         this.milestonesHit.add(m);
         this.cues.push('meowBig');
+        this.cues.push('fartBig'); // chạm mốc nào cũng có 1 tiếng bẹt lớn ăn mừng thầm
         // Face beat MẶT NGẠC NHIÊN mỗi lần chạm mốc (ở mốc 75 cũng là lúc Sen ló vào gõ cửa)
         this.setFaceBeat('faceSurprised', GAME.faceBeatSurprisedMs, now);
         if (m === 25) {
@@ -694,6 +701,11 @@ export class WcRoom {
           this.say({ text: this.pick(MILE50), main: true });
         } else if (m === 75) {
           this.cheatFxUntil.sen = now + 6000;
+          // "Tủm" GIẢ đánh lừa cả phòng (chưa ra đâu!): tối đa 1 lần/lượt, bốc rng
+          if (!this.fakePlopUsed && this.rng() < GAME.fakePlopChance) {
+            this.fakePlopUsed = true;
+            this.cues.push('plop');
+          }
           this.say({ text: this.pick(MILE75), main: true });
         }
       }
@@ -711,6 +723,7 @@ export class WcRoom {
     this.successTopName = top ? top.c.nickname : null;
     if (top) this.kingUsername = top.username;
     this.cues.push('chirp');
+    this.cues.push('successPlop'); // khoảnh khắc xả: fart anh hùng + "tủm… tủm… TỦM" theo cục vàng rơi
     this.say({
       text: this.pick(SUCCESS_LINES, {
         top: top ? top.c.spoken : 'cả phòng',
@@ -741,6 +754,8 @@ export class WcRoom {
     this.ranUsers.clear();
     this.likeEvents = [];
     this.faceBeat = null; // lượt mới: hết hạn mọi face beat của lượt cũ
+    this.nextStrainFartAt = 0; // lượt mới: hẹn lại nhịp "bẹt bẹt" từ đầu
+    this.fakePlopUsed = false; // lượt mới: "tủm" giả được dùng lại 1 lần
     this.lastLikeAt = -Infinity;
     this.waterUntil = 0;
     this.fiberUntil = 0;
@@ -912,6 +927,16 @@ export class WcRoom {
     if (now - this.lastIdleAt >= GAME.idleLineEveryMs && now - this.lastLikeAt > 20_000) {
       this.lastIdleAt = now;
       this.say({ text: this.pick(IDLE_LINES) });
+    }
+    // "Bẹt bẹt" lúc gồng: chỉ khi Bug đang rặn thật (không dỗi, không ngủ gật) và
+    // nhịp tim cao hoặc đã sát đích; hẹn bằng rng tất định, cách nhau 6–14s — không spam.
+    if (!this.sulking(now) && !this.sleepyAt(now) && (rate >= GAME.strainFartMinRate || this.pct() >= GAME.maxProgressPct)) {
+      if (this.nextStrainFartAt === 0) {
+        this.nextStrainFartAt = now + GAME.strainFartMinGapMs + this.rng() * (GAME.strainFartMaxGapMs - GAME.strainFartMinGapMs);
+      } else if (now >= this.nextStrainFartAt) {
+        this.cues.push('fart');
+        this.nextStrainFartAt = now + GAME.strainFartMinGapMs + this.rng() * (GAME.strainFartMaxGapMs - GAME.strainFartMinGapMs);
+      }
     }
     return this.drainSays();
   }

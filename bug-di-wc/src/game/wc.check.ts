@@ -470,6 +470,62 @@ const person = (username: string): Person => ({ username, nickname: username, sp
   }
 }
 
+// ---------- 22. Âm thanh "bẹt bẹt / tủm": cue ở mốc, khi thắng, khi dỗi, và lúc gồng (thưa, không spam) ----------
+{
+  // Chạm mốc 25 -> 1 tiếng bẹt lớn
+  const room = new WcRoom(T, mulberry32(22));
+  room.like(person('anhA'), 200, T); // 33% — qua mốc 25
+  ok(room.drainCues().includes('fartBig'), 'chạm mốc 25: cue fartBig (bẹt lớn)');
+
+  // Thắng -> chuỗi xả successPlop
+  const room2 = new WcRoom(T, mulberry32(22));
+  room2.forceSuccess(T);
+  ok(room2.drainCues().includes('successPlop'), 'thắng: cue successPlop (bẹt anh hùng + tủm… tủm… TỦM)');
+
+  // Dỗi (ép + chọc thật) -> "pẹt" phật ý
+  const room3 = new WcRoom(T, mulberry32(22));
+  room3.forceSulk(T);
+  ok(room3.drainCues().includes('fartTiny'), 'ép dỗi: cue fartTiny');
+  const room4 = new WcRoom(T, mulberry32(22));
+  for (let i = 0; i < 9; i++) room4.chat(person(`c${i}`), 'CHỌC', T); // 9 x 12 = 108 -> quạu 100
+  ok(room4.drainCues().includes('fartTiny'), 'chọc tới dỗi thật: cue fartTiny');
+
+  // Gồng liên tục 90 giây (nhịp ~12 tim/giây): có bẹt rặn, đều thưa >= ~6s, không spam
+  const room5 = new WcRoom(T, mulberry32(22));
+  const fartTimes: number[] = [];
+  for (let s = 0; s <= 180; s++) {
+    const now = T + s * 500;
+    room5.like(person('anhA'), 6, now);
+    room5.tick(now);
+    if (room5.drainCues().includes('fart')) fartTimes.push(now);
+  }
+  ok(fartTimes.length >= 3, `gồng liên tục 90s: có "bẹt bẹt" lúc rặn (${fartTimes.length} lần)`);
+  ok(fartTimes.length <= 16, `"bẹt bẹt" không spam (${fartTimes.length} lần / 90s)`);
+  for (let i = 1; i < fartTimes.length; i++) {
+    ok(fartTimes[i] - fartTimes[i - 1] >= 5_500, `bẹt rặn cách nhau >= ~6s (khoảng ${i}: ${fartTimes[i] - fartTimes[i - 1]}ms)`);
+  }
+
+  // Phòng im hoàn toàn: tuyệt đối không có bẹt rặn
+  const room6 = new WcRoom(T, mulberry32(22));
+  let idleFarts = 0;
+  for (let s = 0; s <= 120; s++) {
+    room6.tick(T + s * 500);
+    if (room6.drainCues().includes('fart')) idleFarts++;
+  }
+  eq(idleFarts, 0, 'phòng im: không có "bẹt bẹt" nào');
+
+  // Mốc 75 "tủm" GIẢ: xuất hiện ở một số lượt, tối đa 1 lần/lượt
+  let fakeAttempts = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const r = new WcRoom(T, mulberry32(seed * 13));
+    r.like(person('anhA'), 460, T); // 76,6% — chạm mốc 75 trong 1 nhịp
+    const plops = r.drainCues().filter((c) => c === 'plop').length;
+    ok(plops <= 1, `seed ${seed}: "tủm" giả tối đa 1 lần/lượt (thấy ${plops})`);
+    if (plops === 1) fakeAttempts++;
+  }
+  ok(fakeAttempts >= 3, `"tủm" giả mốc 75 xuất hiện ở một số lượt (${fakeAttempts}/40)`);
+}
+
 if (failures) {
   console.log(`\n${failures} FAIL`);
   process.exit(1);

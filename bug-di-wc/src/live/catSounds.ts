@@ -2,10 +2,12 @@
 // Meow = dao động răng cưa qua 2 formant bandpass quét theo cao độ (miệng mèo mở/đóng),
 // gằn rặn = burst trầm ngắn, xì = nhiễu trắng highpass, tru dài = meow kéo dài có vibrato,
 // chirp/trill mừng = 2 nốt lướt nhanh, grừ nhàn = xung ~23Hz cổng hoá (purr).
+// "Bẹt bẹt" (fart) = răng cưa lướt 90→40Hz bị cổng LFO ~25Hz + nhiễu bandpass trầm;
+// "tủm" (plop) = sine rơi 500→90Hz + té nước. Âm lượng luôn ở mức điểm xuyết dưới MC/nhạc.
 // Chỉ phát trên trang stage, sau tương tác đầu tiên (cùng luật mở khoá như nhạc/giọng).
 // Âm lượng + bật/tắt chỉnh ở trang điều khiển (lệnh custom cat_on/cat_vol).
 
-type Cue = 'meow' | 'meowBig' | 'sadMeow' | 'hiss' | 'yowl' | 'chirp';
+type Cue = 'meow' | 'meowBig' | 'sadMeow' | 'hiss' | 'yowl' | 'chirp' | 'fart' | 'fartBig' | 'fartTiny' | 'plop' | 'successPlop';
 
 const BASE_LEVEL = 0.5;
 
@@ -68,6 +70,11 @@ class CatSounds {
     else if (cue === 'hiss') this.hiss(t);
     else if (cue === 'yowl') this.yowl(t);
     else if (cue === 'chirp') this.chirp(t);
+    else if (cue === 'fart') this.fartBurst(t, false);
+    else if (cue === 'fartBig') this.fartBurst(t, true);
+    else if (cue === 'fartTiny') this.fartOne(t, { dur: 0.09 + Math.random() * 0.04, f0: 150, f1: 95, vol: 0.075, flutter: 30 });
+    else if (cue === 'plop') this.plop(t, 500, 0.15, 0.26);
+    else if (cue === 'successPlop') this.successPlop(t);
   }
 
   /** Tiếng gằn khi đang rặn: gọi lặp từ hook, nhịp/tần theo nhịp tim (tự throttle bên trong) */
@@ -278,6 +285,119 @@ class CatSounds {
     o.stop(t + 0.9);
     vib.start(t);
     vib.stop(t + 0.9);
+  }
+
+  /**
+   * Một tiếng "bẹt": răng cưa lướt xuống ~90→40Hz, gain bị cổng hoá bởi LFO ~25Hz
+   * (chính cái rung "bẹt bẹt" phạch phạch) + một ít nhiễu qua bandpass trầm.
+   * Mọi tham số được random hoá nhẹ nên không hai tiếng nào giống hệt nhau.
+   */
+  private fartOne(t: number, o: { dur: number; f0: number; f1: number; vol: number; flutter: number }) {
+    const ctx = this.ctx!;
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(o.f0, t);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(28, o.f1), t + o.dur);
+    // cổng rung "bẹt bẹt": LFO vuông điều biên độ gain quanh mức nền
+    const flutter = ctx.createGain();
+    flutter.gain.value = o.vol * 0.55;
+    const lfo = ctx.createOscillator();
+    lfo.type = 'square';
+    lfo.frequency.value = o.flutter;
+    const lfoG = ctx.createGain();
+    lfoG.gain.value = o.vol * 0.5;
+    lfo.connect(lfoG).connect(flutter.gain);
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 850;
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.0001, t);
+    env.gain.exponentialRampToValueAtTime(1, t + 0.018);
+    env.gain.setValueAtTime(1, t + Math.max(0.02, o.dur - 0.05));
+    env.gain.exponentialRampToValueAtTime(0.0001, t + o.dur);
+    osc.connect(flutter).connect(lp).connect(env).connect(this.bus!);
+    osc.start(t);
+    osc.stop(t + o.dur + 0.03);
+    lfo.start(t);
+    lfo.stop(t + o.dur + 0.03);
+    // hơi xì kèm: nhiễu qua bandpass trầm, rất nhỏ
+    if (this.noiseBuf) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.noiseBuf;
+      src.loop = true;
+      src.playbackRate.value = 0.7;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 340;
+      bp.Q.value = 0.8;
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.0001, t);
+      ng.gain.exponentialRampToValueAtTime(o.vol * 0.32, t + 0.03);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t + o.dur);
+      src.connect(bp).connect(ng).connect(this.bus!);
+      src.start(t);
+      src.stop(t + o.dur + 0.03);
+    }
+  }
+
+  /** Chuỗi bẹt: thường = 1–3 tiếng ngắn nối nhau; "big" = 2 tiếng dài, trầm và to hơn */
+  private fartBurst(t: number, big: boolean) {
+    const n = big ? 2 : 1 + Math.floor(Math.random() * 3);
+    let at = t;
+    for (let i = 0; i < n; i++) {
+      const dur = big ? 0.34 + Math.random() * 0.24 : 0.12 + Math.random() * 0.33;
+      this.fartOne(at, {
+        dur,
+        f0: (big ? 100 : 84) + Math.random() * 28,
+        f1: 36 + Math.random() * 14,
+        vol: big ? 0.17 : 0.105,
+        flutter: 21 + Math.random() * 8,
+      });
+      at += dur + 0.06 + Math.random() * 0.05;
+    }
+  }
+
+  /** "Tủm": sine rơi nhanh 500→90Hz (biến thể sâu từ ~300Hz) + té nước nhỏ */
+  private plop(t: number, f0: number, vol: number, decay: number) {
+    const ctx = this.ctx!;
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(88, t + 0.12);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+    o.connect(g).connect(this.bus!);
+    o.start(t);
+    o.stop(t + decay + 0.03);
+    if (this.noiseBuf) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.noiseBuf;
+      src.loop = true;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1150;
+      bp.Q.value = 0.9;
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.0001, t + 0.015);
+      ng.gain.exponentialRampToValueAtTime(vol * 0.22, t + 0.045);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+      src.connect(bp).connect(ng).connect(this.bus!);
+      src.start(t + 0.015);
+      src.stop(t + 0.16);
+    }
+  }
+
+  /**
+   * Khoảnh khắc THÀNH CÔNG: 1 tiếng bẹt anh hùng, rồi "tủm… tủm… TỦM" —
+   * hẹn theo nhịp cục vàng rơi (~1,6s) trong nhịp ăn mừng 2,5s của engine.
+   */
+  private successPlop(t: number) {
+    this.fartOne(t + 0.03, { dur: 0.62, f0: 118, f1: 33, vol: 0.18, flutter: 23 });
+    this.plop(t + 0.82, 470, 0.14, 0.26);
+    this.plop(t + 1.2, 520, 0.14, 0.26);
+    this.plop(t + 1.62, 295, 0.2, 0.36); // TỦM cuối: sâu và to hơn
   }
 
   private chirp(t: number) {

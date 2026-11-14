@@ -91,6 +91,12 @@ hiểu ngay câu chuyện.
   rặn theo nhịp tim, xì khi quạu, tru dài khi dỗi, trill mừng khi thành công,
   grừ nhàn khi phòng yên, **ngáy khò khò khi Bug ngủ gật**. Bật/tắt + âm lượng
   ở trang điều khiển.
+- Tiếng **"bẹt bẹt" và "tủm"** cũng tổng hợp bằng Web Audio: lúc Bug gồng ở
+  nhịp tim cao thỉnh thoảng có tiếng bẹt nhỏ (thưa 6–14 giây, không spam),
+  chạm mốc 25/50/75 có bẹt lớn, ở mốc 75 đôi khi có một tiếng **"tủm" giả**
+  đánh lừa (tối đa 1 lần/lượt), lúc dỗi có tiếng "pẹt" phật ý, và khoảnh
+  khắc thành công là màn trả bài: **bẹt anh hùng rồi "tủm… tủm… TỦM"** theo
+  nhịp cục vàng rơi. Tất cả chỉ ở mức điểm xuyết dưới giọng MC và nhạc.
 - Nhạc nền gốc "Rặn Đi Bug Ơi" (tuba oom-pah, C–F–G–C, 112 BPM) tổng hợp trong
   trang stage — không file nhạc ngoài, không bản quyền.
 

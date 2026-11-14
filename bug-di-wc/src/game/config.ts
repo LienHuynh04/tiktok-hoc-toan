@@ -58,6 +58,12 @@ export const GAME = {
   sleepyBubbleEveryMs: 7_000, // đang ngủ gật: tối đa 1 bong bóng "Zzz" của Bug mỗi chừng này
   intermissionLineDelayMs: 3_000, // vào giờ nghỉ giữa lượt 3s: MC nói 1 câu của pool nghỉ (có câu follow thưa, ngoại lệ user duyệt)
 
+  // ----- Âm thanh "bẹt bẹt / tủm" (engine chỉ phát cue, catSounds tổng hợp) -----
+  strainFartMinRate: 5, // nhịp tim >= chừng này/giây (hoặc tiến độ >= maxProgressPct) mới có fart lúc rặn
+  strainFartMinGapMs: 6_000, // fart rặn cách nhau ít nhất ~6s (rng tất định của engine)
+  strainFartMaxGapMs: 14_000, // và tối đa ~14s khi đang gồng liên tục — thưa, không spam
+  fakePlopChance: 0.5, // mốc 75: 50% cơ hội có 1 tiếng "tủm" GIẢ đánh lừa (tối đa 1 lần/lượt)
+
   // ----- MC -----
   cheerCooldownMs: 18_000, // câu cổ vũ theo nhịp tim: tối đa 1 câu mỗi chừng này
   idleLineEveryMs: 80_000,
