@@ -1,0 +1,401 @@
+/* Sân khấu Bug Leo 1000 Bậc — vẽ theo khung 1080x1920, StageFrame tự co giãn. */
+.climb-stage {
+  position: relative;
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  background-color: #f4ead8;
+  background-image: radial-gradient(circle at 20% 10%, #f9f1de 0, transparent 55%), radial-gradient(circle at 85% 90%, #efdfc2 0, transparent 50%);
+  color: #4a3226;
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  user-select: none;
+}
+
+.climb-title-font {
+  font-family: 'Patrick Hand', 'Be Vietnam Pro', cursive;
+}
+
+.climb-waiting {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #7a5c40;
+}
+
+/* ----- Đầu sân khấu ----- */
+.climb-header {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1080px;
+  height: 296px;
+  padding: 14px 36px 0;
+  box-sizing: border-box;
+  text-align: center;
+}
+.climb-brand {
+  font-size: 34px;
+  letter-spacing: 2px;
+  color: #8a5a2a;
+}
+.climb-counter {
+  line-height: 1;
+  margin-top: 2px;
+}
+.climb-counter-now {
+  font-size: 104px;
+  font-weight: 800;
+  color: #4a3226;
+}
+.climb-counter-goal {
+  font-size: 48px;
+  font-weight: 600;
+  color: #a07a4e;
+}
+.climb-wins {
+  position: absolute;
+  right: 36px;
+  top: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-size: 30px;
+  font-weight: 800;
+  color: #b06f09;
+}
+.climb-wins-sub {
+  font-size: 20px;
+  font-weight: 600;
+  color: #a07a4e;
+}
+.climb-progress {
+  margin: 10px auto 0;
+  width: 880px;
+  height: 20px;
+  border-radius: 999px;
+  background-color: #e7d7ba;
+  outline: 3px solid #c9a86a;
+  overflow: hidden;
+}
+.climb-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background-image: linear-gradient(90deg, #f5a623, #e4572e);
+  transition: width 0.25s linear;
+}
+.climb-statusrow {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+.climb-pill {
+  font-size: 25px;
+  font-weight: 700;
+  padding: 7px 22px;
+  border-radius: 999px;
+  color: #fff7e6;
+}
+.climb-pill-calm { background-color: #7fb069; }
+.climb-pill-nap { background-color: #5b7fa6; }
+.climb-pill-slip { background-color: #3f8fbf; }
+.climb-pill-haz { background-color: #d64533; }
+
+/* ----- Hai thanh bên ----- */
+.climb-rail {
+  position: absolute;
+  top: 296px;
+  width: 118px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 3;
+}
+.climb-rail-left { left: 6px; }
+.climb-rail-right { right: 6px; }
+.climb-rail-title {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 23px;
+  text-align: center;
+  color: #8a5a2a;
+  letter-spacing: 1px;
+}
+.climb-rail-item {
+  background-color: rgba(255, 251, 240, 0.88);
+  border: 2px solid #d9c194;
+  border-radius: 14px;
+  padding: 8px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: center;
+}
+.climb-rail-item b {
+  font-size: 21px;
+  color: #4a3226;
+}
+.climb-rail-item span {
+  font-size: 17.5px;
+  line-height: 1.3;
+  color: #7a5c40;
+}
+
+/* ----- Vùng cầu thang ----- */
+.climb-area {
+  position: absolute;
+}
+.climb-bgimg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.climb-pathsvg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.climb-bug {
+  position: absolute;
+  transform: translate(-50%, -94%);
+  pointer-events: none;
+  z-index: 5;
+}
+.climb-bug img {
+  display: block;
+  filter: drop-shadow(0 10px 10px rgba(74, 50, 38, 0.35));
+}
+/* Bộ tư thế: lớp vỏ cung nhảy + các lớp ảnh neo đáy-giữa, crossfade khi đổi tư thế */
+.climb-bug-arc {
+  position: absolute;
+  inset: 0;
+}
+.climb-bug-layer {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.climb-bug-layer img {
+  width: 100%;
+  height: 100%;
+}
+.climb-img-in {
+  animation: climb-posefade 0.12s ease-out;
+}
+@keyframes climb-posefade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.climb-anim-bob {
+  animation: climb-bob 0.5s ease-in-out infinite;
+}
+.climb-anim-step {
+  animation: climb-bob 0.26s ease-in-out infinite;
+}
+.climb-anim-run {
+  animation: climb-bob 0.2s ease-in-out infinite;
+}
+@keyframes climb-bob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -9px; }
+}
+.climb-anim-breathe {
+  animation: climb-breathe 2.4s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+@keyframes climb-breathe {
+  0%, 100% { scale: 1; }
+  50% { scale: 1.03; }
+}
+.climb-bug-leap {
+  animation: climb-leap 0.5s ease-out;
+}
+@keyframes climb-leap {
+  0% { translate: 0 0; }
+  45% { translate: 0 -54px; }
+  100% { translate: 0 0; }
+}
+.climb-bug-tumble {
+  animation: climb-tumble 0.45s ease-in-out infinite;
+}
+@keyframes climb-tumble {
+  0% { transform: translate(-50%, -94%) rotate(-16deg); }
+  50% { transform: translate(-50%, -88%) rotate(14deg); }
+  100% { transform: translate(-50%, -94%) rotate(-16deg); }
+}
+.climb-hazard {
+  position: absolute;
+  transform: translate(-50%, -82%);
+  z-index: 4;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 6px rgba(74, 50, 38, 0.3));
+}
+.climb-spin {
+  animation: climb-spin 0.9s linear infinite;
+  transform-origin: 50% 50%;
+}
+@keyframes climb-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+.climb-bubble {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background-color: #fffdf6;
+  border: 3.5px solid #4a3226;
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-family: 'Patrick Hand', cursive;
+  font-size: 37px;
+  color: #d64533;
+  white-space: nowrap;
+  z-index: 6;
+  animation: climb-bubblepop 0.25s ease-out;
+}
+.climb-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top: 12px solid #4a3226;
+  border-bottom: 0;
+}
+@keyframes climb-bubblepop {
+  from { scale: 0.6; opacity: 0; }
+  to { scale: 1; opacity: 1; }
+}
+.climb-zzz {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  font-family: 'Patrick Hand', cursive;
+  font-size: 34px;
+  color: #5b7fa6;
+  z-index: 6;
+  animation: climb-floatz 1.6s ease-in-out infinite;
+}
+@keyframes climb-floatz {
+  0%, 100% { translate: 0 0; opacity: 0.75; }
+  50% { translate: 6px -14px; opacity: 1; }
+}
+.climb-confetti {
+  position: absolute;
+  z-index: 7;
+  pointer-events: none;
+}
+.climb-confetti span {
+  position: absolute;
+  width: 13px;
+  height: 20px;
+  border-radius: 3px;
+  animation: climb-confetti 1.4s ease-out forwards;
+}
+@keyframes climb-confetti {
+  0% { translate: 0 0; opacity: 1; }
+  100% { translate: 0 120px; opacity: 0; }
+}
+
+/* ----- Mưa cá + banner thắng ----- */
+.climb-fishrain {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 8;
+}
+.climb-fishrain span {
+  position: absolute;
+  top: -80px;
+  animation-name: climb-fishfall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+@keyframes climb-fishfall {
+  from { transform: translateY(0) rotate(-12deg); }
+  to { transform: translateY(2080px) rotate(28deg); }
+}
+.climb-banner {
+  position: absolute;
+  left: 50%;
+  top: 660px;
+  transform: translateX(-50%);
+  width: 790px;
+  text-align: center;
+  background-color: rgba(74, 50, 38, 0.92);
+  border: 5px solid #f2c94c;
+  border-radius: 30px;
+  padding: 30px 36px;
+  z-index: 9;
+  animation: climb-bubblepop 0.3s ease-out;
+}
+.climb-banner-grand {
+  top: 600px;
+  border-color: #ffe08a;
+  background-color: rgba(122, 63, 0, 0.94);
+}
+.climb-banner-title {
+  font-size: 62px;
+  color: #f2c94c;
+  line-height: 1.15;
+}
+.climb-banner-grand .climb-banner-title { font-size: 76px; }
+.climb-banner-sub {
+  margin-top: 10px;
+  font-size: 29px;
+  font-weight: 600;
+  color: #fff7e6;
+}
+
+/* ----- Chân sân khấu ----- */
+.climb-footer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1080px;
+  padding: 10px 36px 16px;
+  box-sizing: border-box;
+  text-align: center;
+}
+.climb-top3 {
+  font-size: 25px;
+  color: #4a3226;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.climb-top3-label { font-weight: 700; color: #8a5a2a; }
+.climb-top3-item { font-weight: 600; }
+.climb-credit {
+  margin-top: 3px;
+  font-size: 22px;
+  color: #b06f09;
+}
+.climb-event {
+  margin-top: 5px;
+  font-size: 26px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.climb-event-ok { color: #4e7d32; }
+.climb-event-fail { color: #c23b2a; }
+.climb-event-info { color: #7a5c40; }
+.climb-totals {
+  margin-top: 3px;
+  font-size: 21px;
+  color: #a07a4e;
+}
+.climb-giftnote {
+  margin-top: 3px;
+  font-size: 20px;
+  font-style: italic;
+  color: #a07a4e;
+}
