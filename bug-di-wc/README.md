@@ -76,6 +76,12 @@ câu xin follow mà chủ kênh duyệt riêng cho game này (2026-11-14); MC c�
 câu đó thưa trong giờ nghỉ giữa lượt (tối đa 1 lần mỗi giờ nghỉ). Đây là ngoại
 lệ duy nhất của game này so với luật không kêu gọi trên sóng.
 
+**Câu premise** (chủ kênh chốt 2026-11-14): *"Thông báo khẩn: Bug đang tắc
+'đầu ra'! Cần đội cứu hộ bằng tim ngay!"* — MC đọc nguyên văn **đầu tiên** khi
+mở buổi (trước câu chào + luật chơi), đồng thời hiện thành banner đỏ "🚨 thông
+báo khẩn" dưới tiêu đề sân khấu trong suốt lượt rặn, để người mới vào phòng
+hiểu ngay câu chuyện.
+
 ## Âm thanh
 
 - MC: giọng **nữ** hài hước như host thật — mỗi sự kiện có ≥5 câu thoại bốc

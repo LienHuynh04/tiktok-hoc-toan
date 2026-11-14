@@ -203,6 +203,9 @@ const WAKE_BUG = [
 // dùng trong Bug Đi WC (ghi chú xoay vòng ở chân sân khấu + MC đọc thưa trong giờ nghỉ giữa lượt).
 // Các game khác vẫn giữ luật không-CTA trên bề mặt phát sóng. GIỮ NGUYÊN VĂN, không viết lại.
 export const FOLLOW_NOTE = 'hãy cho tôi 1 follow để ủng hộ ra clip và game về mèo nha';
+// Câu PREMISE của game (user chốt 2026-11-14, GIỮ NGUYÊN VĂN): MC đọc đầu tiên khi mở buổi,
+// đồng thời là banner "thông báo khẩn" trên đầu sân khấu — người mới vào hiểu ngay câu chuyện.
+export const PREMISE_LINE = "Thông báo khẩn: Bug đang tắc 'đầu ra'! Cần đội cứu hộ bằng tim ngay!";
 // MC nói 1 câu trong giờ nghỉ giữa lượt (mỗi giờ nghỉ tối đa 1 câu) — câu follow nằm thưa trong pool (1/6)
 const INTERMISSION_LINES = [
   'Nghỉ xả hơi mười giây! Bug đang rửa chân tay, vuốt lại bộ lông cho đẹp, chuẩn bị vào lượt rặn mới hoành tráng hơn!',
@@ -490,6 +493,7 @@ export class WcRoom {
     fresh.catVolume = this.catVolume;
     Object.assign(this, fresh);
     return [
+      { text: F(PREMISE_LINE), main: true },
       { text: this.pick(WELCOME_MAIN), main: true },
       { text: this.pick(WELCOME_HOW) },
     ];

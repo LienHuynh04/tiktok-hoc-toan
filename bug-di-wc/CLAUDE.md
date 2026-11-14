@@ -36,6 +36,11 @@
   pool MC giờ nghỉ giữa lượt `INTERMISSION_LINES` (MC nói đúng 1 câu/giờ nghỉ,
   câu follow chiếm 1/6 pool nên xuất hiện thưa, tối đa 1 lần/giờ nghỉ). KHÔNG
   thêm CTA nào khác, KHÔNG mang ngoại lệ này sang game khác.
+- **Câu PREMISE (user chốt 2026-11-14, GIỮ NGUYÊN VĂN)**: `Thông báo khẩn: Bug
+  đang tắc 'đầu ra'! Cần đội cứu hộ bằng tim ngay!` (hằng số `PREMISE_LINE`
+  trong wc.ts) ở đúng 2 chỗ: (1) MC nói ĐẦU TIÊN khi mở buổi (`newSession` —
+  trước câu chào và luật chơi, dạng câu chính `main`), (2) banner đỏ "🚨 thông
+  báo khẩn" dưới hàng tiêu đề sân khấu, chỉ hiện khi `phase === 'attempt'`.
 - **Bug SỐNG (mood + pose + vi mô)**: engine suy `mood` (focused/pumped/annoyed/
   furious/sulking/sleepy/bliss) và `pose` từ tín hiệu sẵn có — thứ tự ưu tiên ở
   `moodAt()`/`poseAt()`, đừng đổi ngưỡng bừa (config `GAME.pumpedRate/maxCombo/

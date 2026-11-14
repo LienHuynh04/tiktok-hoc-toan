@@ -2,7 +2,7 @@
 // NƯỚC/RAU, combo RẶN, mốc 1 lần, thắng + lên cấp, hết giờ giữ 40%, quà vô hiệu,
 // chọc mèo → quạu → dỗi → xin lỗi, bong bóng chat (trần 5 + lọc từ cấm), MC không
 // lặp câu liên tiếp. Chạy: npm run check.
-import { FOLLOW_NOTE, WcRoom, type Person } from './wc';
+import { FOLLOW_NOTE, PREMISE_LINE, WcRoom, type Person } from './wc';
 
 let failures = 0;
 function eq(actual: unknown, expected: unknown, label: string) {
@@ -453,6 +453,21 @@ const person = (username: string): Person => ({ username, nickname: username, sp
   room8.forceFace('surprised', T);
   eq(room8.view(T).pose, 'faceSurprised', 'ép mặt ngạc nhiên từ trang điều khiển');
   eq(room8.view(T + 900).pose, 'strain', 'mặt ngạc nhiên ép cũng hết hạn sau 0,8s');
+}
+
+// ---------- 21. Câu premise mở màn: hằng số NGUYÊN VĂN + MC nói ĐẦU TIÊN khi mở buổi ----------
+{
+  const PREMISE = "Thông báo khẩn: Bug đang tắc 'đầu ra'! Cần đội cứu hộ bằng tim ngay!";
+  eq(PREMISE_LINE, PREMISE, 'hằng số PREMISE_LINE khớp NGUYÊN VĂN câu user chốt');
+  for (let seed = 1; seed <= 30; seed++) {
+    const room = new WcRoom(T, mulberry32(seed * 31));
+    const says = room.newSession(T);
+    ok(says.length >= 3, `seed ${seed}: mở buổi gồm premise + câu chào + luật chơi`);
+    // Câu MC mang tiền tố định tuyến giọng "F: " — nội dung sau tiền tố phải NGUYÊN VĂN
+    eq(says[0].text.replace(/^F: /, ''), PREMISE, `seed ${seed}: MC nói câu premise ĐẦU TIÊN, nguyên văn`);
+    eq(says[0].main, true, `seed ${seed}: câu premise là câu chính (đọc ngay khi mở buổi)`);
+    ok(says[1].text.replace(/^F: /, '') !== PREMISE, `seed ${seed}: câu thứ hai là câu chào, không lặp premise`);
+  }
 }
 
 if (failures) {

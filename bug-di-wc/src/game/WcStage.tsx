@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './wc.css';
 import type { WcState } from './useWc';
-import { FOLLOW_NOTE, type BugPose } from './wc';
+import { FOLLOW_NOTE, PREMISE_LINE, type BugPose } from './wc';
 
 /**
  * Ghi chú xoay vòng trên chân sân khấu: mỗi ghi chú hiện ~6 giây, vòng 4 ghi chú ~24 giây.
@@ -383,6 +383,20 @@ export function WcStage({ game }: { game: WcState }) {
             <div className="mt-[4px] text-[16px] font-semibold text-[#96714e]">👑 = VUA RẶN · 💪 tổng lực cả buổi</div>
           </div>
         </div>
+
+        {/* Banner THÔNG BÁO KHẨN: câu premise của game (nguyên văn), hiện trong lượt rặn
+            để người mới vào phòng hiểu ngay câu chuyện + việc cần làm */}
+        {v.phase === 'attempt' && (
+          <div
+            className="wc-pop mt-[12px] flex items-center gap-[12px] rounded-[18px] px-[20px] py-[10px] shadow-lg"
+            style={{ background: 'linear-gradient(90deg,#c62f1d,#e2703a)', border: '2px solid #ffd9a8' }}
+          >
+            <span className="text-[30px]">🚨</span>
+            <span className="wc-display text-[26px] leading-snug font-black text-white" style={{ textShadow: '0 1px 0 rgba(0,0,0,0.25)' }}>
+              {PREMISE_LINE}
+            </span>
+          </div>
+        )}
 
         {/* THANH RẶN */}
         <div className="glass-panel mt-[14px] px-[22px] py-[14px]">
