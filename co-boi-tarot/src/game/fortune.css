@@ -1,0 +1,94 @@
+/* Sân khấu Cô Bói Tarot: lật bài 3D, tư thế cô bói, chữ lời giải tự cuộn */
+.fcard {
+  perspective: 1400px;
+}
+.fcard-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.3, 1.2);
+}
+.fcard.flipped .fcard-inner {
+  transform: rotateY(180deg);
+}
+.fcard-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 20px;
+  overflow: hidden;
+}
+.fcard-backface {
+  transform: rotateY(180deg);
+}
+/* Mặt úp: hoạ tiết trăng sao chìm, tím sâu viền vàng (bản gốc của phòng này) */
+.fcard-back {
+  background:
+    radial-gradient(circle at 50% 36%, rgba(250, 204, 21, 0.28), transparent 42%),
+    repeating-radial-gradient(circle at 50% 120%, rgba(255, 255, 255, 0.06) 0 2px, transparent 2px 26px),
+    linear-gradient(160deg, #2e1065, #701a75 55%, #1e1b4b);
+  border: 3px solid rgba(250, 204, 21, 0.55);
+  box-shadow: inset 0 0 0 10px rgba(0, 0, 0, 0.25), inset 0 0 60px rgba(0, 0, 0, 0.55);
+}
+.fcard-backface {
+  border: 3px solid rgba(250, 204, 21, 0.65);
+  box-shadow: 0 0 34px 4px rgba(250, 204, 21, 0.3);
+}
+/* Lá được trải xuống bàn: trượt từ phía cô bói xuống + hơi xoay */
+@keyframes fortune-deal-in {
+  0% { opacity: 0; transform: translateY(-70px) rotate(-4deg) scale(0.92); }
+  100% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+}
+.fortune-dealt {
+  animation: fortune-deal-in 0.55s cubic-bezier(0.2, 0.8, 0.3, 1.1) backwards;
+}
+/* Tư thế cô bói: chuyển mờ 120ms như các game khác */
+.fortune-pose {
+  transition: opacity 120ms linear;
+}
+/* Lời giải: tự cuộn chậm lên trong lúc cô đọc (45 giây, dừng ở cuối) */
+@keyframes fortune-read-scroll {
+  0%, 12% { transform: translateY(0); }
+  92%, 100% { transform: translateY(calc(-100% + 148px)); }
+}
+.fortune-reading-scroll {
+  animation: fortune-read-scroll 45s linear forwards;
+  will-change: transform;
+}
+@keyframes fortune-toast {
+  0% { opacity: 0; transform: translateY(-16px); }
+  8% { opacity: 1; transform: translateY(0); }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.fortune-toast {
+  animation: fortune-toast 6s ease forwards;
+}
+/* Toast nhảy hạng trong hàng chờ: nảy lên ở đáy cảnh, giữ ~4.2 giây rồi mờ dần (khớp GAME.rankToastMs) */
+@keyframes fortune-rank-toast {
+  0% { opacity: 0; transform: translateY(18px) scale(0.95); }
+  7% { opacity: 1; transform: translateY(0) scale(1); }
+  86% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(6px); }
+}
+.fortune-rank-toast {
+  animation: fortune-rank-toast 4.2s ease forwards;
+}
+@keyframes fortune-twinkle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.95; }
+}
+.fortune-star {
+  animation: fortune-twinkle 3s ease-in-out infinite;
+}
+
+/* Nhân vật khách xuất hiện / đổi nhân vật (gõ NAM, NỮ): nảy nhẹ từ dưới lên */
+@keyframes fortune-guest-in {
+  from { opacity: 0; transform: translateY(26px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.fortune-guest-in {
+  animation: fortune-guest-in 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.15) backwards;
+}
