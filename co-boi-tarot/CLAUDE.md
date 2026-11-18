@@ -54,6 +54,25 @@
 - Kiểm chứng: `npm run check` (fortune.check.ts), `npm run lint`, `npm run build`,
   smoke server PORT=3030 rồi chụp màn hình stage (?view=stage&mute=1) để nhìn tận mắt.
 
+## Chống tĩnh + khách mẫu (thêm 2026-11-18)
+
+- Phòng trống (không khách ngồi, hàng chờ rỗng, pha idle): sân khấu tự diễn vòng 4 động tác
+  LỚN mỗi ~9.5 giây (xào bài, xoè quạt bài, vẫy chào + tia sáng, xem quả cầu + vòng rune
+  xoay) bằng tư thế sẵn có + phần tử CSS, kèm ambient luôn chạy (sao băng ngẫu nhiên 18-35s,
+  rune bay lên, tia lửa quanh nến). Có khách ngồi là dừng ngay. Câu nhắc cách chơi lúc vắng:
+  pool LINES.idle 6 câu, mỗi ~55 giây, chỉ đọc khi giọng rảnh và không có khách ngồi.
+- Khách mẫu: trống liên tục 40 giây (GAME.demoAfterMs) thì 1 khách mẫu ngồi vào (username
+  'khach-mau', nhãn "✦ Khách mẫu ✦ / lượt xem thử" trên sân khấu), hỏi 1 câu trong
+  DEMO_QUESTIONS, chạy ĐỦ vòng xem như khách thật nhưng: không điểm, không vào hàng chờ,
+  không tính vào số lượt đã xem. Khách thật gõ câu hỏi vào hàng là lượt mẫu NHƯỜNG: lật nốt
+  các lá với nhịp rút gọn (demoFlipStepMs), phần đọc rút còn câu mở + câu nhường; nếu đang
+  giữa pha đọc thì bỏ các câu luận đang chờ (voice.dropQueued, câu đang đọc thì đọc nốt).
+- Lật bài: lá nhấc lên scale 1.07 + xoay 3D + vệt sáng, chạm bàn bung tia lửa, lá ngược
+  chớp đỏ; tiếng vút/thụp tổng hợp Web Audio trong src/game/sfx.ts (chỉ trang stage).
+- Tốc độ giọng mặc định 1.32 (tăng 20% từ 1.10, chủ kênh chốt 2026-11-18); giữa các câu
+  không có khoảng lặng cấu hình riêng: câu chính được tạo giọng sẵn lúc xếp hàng nên nối
+  nhau gần như liền mạch.
+
 ## Nhân vật khách (thêm 2026-11-18)
 
 - Khách ngồi vào bàn hiện thành NHÂN VẬT chibi ngồi ghế (không chỉ đĩa avatar): pool 12 nhân

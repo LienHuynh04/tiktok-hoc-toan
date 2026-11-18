@@ -15,6 +15,12 @@ export const GAME = {
   readingSec: 16, // bài luận hiện chữ sau khi lật xong (đồng hồ bị giữ khi giọng đang đọc)
   restSec: 5, // nghỉ giữa hai lượt
   reversedChance: 0.25, // tỉ lệ lá ra chiều ngược
+  // ----- Chống tĩnh lúc phòng vắng + khách mẫu (chủ kênh chốt 2026-11-18) -----
+  idleActCycleMs: 9500, // sân khấu: chu kỳ 1 động tác biểu diễn của cô lúc vắng (động tác ~5.5s + nghỉ)
+  idleActOnMs: 5500, // sân khấu: phần đầu mỗi chu kỳ là lúc động tác đang diễn
+  demoAfterMs: 40_000, // phòng trống liên tục ngần này (không khách ngồi, hàng chờ rỗng) thì khách mẫu ngồi vào xem thử
+  demoFlipStepMs: 700, // khách mẫu đang nhường bàn cho khách thật: nhịp lật các lá còn lại rút xuống ngần này
+  demoRestSec: 2, // khách mẫu nhường bàn / khép lượt mẫu: nghỉ ngắn rồi mời khách thật
   // ----- Giọng nói thêm -----
   idleLineEveryMs: 55_000, // phòng trống: bao lâu cô nhắc cách chơi 1 lần
   chatterMaxWaitMs: 60_000, // câu nói thêm chờ quá lâu thì bỏ

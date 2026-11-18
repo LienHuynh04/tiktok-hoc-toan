@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FortuneRoom, formatPoints, type ChatIn } from './fortune';
+import { FortuneRoom, formatPoints, DEMO_USERNAME, type ChatIn } from './fortune';
 import { DECK } from './cards78';
 import { GAME, POSITIONS } from './config';
 import { composeReading, detectTheme, extractQuestion, THEMES, type ThemeKey } from './reading';
@@ -336,6 +336,98 @@ assert.equal(detectTheme('dạo này em thấy mệt mỏi quá'), 'general');
   c.addGiftPoints(who(8), 3, t); // Bạn 8 tặng quà: lên đầu hàng chờ
   assert.equal(c.view(t).queueTop4[0].nickname, 'Bạn 8', 'top 4 xếp theo điểm thật');
   assert.deepEqual(c.view(t).queueTop4.map((q) => q.username), c.view(t).queue.slice(0, 4).map((q) => q.username), 'top 4 khớp đầu danh sách đầy đủ');
+}
+
+// ---------- khách mẫu: trống 40s thì ngồi vào, không điểm/không hàng chờ, chạy hết lượt mà không tính lượt ----------
+{
+  let td = t;
+  const c = new FortuneRoom(td, rand);
+  c.newSession(td);
+  c.tick(td + GAME.demoAfterMs - 1);
+  assert.equal(c.view(td).current, null, 'chưa đủ 40s trống: chưa có khách mẫu');
+  const intro = c.tick(td + GAME.demoAfterMs + 1);
+  const v = c.view(td + GAME.demoAfterMs + 1);
+  assert.equal(v.current?.demo, true, 'đủ 40s trống: khách mẫu ngồi vào');
+  assert.equal(v.current?.nickname, 'Khách mẫu');
+  assert.ok(v.current?.guestChar, 'khách mẫu cũng có nhân vật ngồi ghế');
+  assert.ok(v.current!.question.length > 10, 'khách mẫu có câu hỏi mẫu');
+  assert.ok(texts(intro).some((x) => x.includes('lượt mẫu')), 'cô giới thiệu rõ đây là lượt mẫu');
+  assert.equal(v.queueCount, 0, 'khách mẫu không vào hàng chờ');
+  assert.equal(c.pointsOf(DEMO_USERNAME), 0, 'khách mẫu không có điểm');
+
+  // chạy hết một lượt mẫu: welcome -> deal -> flip -> reading -> rest -> idle
+  c.tick((td = c.phaseEndsAt + 1)); // deal
+  c.tick((td += GAME.dealStepMs * 3));
+  c.tick((td = c.phaseEndsAt + 1)); // flip
+  c.tick((td += GAME.flipStepMs + 10));
+  c.tick((td += GAME.flipStepMs));
+  c.tick((td += GAME.flipStepMs));
+  assert.equal(c.view(td).current?.flipped, 3, 'lượt mẫu lật đủ 3 lá');
+  c.tick((td = c.phaseEndsAt + 1)); // reading
+  assert.equal(c.phase, 'reading');
+  assert.ok(c.view(td).readingText.length > 200, 'lượt mẫu vẫn hiện đoạn luận đầy đủ');
+  assert.equal(c.readings, 0, 'lượt mẫu không tính vào số lượt đã xem');
+  c.tick((td = c.phaseEndsAt + 1)); // rest
+  assert.equal(c.phase, 'rest');
+  c.tick((td = c.phaseEndsAt + 1)); // idle
+  assert.equal(c.phase, 'idle');
+  assert.equal(c.view(td).current, null, 'lượt mẫu xong: ghế trống lại');
+}
+
+// ---------- khách mẫu nhường bàn: khách thật vào hàng giữa pha lật -> lật nốt nhanh, đọc rút gọn, khách thật lên ----------
+{
+  let td = t;
+  const c = new FortuneRoom(td, rand);
+  c.newSession(td);
+  c.tick(td + GAME.demoAfterMs + 1); // khách mẫu ngồi
+  c.tick((td = c.phaseEndsAt + 1)); // deal
+  c.tick((td += GAME.dealStepMs * 3));
+  c.tick((td = c.phaseEndsAt + 1)); // flip
+  c.tick((td += GAME.flipStepMs + 10));
+  assert.equal(c.view(td).current?.flipped, 1, 'lượt mẫu đã lật 1 lá');
+  chat(c, 42, 'Cô ơi chuyện tình cảm của em thế nào?', td); // khách thật vào hàng
+  assert.equal(c.view(td).queueCount, 1, 'khách thật ở trong hàng chờ');
+  assert.equal(c.view(td).current?.demo, true, 'khách mẫu chưa bị giật khỏi ghế giữa lá đang lật');
+  let readLines: { text: string }[] = [];
+  const ph = () => (c as FortuneRoom).phase; // đọc pha qua hàm để tsc không thu hẹp kiểu sai trong vòng lặp
+  for (let i = 0; i < 6 && ph() !== 'reading'; i++) {
+    const lines = c.tick((td += 300));
+    if (ph() === 'reading') readLines = lines; // chỉ lấy câu của đúng tick chuyển sang pha đọc
+  }
+  assert.equal(c.view(td).current?.flipped, 3, 'nhường bàn: các lá còn lại được lật nốt rất nhanh');
+  assert.equal(c.phase, 'reading');
+  assert.ok(texts(readLines).some((x) => x.includes('nhường bàn')), 'đọc rút gọn: có câu nhường bàn');
+  assert.equal(readLines.length, 2, 'đọc rút gọn: chỉ câu mở + câu nhường, không đọc 6 câu luận của lượt mẫu');
+  c.tick((td = c.phaseEndsAt + 1)); // rest ngắn
+  c.tick((td = c.phaseEndsAt + 1)); // khách thật ngồi
+  assert.equal(c.view(td).current?.nickname, 'Bạn 42', 'khách thật được ngồi ngay sau lượt mẫu');
+  assert.equal(c.view(td).current?.demo, false);
+}
+
+// ---------- khách mẫu nhường bàn giữa pha đọc: bỏ câu chờ đọc, đọc nốt câu đang dở rồi nhường ----------
+{
+  let td = t;
+  const c = new FortuneRoom(td, rand);
+  c.newSession(td);
+  c.tick(td + GAME.demoAfterMs + 1);
+  c.tick((td = c.phaseEndsAt + 1)); // deal
+  c.tick((td += GAME.dealStepMs * 3));
+  c.tick((td = c.phaseEndsAt + 1)); // flip
+  c.tick((td += GAME.flipStepMs + 10));
+  c.tick((td += GAME.flipStepMs));
+  c.tick((td += GAME.flipStepMs));
+  const full = c.tick((td = c.phaseEndsAt + 1)); // reading đầy đủ (chưa ai nhường)
+  assert.equal(c.phase, 'reading');
+  assert.ok(full.length >= 7, 'chưa có khách thật: lượt mẫu đọc đủ câu mở + 6 câu luận');
+  assert.equal(c.consumeDemoCut(), false, 'chưa nhường: không có yêu cầu bỏ câu chờ');
+  chat(c, 43, 'Công việc của em sao cô?', td); // khách thật vào giữa pha đọc
+  const y = c.tick((td += 200));
+  assert.ok(texts(y).some((x) => x.includes('nhường bàn')), 'giữa pha đọc: cô nói câu nhường bàn');
+  assert.equal(c.consumeDemoCut(), true, 'stage được báo bỏ các câu luận đang chờ đúng 1 lần');
+  assert.equal(c.consumeDemoCut(), false, 'báo cắt chỉ 1 lần');
+  c.tick((td = c.phaseEndsAt + 1)); // rest ngắn
+  c.tick((td = c.phaseEndsAt + 1)); // khách thật ngồi
+  assert.equal(c.view(td).current?.nickname, 'Bạn 43', 'khách thật lên ngay sau khi lượt mẫu nhường');
 }
 
 console.log('fortune.check: tất cả đều đúng');

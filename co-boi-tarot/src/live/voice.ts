@@ -31,7 +31,7 @@ class Voice {
   private playing = false;
   private current: HTMLAudioElement | null = null;
   private lastSpokeAt = Date.now();
-  rate = readRate(); // mặc định 1.25: MC nói nhanh cho tiết tấu dồn dập (chủ kênh chốt); chỉnh ở trang điều khiển
+  rate = readRate(); // mặc định 1.32 (chủ kênh chốt 2026-11-18: tăng ~20% từ 1.10 cho nhịp đọc nhanh hơn); chỉnh ở trang điều khiển
   volume = 1;
   enabled = IS_STAGE;
   /** báo MC nào đang nói (để nhân vật MC trên sân khấu nhún nhảy) */
@@ -59,6 +59,13 @@ class Voice {
     this.current?.pause();
     this.current = null;
     this.playing = false;
+  }
+
+  /** Bỏ mọi câu đang CHỜ đọc (câu đang đọc dở thì đọc nốt câu đó): dùng khi lượt mẫu phải nhường bàn cho khách thật */
+  dropQueued() {
+    for (const l of [...this.normal, ...this.priority]) l.done?.();
+    this.normal = [];
+    this.priority = [];
   }
 
   get busy() {
@@ -160,9 +167,9 @@ class Voice {
 function readRate() {
   try {
     const r = Number(localStorage.getItem('voice-rate'));
-    return r >= 0.5 && r <= 1.5 ? r : 1.1; // cô giáo đọc đề: chậm hơn MC đám cưới (1.35)
+    return r >= 0.5 && r <= 1.5 ? r : 1.32; // mặc định 1.32: nhanh hơn 20% so với 1.10 cũ (chủ kênh chốt 2026-11-18)
   } catch {
-    return 1.1;
+    return 1.32;
   }
 }
 

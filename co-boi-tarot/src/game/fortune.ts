@@ -44,6 +44,7 @@ interface Current {
   flipped: number;
   reading: string[];
   charId: string | null; // nhân vật khách đang ngồi (pool trong guests.ts)
+  demo: boolean; // true = khách mẫu (lượt xem thử lúc phòng vắng): không điểm, không vào hàng chờ
 }
 
 /** Sự kiện nhảy hạng trong hàng chờ (vì điểm của chính người đó tăng): sân khấu hiện toast "số cũ → số mới" */
@@ -78,6 +79,7 @@ export interface FortuneView {
     points: number;
     dealt: number;
     flipped: number;
+    demo: boolean; // khách đang ngồi là khách mẫu (sân khấu hiện nhãn "Khách mẫu / lượt xem thử")
     pose: Pose;
     guestChar: GuestChar | null;
     cards: { img: string; name: string; en: string; keywords: string; reversed: boolean; faceUp: boolean; position: string }[];
@@ -149,8 +151,35 @@ const LINES = {
     F('Phòng đang vắng, ai có câu hỏi trong lòng thì cứ gõ lên chat nhé. Cô xem lần lượt theo điểm trong hàng chờ.'),
     F('Cô vẫn đang ngồi đây chờ bạn tiếp theo. Gõ câu hỏi của bạn lên là cô ghi vào hàng chờ ngay.'),
     F('Trong lúc chờ bạn mới, cô nhắc lại là xem bài ở phòng cô chỉ để giải trí thôi nhé. Ai tò mò thì cứ mạnh dạn hỏi một câu.'),
+    F('Bạn muốn chọn nhân vật ngồi ghế theo ý mình thì gõ một chữ NAM hoặc NỮ lên chat, cô đổi nhân vật cho bạn ngay nhé.'),
+    F('Xem bài ở phòng cô chỉ để giải trí và tham khảo cho vui thôi, cả nhà đừng tin để quyết định việc quan trọng nhé. Ai có thắc mắc gì trong lòng thì cứ gõ câu hỏi lên, cô xem cho.'),
+    F('Ai mới vào phòng thì cô chào nhé. Muốn xem bài, bạn cứ gõ câu hỏi của mình lên chat, cô ghi vào hàng chờ theo điểm, điểm cao thì được lên trước.'),
+  ],
+  demoIntro: [
+    F('Chưa có bạn nào lên, cô xem thử một lượt mẫu nha. Ai muốn xem thật thì cứ gõ câu hỏi lên chat, cô nhường bàn cho bạn ngay.'),
+    F('Phòng đang vắng, cô làm một lượt mẫu cho cả nhà xem cách chơi nhé. Bạn nào gõ câu hỏi lên là cô chuyển sang xem cho bạn liền.'),
+  ],
+  demoYield: [F('Có bạn thật lên rồi, cô khép lượt mẫu tại đây để nhường bàn cho bạn nhé.')],
+  demoOutro: [
+    F('Lượt mẫu xong rồi đó. Ai muốn cô xem cho mình thì cứ gõ câu hỏi lên chat nhé.'),
+    F('Đó là một lượt mẫu cho cả nhà xem thử. Tới lượt bạn thì cứ gõ câu hỏi lên, cô xem y như vậy cho bạn.'),
   ],
 };
+
+/** Câu hỏi mẫu của khách mẫu: đủ các chủ đề để lượt mẫu trông như lượt thật */
+export const DEMO_QUESTIONS = [
+  'Cô ơi, chuyện tình cảm sắp tới của em thế nào?',
+  'Công việc của em tháng này có thuận lợi không cô?',
+  'Tiền bạc cuối năm của em ra sao hả cô?',
+  'Em sắp thi, kết quả có tốt không cô?',
+  'Gia đình em sắp tới có chuyện gì vui không cô?',
+  'Em có nên đổi việc lúc này không cô?',
+  'Chuyện học hành của em dạo này thế nào cô?',
+  'Sắp tới em có gặp may mắn gì không cô?',
+];
+
+/** Username của khách mẫu: có dấu gạch ngang nên không bao giờ trùng username TikTok thật */
+export const DEMO_USERNAME = 'khach-mau';
 
 export const DISCLAIMER_LINE = 'Cô nhắc nhẹ cả phòng, xem tarot ở đây chỉ mang tính giải trí và tham khảo cho vui thôi nhé.';
 
@@ -174,12 +203,18 @@ export class FortuneRoom {
   private lastCharId: string | null = null; // nhân vật của khách gần nhất: khách sau tránh trùng
   private lastIdleAt = 0;
   private lastLineIdx = new Map<string, number>();
+  // Khách mẫu: phòng trống liên tục từ mốc này (có khách ngồi hoặc có người chờ là mốc bị đặt lại)
+  private emptySince: number;
+  private demoYield = false; // khách thật đã vào hàng trong lúc khách mẫu đang xem: lượt mẫu phải nhường nhanh
+  private demoYieldAnnounced = false; // đã nói câu nhường bàn trong pha đọc của lượt mẫu chưa
+  private demoCutVoice = false; // lượt mẫu đang đọc mà phải nhường: trang stage bỏ các câu đang chờ đọc 1 lần
 
   constructor(
     private now0: number,
     private rand: () => number = Math.random,
   ) {
     this.lastIdleAt = now0;
+    this.emptySince = now0;
   }
 
   private pick(key: string, arr: readonly string[]): string {
@@ -290,6 +325,10 @@ export class FortuneRoom {
     this.lastNow = now;
     this.lastCharId = null;
     this.lastIdleAt = now;
+    this.emptySince = now;
+    this.demoYield = false;
+    this.demoYieldAnnounced = false;
+    this.demoCutVoice = false;
     return [
       { text: this.pick('welcome', LINES.welcome), main: true },
       { text: this.pick('howto', LINES.howto), main: true },
@@ -331,6 +370,8 @@ export class FortuneRoom {
       return [{ text: this.pickFn('queueFull', LINES.queueFull, e.spoken), ttl: GAME.chatterMaxWaitMs }];
     }
     this.queue.push({ username: e.username, nickname: e.nickname, spoken: e.spoken, avatar: e.avatar, question, theme: detectTheme(question), joinedAt: now, seq: this.joinSeq++, genderPref: null });
+    // khách thật vào hàng trong lúc khách mẫu đang xem: lượt mẫu phải nhường bàn nhanh
+    if (this.current?.demo) this.demoYield = true;
     this.sortQueue();
     const pos = this.queue.findIndex((x) => x.username === e.username) + 1;
     const out: Say[] = [{ text: this.pickFn('join', LINES.join, e.spoken, pos, this.pointsOf(e.username)), ttl: GAME.chatterMaxWaitMs }];
@@ -348,7 +389,15 @@ export class FortuneRoom {
     }
     // khách đã lên ghế: bỏ các toast nhảy hạng còn treo của họ (toast chỉ dành cho người còn chờ)
     this.jumps = this.jumps.filter((j) => j.username !== guest.username);
-    // rút 3 lá khác nhau từ đủ 78 lá
+    this.beginTurn(guest, false, now);
+    return [
+      { text: this.pickFn('seat', LINES.seat, guest.spoken), main: true },
+      { text: this.pickFn('questionLine', LINES.questionLine, guest.question), main: true },
+    ];
+  }
+
+  /** Mở một lượt xem: rút 3 lá khác nhau từ đủ 78 lá, bốc nhân vật khách, vào pha welcome */
+  private beginTurn(guest: Queued, demo: boolean, now: number) {
     const pool = [...DECK];
     const drawn: DrawnCard[] = [];
     for (let i = 0; i < 3; i++) {
@@ -358,14 +407,37 @@ export class FortuneRoom {
     }
     const ch = drawGuestChar(this.rand, { gender: guest.genderPref, excludeId: this.lastCharId });
     if (ch) this.lastCharId = ch.id;
-    this.current = { guest, drawn, dealt: 0, flipped: 0, reading: [], charId: ch?.id ?? null };
+    this.current = { guest, drawn, dealt: 0, flipped: 0, reading: [], charId: ch?.id ?? null, demo };
+    this.demoYield = false;
+    this.demoYieldAnnounced = false;
     this.lastReading = '';
     this.phase = 'welcome';
     this.phaseStartedAt = now;
     this.phaseEndsAt = now + GAME.welcomeSec * 1000;
+  }
+
+  /**
+   * Khách mẫu: phòng trống đủ lâu thì cô tự xem một lượt mẫu (nhãn rõ ràng trên sân khấu).
+   * Không vào hàng chờ, không điểm, không tính vào số lượt đã xem. Khách thật vào hàng
+   * là lượt mẫu nhường (xem demoYield trong tick).
+   */
+  private seatDemo(now: number): Say[] {
+    const question = this.pick('demoQ', DEMO_QUESTIONS);
+    const guest: Queued = {
+      username: DEMO_USERNAME,
+      nickname: 'Khách mẫu',
+      spoken: 'bạn khách mẫu',
+      avatar: '',
+      question,
+      theme: detectTheme(question),
+      joinedAt: now,
+      seq: -1,
+      genderPref: null,
+    };
+    this.beginTurn(guest, true, now);
     return [
-      { text: this.pickFn('seat', LINES.seat, guest.spoken), main: true },
-      { text: this.pickFn('questionLine', LINES.questionLine, guest.question), main: true },
+      { text: this.pick('demoIntro', LINES.demoIntro), main: true },
+      { text: this.pickFn('questionLine', LINES.questionLine, question), main: true },
     ];
   }
 
@@ -405,30 +477,54 @@ export class FortuneRoom {
       (key, arr) => this.pick(key, arr),
     );
     this.lastReading = cur.reading.join(' ');
-    this.readings++;
     this.phase = 'reading';
     this.phaseStartedAt = now;
+    // Lượt mẫu không tính vào số lượt đã xem; lời giải đầy đủ vẫn hiện chữ trên sân khấu.
+    // Lượt mẫu đang phải nhường bàn: giọng chỉ đọc câu mở + câu nhường, pha đọc rút ngắn.
+    if (cur.demo && this.demoYield) {
+      this.phaseEndsAt = now + 4000;
+      this.demoYieldAnnounced = true;
+      return [
+        { text: this.pick('readingIntro', LINES.readingIntro), main: true },
+        { text: this.pick('demoYield', LINES.demoYield), main: true },
+      ];
+    }
+    if (!cur.demo) this.readings++;
     this.phaseEndsAt = now + GAME.readingSec * 1000;
     const out: Say[] = [{ text: this.pick('readingIntro', LINES.readingIntro), main: true }];
     for (const s of cur.reading) out.push({ text: F(s), main: true });
-    if (this.readings === 1 || this.readings % GAME.disclaimerEvery === 0) out.push({ text: F(DISCLAIMER_LINE), main: true });
+    if (!cur.demo && (this.readings === 1 || this.readings % GAME.disclaimerEvery === 0)) out.push({ text: F(DISCLAIMER_LINE), main: true });
     return out;
   }
 
   private startRest(now: number, sec = GAME.restSec): Say[] {
+    const wasDemo = this.current?.demo ?? false;
     this.current = null;
     this.phase = 'rest';
     this.phaseStartedAt = now;
     this.phaseEndsAt = now + sec * 1000;
+    // Khép lượt mẫu bình thường (không bị nhường): cô chào tiễn và mời khách thật gõ câu hỏi
+    if (wasDemo && !this.demoYield) return [{ text: this.pick('demoOutro', LINES.demoOutro), ttl: GAME.chatterMaxWaitMs }];
     return [];
+  }
+
+  /** Trang stage gọi sau mỗi tick: true đúng 1 lần khi lượt mẫu đang đọc phải bỏ câu chờ để nhường bàn */
+  consumeDemoCut(): boolean {
+    const c = this.demoCutVoice;
+    this.demoCutVoice = false;
+    return c;
   }
 
   tick(now: number): Say[] {
     this.lastNow = now;
     const cur = this.current;
+    // Phòng còn người (đang ngồi hoặc đang chờ) thì mốc "trống phòng" đặt lại từ đầu
+    if (cur || this.queue.length) this.emptySince = now;
     switch (this.phase) {
       case 'idle': {
         if (this.queue.length) return this.seatNext(now);
+        // Trống liên tục đủ lâu: khách mẫu ngồi vào xem thử để sân khấu không đứng yên
+        if (now - this.emptySince >= GAME.demoAfterMs) return this.seatDemo(now);
         if (now - this.lastIdleAt >= GAME.idleLineEveryMs) {
           this.lastIdleAt = now;
           return [{ text: this.pick('idle', LINES.idle), ttl: GAME.chatterMaxWaitMs }];
@@ -445,12 +541,25 @@ export class FortuneRoom {
       }
       case 'flip': {
         if (!cur) return [];
-        const should = Math.min(3, Math.floor((now - this.phaseStartedAt) / GAME.flipStepMs));
+        // Lượt mẫu đang nhường: lật nốt các lá còn lại với nhịp rút gọn (không cắt giữa chừng 1 lá)
+        const step = cur.demo && this.demoYield ? GAME.demoFlipStepMs : GAME.flipStepMs;
+        const should = Math.min(3, Math.floor((now - this.phaseStartedAt) / step));
         if (should > cur.flipped) return this.flipOne(now);
-        return now >= this.phaseEndsAt && cur.flipped >= 3 ? this.startReading(now) : [];
+        const done = cur.demo && this.demoYield ? cur.flipped >= 3 : now >= this.phaseEndsAt && cur.flipped >= 3;
+        return done ? this.startReading(now) : [];
       }
-      case 'reading':
-        return now >= this.phaseEndsAt ? this.startRest(now) : [];
+      case 'reading': {
+        // Khách thật vào hàng giữa lúc lượt mẫu đang đọc: nói câu nhường, bỏ các câu luận đang
+        // chờ đọc (câu đang đọc dở thì đọc nốt), rút pha đọc xuống rất ngắn rồi nghỉ ngắn
+        if (cur?.demo && this.demoYield && !this.demoYieldAnnounced) {
+          this.demoYieldAnnounced = true;
+          this.demoCutVoice = true;
+          this.phaseEndsAt = Math.min(this.phaseEndsAt, now + 1200);
+          return [{ text: this.pick('demoYield', LINES.demoYield), main: true }];
+        }
+        if (now >= this.phaseEndsAt) return this.startRest(now, cur?.demo && this.demoYield ? GAME.demoRestSec : GAME.restSec);
+        return [];
+      }
       case 'rest': {
         if (now >= this.phaseEndsAt) {
           if (this.queue.length) return this.seatNext(now);
@@ -542,6 +651,7 @@ export class FortuneRoom {
             points: this.pointsOf(cur.guest.username),
             dealt: cur.dealt,
             flipped: cur.flipped,
+            demo: cur.demo,
             pose,
             guestChar: guestCharById(cur.charId),
             cards: cur.drawn.map((d, i) => ({

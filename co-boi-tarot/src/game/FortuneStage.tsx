@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { FortuneState } from './useFortune';
 import { formatPoints, type FortuneView } from './fortune';
-import { DISCLAIMER_STAGE, POINTS_NOTE } from './config';
+import { DISCLAIMER_STAGE, GAME, POINTS_NOTE } from './config';
+import { sfx } from './sfx';
 import './fortune.css';
 
 type CardV = NonNullable<FortuneView['current']>['cards'][number];
@@ -63,6 +64,75 @@ function useBlink() {
   return blinking;
 }
 
+// ----- Chống tĩnh: cô bói tự biểu diễn lúc phòng trống -----
+// Không khách ngồi + hàng chờ rỗng + đang ở pha chờ: cứ mỗi idleActCycleMs lại diễn 1
+// động tác LỚN (xào bài -> xoè quạt -> vẫy chào -> xem quả cầu), mỗi động tác idleActOnMs.
+// Có khách ngồi (kể cả khách mẫu) là dừng ngay vì điều kiện active tắt.
+const ACTS = ['shuffle', 'fan', 'wave', 'ball'] as const;
+type Act = (typeof ACTS)[number];
+
+function useIdleActs(active: boolean): Act | null {
+  const [act, setAct] = useState<Act | null>(null);
+  useEffect(() => {
+    if (!active) {
+      setAct(null);
+      return;
+    }
+    let idx = Math.floor(Math.random() * ACTS.length);
+    let tOn = 0;
+    let tCycle = 0;
+    const start = () => {
+      setAct(ACTS[idx % ACTS.length]);
+      tOn = window.setTimeout(() => setAct(null), GAME.idleActOnMs);
+      tCycle = window.setTimeout(() => {
+        idx++;
+        start();
+      }, GAME.idleActCycleMs);
+    };
+    start();
+    return () => {
+      window.clearTimeout(tOn);
+      window.clearTimeout(tCycle);
+    };
+  }, [active]);
+  return act;
+}
+
+// Chữ rune bay lên trong cảnh phòng: vị trí/tốc độ ngẫu nhiên theo từng ký tự
+const RUNE_GLYPHS = ['☾', '✦', '♆', '☿', '♄', '♃', '☉', '♀'];
+function useRunes() {
+  return useMemo(
+    () =>
+      Array.from({ length: 8 }, (_, i) => ({
+        glyph: RUNE_GLYPHS[Math.floor(Math.random() * RUNE_GLYPHS.length)],
+        left: 6 + Math.random() * 86,
+        size: 20 + Math.floor(Math.random() * 11),
+        dur: 12 + Math.random() * 8,
+        delay: -Math.random() * 18,
+        key: i,
+      })),
+    [],
+  );
+}
+
+// Sao băng: xuất hiện ở vị trí ngẫu nhiên phía trên sân khấu, chu kỳ ngẫu nhiên 18-35 giây
+function useMeteors() {
+  const [meteors, setMeteors] = useState<{ id: number; left: number; top: number }[]>([]);
+  useEffect(() => {
+    let id = 0;
+    let timer = 0;
+    const spawn = () => {
+      const m = { id: ++id, left: 260 + Math.random() * 620, top: 26 + Math.random() * 330 };
+      setMeteors((prev) => [...prev.slice(-2), m]);
+      window.setTimeout(() => setMeteors((prev) => prev.filter((x) => x.id !== m.id)), 2400);
+      timer = window.setTimeout(spawn, 18_000 + Math.random() * 17_000);
+    };
+    timer = window.setTimeout(spawn, 3500 + Math.random() * 5000);
+    return () => window.clearTimeout(timer);
+  }, []);
+  return meteors;
+}
+
 // Bụi sáng trôi trong ánh cửa sổ (vị trí/chu kỳ cố định theo hạt, lệch pha nhau)
 function useDust() {
   return useMemo(
@@ -83,7 +153,12 @@ export function FortuneStage({ game }: { game: FortuneState }) {
   const stars = useStars();
   const cur = v?.current ?? null;
   const giftFresh = game.lastGift && Date.now() - game.lastGift.at < 6000;
-  const pose: Pose = giftFresh ? 'happy' : (cur?.pose ?? 'idle');
+  // Động tác chống tĩnh: chỉ diễn khi phòng thật sự trống (không khách ngồi, hàng chờ rỗng, pha chờ)
+  const act = useIdleActs(!!v && !cur && v.queueCount === 0 && v.phase === 'idle');
+  const meteors = useMeteors();
+  const runes = useRunes();
+  const actPose: Pose | null = act === 'shuffle' ? 'deal' : act === 'wave' ? 'happy' : act === 'ball' ? 'read' : act === 'fan' ? 'idle' : null;
+  const pose: Pose = actPose ?? (giftFresh ? 'happy' : (cur?.pose ?? 'idle'));
   const [bgOk, setBgOk] = useState(true);
   const [hintIdx, setHintIdx] = useState(0);
   useEffect(() => {
@@ -102,9 +177,18 @@ export function FortuneStage({ game }: { game: FortuneState }) {
     on();
     return () => document.removeEventListener('visibilitychange', on);
   }, []);
-  // Cô chú ý về phía nào: khách vừa ngồi / đang đọc bài -> phía khách; trải + lật bài -> phía bài
+  // Cô chú ý về phía nào: khách vừa ngồi / đang đọc bài -> phía khách; trải + lật bài -> phía bài.
+  // Đang diễn động tác chống tĩnh: xào bài / xem quả cầu -> cúi về phía bài; vẫy chào -> hướng ra khách
   const attn: 'guest' | 'cards' | 'none' =
-    giftFresh || v?.phase === 'welcome' || v?.phase === 'reading' ? 'guest' : v?.phase === 'deal' || v?.phase === 'flip' ? 'cards' : 'none';
+    act === 'shuffle' || act === 'ball'
+      ? 'cards'
+      : act === 'wave'
+        ? 'guest'
+        : giftFresh || v?.phase === 'welcome' || v?.phase === 'reading'
+          ? 'guest'
+          : v?.phase === 'deal' || v?.phase === 'flip'
+            ? 'cards'
+            : 'none';
   // Khách nảy mừng nhỏ mỗi khi 1 lá của mình được lật
   const [guestBounce, setGuestBounce] = useState(false);
   const prevFlip = useRef<{ user: string; flipped: number } | null>(null);
@@ -115,6 +199,7 @@ export function FortuneStage({ game }: { game: FortuneState }) {
     prevFlip.current = curUser ? { user: curUser, flipped: curFlipped } : null;
     if (curUser && prev && prev.user === curUser && curFlipped > prev.flipped) {
       setGuestBounce(true);
+      sfx.flip(); // tiếng vút + thụp khớp animation lật mới (sfx tự im lặng ngoài trang stage / khi mute)
       const t = window.setTimeout(() => setGuestBounce(false), 340);
       return () => window.clearTimeout(t);
     }
@@ -138,6 +223,10 @@ export function FortuneStage({ game }: { game: FortuneState }) {
     >
       {stars.map((s, i) => (
         <div key={i} className="fortune-star absolute rounded-full bg-amber-100" style={{ left: s.left, top: s.top, width: s.size, height: s.size, animationDelay: `${s.delay}s` }} />
+      ))}
+      {/* Sao băng ngẫu nhiên phía trên sân khấu (lớp ambient chống tĩnh) */}
+      {meteors.map((m) => (
+        <div key={m.id} className="fortune-meteor" style={{ left: m.left, top: m.top }} />
       ))}
 
       {/* Đầu trang: tên phòng */}
@@ -173,7 +262,11 @@ export function FortuneStage({ game }: { game: FortuneState }) {
                   )}
                   <div className="min-w-0 flex-1 truncate text-[32px] font-bold leading-tight">{cur.nickname}</div>
                   <div className="rounded-full bg-indigo-600/80 px-3.5 py-1 text-[23px] font-semibold">{cur.themeLabel}</div>
-                  <div className="rounded-full bg-amber-400/90 px-3.5 py-1 text-[23px] font-bold text-indigo-950">⭐ {formatPoints(cur.points)} điểm</div>
+                  {cur.demo ? (
+                    <div className="rounded-full bg-fuchsia-500/90 px-3.5 py-1 text-[23px] font-bold text-white">Lượt xem thử</div>
+                  ) : (
+                    <div className="rounded-full bg-amber-400/90 px-3.5 py-1 text-[23px] font-bold text-indigo-950">⭐ {formatPoints(cur.points)} điểm</div>
+                  )}
                 </div>
                 <div className="mt-1.5 line-clamp-2 text-[29px] leading-snug text-amber-100">
                   <span className="font-bold text-amber-300">Câu hỏi: </span>
@@ -205,6 +298,20 @@ export function FortuneStage({ game }: { game: FortuneState }) {
                 style={{ left: `${d.left}%`, top: `${d.top}%`, width: d.size, height: d.size, animationDuration: `${d.dur}s`, animationDelay: `${d.delay}s` }}
               />
             ))}
+            {/* Rune bay lên + tia lửa nhỏ quanh nến và quả cầu: lớp ambient luôn chạy, pha lệch nhau nên không lặp máy móc */}
+            {runes.map((r) => (
+              <div
+                key={r.key}
+                className="fortune-rune"
+                style={{ left: `${r.left}%`, fontSize: r.size, animationDuration: `${r.dur}s`, animationDelay: `${r.delay}s` }}
+              >
+                {r.glyph}
+              </div>
+            ))}
+            <div className="fortune-sparkle-dot" style={{ left: 62, top: 322, width: 13, height: 13, animationDuration: '2.3s' }} />
+            <div className="fortune-sparkle-dot" style={{ left: 952, top: 308, width: 11, height: 11, animationDuration: '3.7s', animationDelay: '-1.4s' }} />
+            <div className="fortune-sparkle-dot" style={{ left: 648, top: 252, width: 10, height: 10, animationDuration: '4.4s', animationDelay: '-2.6s' }} />
+            <div className="fortune-sparkle-dot" style={{ left: 196, top: 218, width: 12, height: 12, animationDuration: '2.9s', animationDelay: '-0.8s' }} />
             {/* Cô bói: 4 tư thế xếp chồng, hiện 1. Các lớp bọc chuyển động lồng nhau:
                 chú ý (theo pha) -> lay áo/tóc -> nhịp thở (+ hào quang quả cầu) -> chớp mắt -> settle khi đổi tư thế */}
             <div className="absolute bottom-[-8px] left-[36px] h-[430px] w-[404px]">
@@ -253,7 +360,11 @@ export function FortuneStage({ game }: { game: FortuneState }) {
                     <div className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-full bg-fuchsia-900 text-[22px] ring-2 ring-amber-300/80">🙂</div>
                   )}
                   <div className="min-w-0 truncate rounded-full bg-black/60 px-4 py-1 text-[26px] font-bold ring-1 ring-amber-200/40">{cur.nickname}</div>
-                  <div className="flex-none rounded-full bg-amber-400/90 px-3 py-0.5 text-[21px] font-bold text-indigo-950">⭐ {formatPoints(cur.points)}</div>
+                  {cur.demo ? (
+                    <div className="flex-none rounded-full bg-fuchsia-500/90 px-3 py-0.5 text-[21px] font-bold text-white">khách mẫu</div>
+                  ) : (
+                    <div className="flex-none rounded-full bg-amber-400/90 px-3 py-0.5 text-[21px] font-bold text-indigo-950">⭐ {formatPoints(cur.points)}</div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -278,6 +389,48 @@ export function FortuneStage({ game }: { game: FortuneState }) {
                 )}
               </div>
             )}
+            {/* Động tác chống tĩnh của cô lúc phòng trống (chỉ hiện khi act đang diễn) */}
+            {act === 'shuffle' && (
+              <div className="fortune-act-deck" aria-hidden>
+                <div className="fortune-act-deck-half fortune-act-deck-l" />
+                <div className="fortune-act-deck-half fortune-act-deck-r" />
+              </div>
+            )}
+            {act === 'fan' && (
+              <div className="fortune-act-fan" aria-hidden>
+                {[-36, -24, -12, 0, 12, 24, 36].map((a) => (
+                  <div key={a} className="fortune-act-fan-slat" style={{ ['--fan-rot' as string]: `${a}deg` }} />
+                ))}
+              </div>
+            )}
+            {act === 'wave' && (
+              <div className="fortune-act-sparkles" aria-hidden>
+                {[
+                  { left: 30, top: 18 },
+                  { left: 120, top: 0 },
+                  { left: 215, top: 12 },
+                  { left: 310, top: 34 },
+                  { left: 76, top: 74 },
+                  { left: 262, top: 88 },
+                  { left: 168, top: 52 },
+                  { left: 340, top: 110 },
+                ].map((p, i) => (
+                  <span key={i} style={{ left: p.left, top: p.top, animationDelay: `${i * 0.18}s` }} />
+                ))}
+              </div>
+            )}
+            {act === 'ball' && (
+              <>
+                <div className="fortune-act-ballglow" aria-hidden />
+                <div className="fortune-act-runering" aria-hidden>
+                  {['☉', '☽', '♀', '♂', '♃', '♄', '☿'].map((g, i, arr) => (
+                    <span key={g} style={{ transform: `rotate(${(360 / arr.length) * i}deg) translateY(-84px)` }}>
+                      {g}
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
             <div className="absolute left-[26px] top-[18px] rounded-full bg-black/45 px-4 py-1 text-[23px] font-semibold text-amber-100 ring-1 ring-amber-200/30">
               {v.phase === 'idle' && 'Cô đang chờ khách'}
               {v.phase === 'welcome' && 'Cô đang nghe câu hỏi'}
@@ -294,7 +447,9 @@ export function FortuneStage({ game }: { game: FortuneState }) {
                 style={{ background: 'linear-gradient(160deg, rgba(76,29,149,0.93), rgba(49,10,101,0.95))', boxShadow: '0 10px 26px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(250,204,21,0.22)' }}
               >
                 <div className="truncate text-[31px] font-extrabold leading-tight text-amber-200">✦ {v.nameplate.nickname} ✦</div>
-                <div className="text-[22px] leading-tight text-fuchsia-100/85">đang ngồi trước bàn bài</div>
+                <div className="text-[22px] leading-tight text-fuchsia-100/85">
+                  {cur.demo ? 'lượt xem thử — bạn gõ câu hỏi là được lên ngay' : 'đang ngồi trước bàn bài'}
+                </div>
               </div>
             )}
             {/* Toast nhảy hạng: xếp tối đa 2, ở đáy giữa cảnh (không đè panel lời giải) */}
@@ -426,7 +581,24 @@ function CardSlot({ c, index, dealt }: { c: CardV; index: number; dealt: boolean
     <div className="w-[272px]">
       <div className={`mb-2 text-center text-[24px] font-bold ${c.faceUp ? 'text-amber-300' : 'text-fuchsia-100/75'}`}>{c.position}</div>
       <div className={`relative h-[380px] w-[272px] ${dealt ? 'fortune-dealt' : 'opacity-0'}`} style={{ animationDelay: `${index * 0.12}s` }}>
-        <div className={`fcard h-full w-full ${c.faceUp ? 'flipped' : ''}`}>
+        {/* Hiệu ứng lúc lá lật: quầng sáng vệt sau lá, tia lửa khi chạm bàn, lá ngược chớp đỏ */}
+        {c.faceUp && <div className="fortune-flip-glow" aria-hidden />}
+        {c.faceUp && (
+          <div className="fortune-land-sparks" aria-hidden>
+            {[
+              { dx: '-78px', dy: '-52px' },
+              { dx: '72px', dy: '-58px' },
+              { dx: '-88px', dy: '6px' },
+              { dx: '86px', dy: '10px' },
+              { dx: '-44px', dy: '-84px' },
+              { dx: '48px', dy: '-88px' },
+            ].map((s, i) => (
+              <span key={i} style={{ ['--dx' as string]: s.dx, ['--dy' as string]: s.dy }} />
+            ))}
+          </div>
+        )}
+        {c.faceUp && c.reversed && <div className="fortune-flip-flash" aria-hidden />}
+        <div className={`fcard h-full w-full ${c.faceUp ? 'flipped fortune-flip-lift' : ''}`}>
           <div className="fcard-inner">
             {/* Mặt úp: hoạ tiết trăng sao tím vàng (bản gốc của phòng) */}
             <div className="fcard-face fcard-back flex flex-col items-center justify-center">

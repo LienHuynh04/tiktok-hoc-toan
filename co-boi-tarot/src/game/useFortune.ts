@@ -152,7 +152,11 @@ export function useFortune() {
         dirty.current = true;
       }
       lastTick = now;
-      say(room.tick(now));
+      const lines = room.tick(now);
+      // Lượt mẫu đang đọc mà khách thật vào hàng: bỏ các câu luận đang chờ (câu đang đọc thì
+      // đọc nốt) để câu nhường bàn + lượt khách thật lên ngay sau đó, không chờ hết đoạn mẫu
+      if (room.consumeDemoCut()) voice.dropQueued();
+      say(lines);
       flushChatter(room, now);
       music.setDucked(voice.busy);
       if (!MUTED) music.resume(); // thử mở lại tiếng sau tương tác đầu tiên trong LIVE Studio
