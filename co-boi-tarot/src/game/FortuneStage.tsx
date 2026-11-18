@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { FortuneState } from './useFortune';
 import { formatPoints, type FortuneView } from './fortune';
 import { DISCLAIMER_STAGE, POINTS_NOTE } from './config';
@@ -29,6 +29,55 @@ const HINTS = [
   'Điểm cao lên trước · 100 tim = 1 điểm',
 ];
 
+// Hash nhỏ từ id nhân vật khách: mỗi nhân vật một nhịp thở/pha riêng (không ai giống ai)
+function seedOf(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+// Chớp mắt cho cô bói: bóp nhẹ scaleY trong 120ms, lặp sau mỗi 3-6 giây ngẫu nhiên
+function useBlink() {
+  const [blinking, setBlinking] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    let t1 = 0;
+    let t2 = 0;
+    const loop = () => {
+      t1 = window.setTimeout(() => {
+        if (!alive) return;
+        setBlinking(true);
+        t2 = window.setTimeout(() => {
+          if (alive) setBlinking(false);
+        }, 120);
+        loop();
+      }, 2800 + Math.random() * 3200);
+    };
+    loop();
+    return () => {
+      alive = false;
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, []);
+  return blinking;
+}
+
+// Bụi sáng trôi trong ánh cửa sổ (vị trí/chu kỳ cố định theo hạt, lệch pha nhau)
+function useDust() {
+  return useMemo(
+    () =>
+      Array.from({ length: 9 }, (_, i) => ({
+        left: 45 + ((i * 37) % 13),
+        top: 8 + ((i * 53) % 46),
+        size: 3 + ((i * 5) % 3),
+        dur: 8 + ((i * 29) % 7),
+        delay: -((i * 41) % 9),
+      })),
+    [],
+  );
+}
+
 export function FortuneStage({ game }: { game: FortuneState }) {
   const v = game.view;
   const stars = useStars();
@@ -42,9 +91,49 @@ export function FortuneStage({ game }: { game: FortuneState }) {
     return () => clearInterval(id);
   }, []);
 
+  // ----- Lớp chuyển động mượt (micro-motion): xem fortune.css -----
+  const blinking = useBlink();
+  const dust = useDust();
+  // Tab bị ẩn: dừng mọi animation trong sân khấu cho nhẹ máy
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    const on = () => setHidden(document.hidden);
+    document.addEventListener('visibilitychange', on);
+    on();
+    return () => document.removeEventListener('visibilitychange', on);
+  }, []);
+  // Cô chú ý về phía nào: khách vừa ngồi / đang đọc bài -> phía khách; trải + lật bài -> phía bài
+  const attn: 'guest' | 'cards' | 'none' =
+    giftFresh || v?.phase === 'welcome' || v?.phase === 'reading' ? 'guest' : v?.phase === 'deal' || v?.phase === 'flip' ? 'cards' : 'none';
+  // Khách nảy mừng nhỏ mỗi khi 1 lá của mình được lật
+  const [guestBounce, setGuestBounce] = useState(false);
+  const prevFlip = useRef<{ user: string; flipped: number } | null>(null);
+  const curUser = cur?.username ?? null;
+  const curFlipped = cur?.flipped ?? 0;
+  useEffect(() => {
+    const prev = prevFlip.current;
+    prevFlip.current = curUser ? { user: curUser, flipped: curFlipped } : null;
+    if (curUser && prev && prev.user === curUser && curFlipped > prev.flipped) {
+      setGuestBounce(true);
+      const t = window.setTimeout(() => setGuestBounce(false), 340);
+      return () => window.clearTimeout(t);
+    }
+  }, [curUser, curFlipped]);
+  // Nhịp thở/nghiêng đầu của khách: bơm theo id nhân vật để mỗi người một nhịp
+  const gSeed = cur?.guestChar ? seedOf(cur.guestChar.id) : 0;
+  const guestBreatheStyle: CSSProperties = {
+    animationDuration: `${3.4 + (gSeed % 5) * 0.22}s`,
+    animationDelay: `${-((gSeed * 0.7) % 3.4)}s`,
+  };
+  const guestTiltStyle: CSSProperties = {
+    animationDuration: `${9 + (gSeed % 5) * 0.9}s`,
+    animationDelay: `${-((gSeed * 1.3) % 9)}s`,
+    ['--tilt-deg' as string]: gSeed % 2 ? '1.5deg' : '-1.5deg',
+  };
+
   return (
     <div
-      className="relative h-[1920px] w-[1080px] overflow-hidden text-white"
+      className={`relative h-[1920px] w-[1080px] overflow-hidden text-white${hidden ? ' fortune-paused' : ''}`}
       style={{ background: 'radial-gradient(1200px 800px at 50% -10%, #4c1d95 0%, transparent 60%), radial-gradient(1000px 700px at 85% 110%, #701a75 0%, transparent 55%), linear-gradient(180deg, #0b0620 0%, #1e1b4b 45%, #0b0620 100%)' }}
     >
       {stars.map((s, i) => (
@@ -105,28 +194,58 @@ export function FortuneStage({ game }: { game: FortuneState }) {
           <div className="absolute inset-x-[40px] top-[380px] h-[452px] overflow-hidden rounded-[28px] ring-1 ring-amber-200/25" style={{ backgroundColor: '#241243' }}>
             {bgOk && <img src="/assets/room-bg.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setBgOk(false)} />}
             <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(11,6,32,0) 55%, rgba(11,6,32,0.45) 100%)' }} />
-            {/* Cô bói: 4 tư thế xếp chồng, hiện 1 (chuyển mờ 120ms) */}
+            {/* Ánh nến lập loè tại đúng vị trí 3 cụm nến trong tranh nền + bụi sáng trôi ở khung cửa sổ */}
+            <div className="fortune-candle" style={{ left: 10, top: 317, width: 130, height: 130, animationDuration: '1.15s' }} />
+            <div className="fortune-candle" style={{ left: 900, top: 305, width: 120, height: 120, animationDuration: '1.45s', animationDelay: '-0.5s' }} />
+            <div className="fortune-candle" style={{ left: 617, top: 249, width: 96, height: 96, animationDuration: '1.7s', animationDelay: '-1.1s' }} />
+            {dust.map((d, i) => (
+              <div
+                key={i}
+                className="fortune-dust"
+                style={{ left: `${d.left}%`, top: `${d.top}%`, width: d.size, height: d.size, animationDuration: `${d.dur}s`, animationDelay: `${d.delay}s` }}
+              />
+            ))}
+            {/* Cô bói: 4 tư thế xếp chồng, hiện 1. Các lớp bọc chuyển động lồng nhau:
+                chú ý (theo pha) -> lay áo/tóc -> nhịp thở (+ hào quang quả cầu) -> chớp mắt -> settle khi đổi tư thế */}
             <div className="absolute bottom-[-8px] left-[36px] h-[430px] w-[404px]">
-              {POSES.map((p) => (
-                <img
-                  key={p}
-                  src={`/assets/teller-${p}.png`}
-                  alt=""
-                  className="fortune-pose absolute inset-0 h-full w-full object-contain object-bottom"
-                  style={{ opacity: pose === p ? 1 : 0 }}
-                />
-              ))}
+              <div className={`fortune-attn fortune-attn-${attn} h-full w-full`}>
+                <div className="fortune-sway h-full w-full">
+                  <div className="fortune-breathe relative h-full w-full">
+                    <div className="fortune-ball-glow" />
+                    <div className="fortune-blinkwrap h-full w-full" style={{ transform: blinking ? 'scaleY(0.995)' : 'scaleY(1)' }}>
+                      <div key={pose} className="fortune-pose-settle relative h-full w-full">
+                        {POSES.map((p) => (
+                          <img
+                            key={p}
+                            src={`/assets/teller-${p}.png`}
+                            alt=""
+                            className="fortune-pose absolute inset-0 h-full w-full object-contain object-bottom"
+                            style={{ opacity: pose === p ? 1 : 0 }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             {/* Ghế khách: nhân vật chibi ngồi quay lưng 3/4 về phía cô, huy hiệu avatar + tên ở chân ghế */}
             {cur && cur.guestChar ? (
               <div className="absolute bottom-[4px] right-[2px] flex w-[408px] flex-col items-center">
-                <img
-                  key={cur.guestChar.id}
-                  src={cur.guestChar.img}
-                  alt=""
-                  className="fortune-guest-in h-[336px] w-full object-contain object-bottom"
-                  style={{ filter: 'drop-shadow(0 10px 14px rgba(0,0,0,0.45))' }}
-                />
+                {/* Lớp chuyển động của khách: nảy khi lá của mình lật -> thỉnh thoảng nghiêng đầu -> thở/lay vai (nhịp riêng theo nhân vật) */}
+                <div className={`w-full${guestBounce ? ' fortune-guest-bounce' : ''}`}>
+                  <div className="fortune-guest-tilt w-full" style={guestTiltStyle}>
+                    <div className="fortune-guest-breathe w-full" style={guestBreatheStyle}>
+                      <img
+                        key={cur.guestChar.id}
+                        src={cur.guestChar.img}
+                        alt=""
+                        className="fortune-guest-in h-[336px] w-full object-contain object-bottom"
+                        style={{ filter: 'drop-shadow(0 10px 14px rgba(0,0,0,0.45))' }}
+                      />
+                    </div>
+                  </div>
+                </div>
                 <div className="relative z-10 -mt-[38px] flex max-w-[408px] items-center gap-2">
                   {cur.avatar ? (
                     <img src={cur.avatar} alt="" className="h-[46px] w-[46px] flex-none rounded-full object-cover ring-2 ring-amber-300/80" />

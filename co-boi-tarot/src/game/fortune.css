@@ -1,6 +1,12 @@
 /* Sân khấu Cô Bói Tarot: lật bài 3D, tư thế cô bói, chữ lời giải tự cuộn */
 .fcard {
   perspective: 1400px;
+  /* Bóng đổ mềm dưới lá: sâu hơn khi lá đã lật (cảm giác lá "nặng" và có thật) */
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.35));
+  transition: filter 0.9s cubic-bezier(0.2, 0.7, 0.3, 1.2);
+}
+.fcard.flipped {
+  filter: drop-shadow(0 18px 26px rgba(0, 0, 0, 0.5));
 }
 .fcard-inner {
   position: relative;
@@ -38,15 +44,15 @@
 }
 /* Lá được trải xuống bàn: trượt từ phía cô bói xuống + hơi xoay */
 @keyframes fortune-deal-in {
-  0% { opacity: 0; transform: translateY(-70px) rotate(-4deg) scale(0.92); }
-  100% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+  0% { opacity: 0; transform: translateY(-70px) rotate(-4deg) scale(0.92); filter: drop-shadow(0 34px 24px rgba(0, 0, 0, 0.22)); }
+  100% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0)); }
 }
 .fortune-dealt {
   animation: fortune-deal-in 0.55s cubic-bezier(0.2, 0.8, 0.3, 1.1) backwards;
 }
-/* Tư thế cô bói: chuyển mờ 120ms như các game khác */
+/* Tư thế cô bói: chuyển mờ 250ms (kèm nảy "settle" ở lớp bọc trong FortuneStage) */
 .fortune-pose {
-  transition: opacity 120ms linear;
+  transition: opacity 250ms ease;
 }
 /* Lời giải: tự cuộn chậm lên trong lúc cô đọc (45 giây, dừng ở cuối) */
 @keyframes fortune-read-scroll {
@@ -91,4 +97,194 @@
 }
 .fortune-guest-in {
   animation: fortune-guest-in 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.15) backwards;
+}
+
+/* =====================================================================
+   LỚP CHUYỂN ĐỘNG MƯỢT (micro-motion) — chỉ transform/opacity, mọi vòng
+   lặp đều khép kín (điểm đầu = điểm cuối) nên không giật ở biên vòng.
+   Cấu trúc lồng nhau trong FortuneStage: mỗi lớp bọc lo đúng 1 chuyển
+   động (chú ý -> lay -> thở -> chớp mắt) để các transform không đè nhau.
+   ===================================================================== */
+
+/* --- Cô bói: hướng chú ý theo pha (nghiêng về khách / cúi về phía bài).
+       Đổi class là CSS transition tự nắn (lerp) trong 1.1s, không nhảy. --- */
+.fortune-attn {
+  transition: transform 1.1s cubic-bezier(0.3, 0.7, 0.25, 1);
+  transform-origin: 50% 95%;
+  will-change: transform;
+}
+.fortune-attn-none {
+  transform: rotate(0deg) translate(0, 0) scale(1);
+}
+.fortune-attn-guest {
+  transform: rotate(1.1deg) translateX(7px);
+}
+.fortune-attn-cards {
+  transform: rotate(-0.9deg) translateY(5px) scale(1.008);
+}
+
+/* --- Cô bói: áo choàng + tóc lay ±0.6° quanh trục thấp, chu kỳ 5.3s lệch
+       pha với nhịp thở 3.2s nên tổng hợp không bao giờ lặp máy móc --- */
+@keyframes fortune-sway {
+  0%, 100% { transform: rotate(-0.6deg); }
+  50% { transform: rotate(0.6deg); }
+}
+.fortune-sway {
+  animation: fortune-sway 5.3s ease-in-out infinite;
+  transform-origin: 50% 92%;
+  will-change: transform;
+}
+
+/* --- Cô bói: nhịp thở 3.2s — phồng nhẹ 1 -> 1.015 + nhún lên 3px --- */
+@keyframes fortune-breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.015); }
+}
+.fortune-breathe {
+  animation: fortune-breathe 3.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* --- Cô bói: chớp mắt — JS (useBlink) gắn transform scaleY 0.995 trong
+       120ms mỗi 3-6s; lớp này chỉ lo nắn hai chiều cho mềm --- */
+.fortune-blinkwrap {
+  transition: transform 55ms ease-in-out;
+  transform-origin: 50% 30%;
+  will-change: transform;
+}
+
+/* --- Cô bói: đổi tư thế — nảy "settle" scale 1.025 -> 1 trong 250ms,
+       chạy đồng thời với chuyển mờ opacity 250ms của .fortune-pose --- */
+@keyframes fortune-pose-settle {
+  from { transform: scale(1.025); }
+  to { transform: scale(1); }
+}
+.fortune-pose-settle {
+  animation: fortune-pose-settle 250ms ease-out;
+  will-change: transform;
+}
+
+/* --- Quả cầu pha lê: hào quang tím sau lưng cô, lơ lửng ±4px + đập sáng.
+       (Quả cầu nằm trong tranh, không tách ra được nên dùng hào quang.) --- */
+@keyframes fortune-ball-pulse {
+  0%, 100% { transform: translateY(4px) scale(0.95); opacity: 0.5; }
+  50% { transform: translateY(-4px) scale(1.05); opacity: 0.8; }
+}
+.fortune-ball-glow {
+  position: absolute;
+  left: 42%;
+  top: 48%;
+  width: 210px;
+  height: 210px;
+  margin-left: -105px;
+  margin-top: -105px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(196, 141, 255, 0.55) 0%, rgba(147, 84, 255, 0.28) 42%, transparent 68%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: fortune-ball-pulse 2.9s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* --- Khách: thở + lay vai — chu kỳ/pha do FortuneStage bơm theo id
+       nhân vật (inline animation-duration/delay) nên mỗi khách một nhịp --- */
+@keyframes fortune-guest-breathe {
+  0%, 100% { transform: translateY(0) rotate(-0.8deg); }
+  50% { transform: translateY(-2.5px) rotate(0.8deg); }
+}
+.fortune-guest-breathe {
+  animation: fortune-guest-breathe 3.8s ease-in-out infinite;
+  transform-origin: 50% 88%;
+  will-change: transform;
+}
+
+/* --- Khách: thỉnh thoảng nghiêng đầu — chu kỳ dài 9-13s (inline), nghiêng
+       ±1.5° (biến --tilt-deg) rồi giữ ~1.5s và trả về --- */
+@keyframes fortune-guest-tilt {
+  0%, 58%, 100% { transform: rotate(0deg); }
+  66%, 80% { transform: rotate(var(--tilt-deg, 1.5deg)); }
+  90% { transform: rotate(0deg); }
+}
+.fortune-guest-tilt {
+  animation: fortune-guest-tilt 10s ease-in-out infinite;
+  transform-origin: 50% 90%;
+  will-change: transform;
+}
+
+/* --- Khách: nảy mừng nhỏ 300ms mỗi khi 1 lá của mình được lật
+       (JS gắn class khi view.flipped tăng) --- */
+@keyframes fortune-guest-bounce {
+  0% { transform: translateY(0); }
+  35% { transform: translateY(-9px); }
+  65% { transform: translateY(1.5px); }
+  100% { transform: translateY(0); }
+}
+.fortune-guest-bounce {
+  animation: fortune-guest-bounce 300ms cubic-bezier(0.3, 0.7, 0.3, 1.2);
+  will-change: transform;
+}
+
+/* --- Ánh nến: quầng sáng ấm lập loè kiểu bước ngẫu nhiên (nhiều mốc
+       không đều + chu kỳ riêng từng ngọn nên không bao giờ đồng bộ) --- */
+@keyframes fortune-candle-flicker {
+  0% { opacity: 0.55; transform: scale(1); }
+  13% { opacity: 0.8; transform: scale(1.12) translateY(-1px); }
+  27% { opacity: 0.5; transform: scale(0.94); }
+  41% { opacity: 0.85; transform: scale(1.08); }
+  58% { opacity: 0.6; transform: scale(1.02) translateY(1px); }
+  73% { opacity: 0.9; transform: scale(1.15); }
+  88% { opacity: 0.58; transform: scale(0.97); }
+  100% { opacity: 0.55; transform: scale(1); }
+}
+.fortune-candle {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255, 190, 80, 0.85) 0%, rgba(255, 140, 40, 0.35) 38%, transparent 68%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: fortune-candle-flicker 1.15s linear infinite;
+  will-change: transform, opacity;
+}
+
+/* --- Bụi sáng trôi chậm trong ánh cửa sổ: mờ ở hai đầu vòng nên
+       nhảy vị trí ở biên vòng không ai thấy --- */
+@keyframes fortune-dust-drift {
+  0% { transform: translate(0, 10px); opacity: 0; }
+  15% { opacity: 0.8; }
+  50% { transform: translate(14px, -16px); opacity: 0.5; }
+  85% { opacity: 0.7; }
+  100% { transform: translate(-8px, -34px); opacity: 0; }
+}
+.fortune-dust {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255, 236, 190, 0.95) 0%, rgba(255, 214, 130, 0.4) 55%, transparent 75%);
+  pointer-events: none;
+  animation: fortune-dust-drift 10s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Tab stage bị ẩn (đổi cửa sổ): dừng mọi animation trong sân khấu */
+.fortune-paused *,
+.fortune-paused *::before,
+.fortune-paused *::after {
+  animation-play-state: paused !important;
+}
+
+/* Người dùng chọn giảm chuyển động: tắt toàn bộ lớp micro-motion */
+@media (prefers-reduced-motion: reduce) {
+  .fortune-breathe,
+  .fortune-sway,
+  .fortune-guest-breathe,
+  .fortune-guest-tilt,
+  .fortune-guest-bounce,
+  .fortune-ball-glow,
+  .fortune-candle,
+  .fortune-dust,
+  .fortune-pose-settle {
+    animation: none !important;
+  }
+  .fortune-attn {
+    transition: none;
+  }
 }
