@@ -72,6 +72,12 @@
 - Tốc độ giọng mặc định 1.32 (tăng 20% từ 1.10, chủ kênh chốt 2026-11-18); giữa các câu
   không có khoảng lặng cấu hình riêng: câu chính được tạo giọng sẵn lúc xếp hàng nên nối
   nhau gần như liền mạch.
+- Nhịp lượt xem đã siết (chủ kênh chốt 2026-11-18, "trải bài nhanh hơn, còn nhiều người
+  đợi"): cắt ~40% thời gian chết giữa các bước, tổng sàn 1 vòng 38.35s -> 23.1s (welcome
+  5->3s, trải bài 950->600ms/lá + đuôi 500->300ms, lật 2800->1700ms/lá + đuôi 600->400ms,
+  sàn pha đọc 16->10s, nghỉ 5->2.5s; đuôi pha nằm ở GAME.dealTailMs/flipTailMs). Các con số
+  này chỉ là SÀN: đồng hồ pha bị giữ khi giọng đọc câu chính nên không cắt ngang câu nói,
+  và nội dung đoạn luận không đổi.
 
 ## Nhân vật khách (thêm 2026-11-18)
 

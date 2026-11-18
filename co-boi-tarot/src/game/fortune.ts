@@ -444,14 +444,14 @@ export class FortuneRoom {
   private startDeal(now: number): Say[] {
     this.phase = 'deal';
     this.phaseStartedAt = now;
-    this.phaseEndsAt = now + GAME.dealStepMs * 3 + 500;
+    this.phaseEndsAt = now + GAME.dealStepMs * 3 + GAME.dealTailMs;
     return [{ text: this.pick('deal', LINES.deal), main: true }];
   }
 
   private startFlip(now: number): Say[] {
     this.phase = 'flip';
     this.phaseStartedAt = now;
-    this.phaseEndsAt = now + GAME.flipStepMs * 3 + 600;
+    this.phaseEndsAt = now + GAME.flipStepMs * 3 + GAME.flipTailMs;
     return [];
   }
 

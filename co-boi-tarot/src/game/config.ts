@@ -9,11 +9,17 @@ export const GAME = {
   rankToastMinIntervalMs: 3000, // mỗi người: hai lần báo nhảy hạng cách nhau ít nhất ngần này (chống spam khi bão tim)
   questionMaxChars: 140, // câu hỏi hiện trên sân khấu: cắt ở ngần này ký tự
   // ----- Nhịp một lượt xem -----
-  welcomeSec: 5, // khách ngồi vào ghế, cô chào và đọc lại câu hỏi
-  dealStepMs: 950, // mỗi lá úp xuất hiện cách nhau ngần này
-  flipStepMs: 2800, // mỗi lá lật cách nhau ngần này (có nhịp hồi hộp)
-  readingSec: 16, // bài luận hiện chữ sau khi lật xong (đồng hồ bị giữ khi giọng đang đọc)
-  restSec: 5, // nghỉ giữa hai lượt
+  // Đã siết nhịp 2026-11-18 (chủ kênh: trải bài nhanh hơn, còn nhiều người đợi): cắt ~40% thời gian
+  // CHẾT giữa các bước. Đây chỉ là thời gian SÀN của từng pha: đồng hồ pha bị giữ (hold) trong lúc
+  // giọng đang đọc câu chính nên cắt sàn không bao giờ cắt ngang câu nói; pha đọc trên live vẫn dài
+  // bằng đúng thời lượng giọng đọc đoạn luận ở tốc độ 1.32.
+  welcomeSec: 3, // khách ngồi vào ghế, cô chào và đọc lại câu hỏi
+  dealStepMs: 600, // mỗi lá úp xuất hiện cách nhau ngần này
+  dealTailMs: 300, // đuôi pha trải bài sau khi lá úp thứ 3 hiện (trước đây để cứng 500 trong engine)
+  flipStepMs: 1700, // mỗi lá lật cách nhau ngần này (vẫn đủ hồi hộp: lật 0.95s + ~0.75s chờ)
+  flipTailMs: 400, // đuôi pha lật sau lá thứ 3 (trước đây để cứng 600 trong engine)
+  readingSec: 10, // sàn của pha đọc: bài luận hiện chữ sau khi lật xong (đồng hồ bị giữ khi giọng đang đọc)
+  restSec: 2.5, // nghỉ giữa hai lượt
   reversedChance: 0.25, // tỉ lệ lá ra chiều ngược
   // ----- Chống tĩnh lúc phòng vắng + khách mẫu (chủ kênh chốt 2026-11-18) -----
   idleActCycleMs: 9500, // sân khấu: chu kỳ 1 động tác biểu diễn của cô lúc vắng (động tác ~5.5s + nghỉ)
