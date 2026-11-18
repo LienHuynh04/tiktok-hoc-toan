@@ -37,8 +37,13 @@ assert.equal(GAME.likesPerPoint, 100, '100 tim = 1 điểm');
 assert.equal(POSITIONS.length, 3);
 
 // ---------- nhận diện câu hỏi + chủ đề ----------
-assert.equal(extractQuestion('Cô ơi, chuyện tình cảm sắp tới của em thế nào?')!.includes('tình cảm'), true);
-assert.ok(extractQuestion('HỎI: em có nên đổi việc không cô'));
+// Luật của user: câu hỏi lưu/hiện/đọc phải là comment NGUYÊN VĂN người xem gõ, không sửa chữ nào
+assert.equal(extractQuestion('Cô ơi, chuyện tình cảm sắp tới của em thế nào?'), 'Cô ơi, chuyện tình cảm sắp tới của em thế nào?', 'câu hỏi thường: giữ nguyên văn');
+assert.equal(extractQuestion('HỎI: em có nên đổi việc không cô'), 'HỎI: em có nên đổi việc không cô', 'có tiền tố HỎI:: vẫn giữ nguyên văn cả tiền tố');
+assert.equal(extractQuestion('Hỏi: chuyện tình cảm sắp tới của em thế nào?'), 'Hỏi: chuyện tình cảm sắp tới của em thế nào?', 'tiền tố Hỏi: viết thường: giữ nguyên văn');
+assert.equal(extractQuestion('  HỎI: em có nên đổi việc không cô  '), 'HỎI: em có nên đổi việc không cô', 'chỉ cắt khoảng trắng hai đầu');
+assert.equal(extractQuestion('HỎI:'), null, 'chỉ có tiền tố, không nội dung: không phải câu hỏi');
+assert.equal(extractQuestion('Hỏi: à'), null, 'sau tiền tố quá ngắn: không phải câu hỏi');
 assert.ok(extractQuestion('cho em hỏi chuyện tiền bạc cuối năm ra sao'));
 assert.equal(extractQuestion('live hay quá cô ơi'), null, 'câu khen không phải câu hỏi');
 assert.equal(extractQuestion('hay quá'), null);
@@ -128,6 +133,7 @@ assert.equal(detectTheme('dạo này em thấy mệt mỏi quá'), 'general');
   chat(c, 2, 'Công việc của em sao cô?', t);
   assert.equal(c.phase, 'welcome');
   const v0 = c.view(t);
+  assert.equal(v0.current?.question, 'Cô ơi chuyện tình cảm của em thế nào?', 'câu hỏi trên sân khấu = nguyên văn comment khách gõ');
   assert.equal(v0.current?.cards.length, 3);
   assert.ok(v0.current!.cards.every((x) => !x.faceUp), 'chưa lật lá nào');
   const ids = v0.current!.cards.map((x) => x.img);

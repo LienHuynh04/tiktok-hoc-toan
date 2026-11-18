@@ -158,11 +158,12 @@ export function extractQuestion(comment: string): string | null {
   const raw = comment.trim();
   if (raw.length < 4) return null;
   const p = plain(raw);
-  // tiền tố "HỎI:" hoặc "HOI " ở đầu
+  // tiền tố "HỎI:" ở đầu: vẫn là câu hỏi, và giữ NGUYÊN VĂN cả comment (kể cả tiền tố).
+  // Chỉ có tiền tố mà không có nội dung thật phía sau thì không phải câu hỏi.
   const prefix = /^\s*h[ỏo]i\s*[:：]\s*/i.exec(raw);
   if (prefix) {
-    const q = raw.slice(prefix[0].length).trim();
-    return q.length >= 3 ? q : 'Xem tổng quan cho mình nhé cô';
+    const rest = raw.slice(prefix[0].length).trim();
+    return rest.length >= 3 ? raw : null;
   }
   if (p.startsWith(' hoi co ') || p.startsWith(' hoi thay ') || p.startsWith(' cho hoi ') || p.startsWith(' cho minh hoi ') || p.startsWith(' cho em hoi ')) return raw;
   if (raw.includes('?') || raw.includes('？')) return raw;
