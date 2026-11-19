@@ -24,13 +24,6 @@ function useStars() {
   );
 }
 
-// Dòng nhắc nhỏ xoay vòng ở chân cảnh phòng bói
-const HINTS = [
-  'Gõ NAM / NỮ để đổi nhân vật đang ngồi',
-  'Gõ câu hỏi lên chat để vào hàng chờ',
-  'Điểm cao lên trước · 100 tim = 1 điểm',
-];
-
 // Hạt phản ứng của khách khi lá của mình lật: Ẩn Chính = tim/sao vàng bay lên,
 // lá ngược = tia tím trầm. Vị trí cố định quanh nhân vật khách (khung 408px).
 const GUEST_FX_MAJOR = [
@@ -179,11 +172,6 @@ export function FortuneStage({ game }: { game: FortuneState }) {
   const actPose: Pose | null = act === 'shuffle' ? 'deal' : act === 'wave' ? 'happy' : act === 'ball' ? 'read' : act === 'fan' ? 'idle' : null;
   const pose: Pose = actPose ?? (giftFresh ? 'happy' : (cur?.pose ?? 'idle'));
   const [bgOk, setBgOk] = useState(true);
-  const [hintIdx, setHintIdx] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setHintIdx((i) => (i + 1) % HINTS.length), 6000);
-    return () => clearInterval(id);
-  }, []);
 
   // ----- Lớp chuyển động mượt (micro-motion): xem fortune.css -----
   const blinking = useBlink();
@@ -551,10 +539,6 @@ export function FortuneStage({ game }: { game: FortuneState }) {
                 ))}
               </div>
             )}
-            {/* Dòng nhắc xoay vòng: dải nhỏ 1 dòng ở đáy cảnh, né huy hiệu khách bên phải */}
-            <div key={hintIdx} className="fortune-guest-in absolute bottom-[8px] left-[200px] w-[400px] truncate rounded-full bg-black/45 px-4 py-1 text-center text-[19px] leading-snug text-amber-100/85 ring-1 ring-white/10">
-              {HINTS[hintIdx]}
-            </div>
           </div>
 
           {/* Hàng panel: hàng chờ (trái) + bảng giải thích điểm (phải) */}

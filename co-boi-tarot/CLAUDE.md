@@ -142,6 +142,9 @@
   giải top 1672 cao 166. ĐÃ BỎ dòng điểm vàng ở chân trang (trùng luật điểm ở panel phải,
   giữ nguyên văn panel phải); chân trang chỉ còn dòng miễn trừ. POINTS_NOTE trong config.ts
   giữ làm hằng tham chiếu, sân khấu không hiển thị nữa.
+- Dải chữ nhắc xoay vòng ở đáy cảnh phòng (HINTS: "Gõ câu hỏi…", "Gõ NAM / NỮ…", "Điểm cao
+  lên trước…") đã GỠ theo lời chủ kênh 2026-11-19; cách chơi vẫn còn ở banner lúc chờ và
+  trong ô lời giải, không thêm lại dải thay thế.
 
 ### Gói 3 — ĐÃ GỠ BỎ (2026-11-19)
 - Gói 3 "cả phòng tham gia" (đoán lá cuối qua chat + thanh năng lượng phòng/lá ẩn thứ 4 + báo vị trí/thời gian chờ khi vào hàng) từng được làm cùng đợt này, nhưng chủ kênh chốt GỠ BỎ ngay trong ngày 2026-11-19: lượt xem phải nhanh cho người xem, không thêm bước chờ/đoán giữa các lá. Code, test và tài liệu của gói này đã xoá sạch; đừng tự thêm lại nếu chủ kênh chưa chốt lại.
