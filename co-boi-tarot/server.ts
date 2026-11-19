@@ -12,6 +12,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { fileURLToPath } from 'url';
 import { TikTokLiveConnection, WebcastEvent, ControlEvent } from 'tiktok-live-connector';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
@@ -27,12 +28,48 @@ const TTS_VOICE = process.env.TTS_VOICE || 'vi-VN-HoaiMyNeural'; // giọng nữ
 // Giọng cô giáo: cao hơn một chút cho tươi
 const TTS_PITCH = process.env.TTS_PITCH || '+0%';
 
-// Chặn DNS rebinding: trang web lạ trỏ tên miền của nó về 127.0.0.1 thì Host/Origin sẽ khác các tên dưới đây
+// Chặn DNS rebinding: trang web lạ trỏ tên miền của nó về IP của server thì Host/Origin sẽ là TÊN MIỀN công cộng
+// -> vẫn bị chặn. Chỉ nhận: tên nội bộ (localhost/127.0.0.1/lvh.me) hoặc IP LAN dạng số thuộc dải riêng
+// (10/8, 172.16/12, 192.168/16) để điện thoại cùng Wi-Fi mở được trang stage mà live qua app TikTok.
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', 'lvh.me']);
-const hostOk = (h?: string) => !!h && LOCAL_HOSTS.has(h.replace(/:\d+$/, '').toLowerCase());
+const isPrivateIpv4 = (h: string) => {
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(h);
+  if (!m) return false;
+  const [a, b, c, d] = m.slice(1).map(Number);
+  if ([a, b, c, d].some((n) => n > 255)) return false;
+  return a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+};
+// IP của chính các card mạng của máy này (kể cả dải lạ như Tailscale 100.x): trình duyệt chỉ gửi
+// Host là IP này khi nó đang nói chuyện thẳng với server bằng IP, nên nhận thêm là an toàn.
+const OWN_IPS = new Set<string>();
+for (const infos of Object.values(os.networkInterfaces())) {
+  for (const info of infos ?? []) if (info.family === 'IPv4') OWN_IPS.add(info.address);
+}
+const hostOk = (h?: string) => {
+  if (!h) return false;
+  const host = h.replace(/:\d+$/, '').toLowerCase();
+  return LOCAL_HOSTS.has(host) || isPrivateIpv4(host) || OWN_IPS.has(host);
+};
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (!hostOk(req.headers.host) || (origin && !hostOk(origin.replace(/^https?:\/\//, '')))) return res.status(403).end();
+  next();
+});
+
+// Tách quyền theo nguồn: điện thoại (LAN) chỉ XEM sân khấu (trang stage, assets, SSE, giọng đọc, stage báo
+// trạng thái) — các lệnh ĐIỀU KHIỂN (điều khiển giọng/tên kênh, kết nối/ngắt TikTok, phát sự kiện giả)
+// chỉ nhận từ chính máy này (loopback). Trang điều khiển mở bằng IP LAN sẽ bị chặn các lệnh này:
+// hãy mở trang điều khiển bằng localhost/lvh.me trên máy Mac.
+const CONTROL_PATHS = new Set(['/api/control', '/api/tiktok/connect', '/api/tiktok/disconnect', '/api/test/emit']);
+const isLoopbackAddr = (addr?: string) => {
+  if (!addr) return false;
+  const a = addr.replace(/^::ffff:/, '');
+  return a === '::1' || /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(a);
+};
+app.use((req, res, next) => {
+  if (req.method === 'POST' && CONTROL_PATHS.has(req.path) && !isLoopbackAddr(req.socket.remoteAddress)) {
+    return res.status(403).end();
+  }
   next();
 });
 
@@ -527,9 +564,19 @@ async function start() {
     app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'dist', 'index.html')));
   }
 
-  // Chỉ nghe trên máy này: API không có đăng nhập, người cùng Wi-Fi không được điều khiển giọng đọc
-  app.listen(PORT, '127.0.0.1', () => {
+  // Nghe trên mọi card mạng để điện thoại cùng Wi-Fi mở được trang stage (live qua app TikTok bằng
+  // phát màn hình). API không có đăng nhập nên cổng Host ở trên + tách quyền loopback cho các lệnh
+  // điều khiển là lớp bảo vệ: người lạ ngoài internet không vào được, người cùng Wi-Fi chỉ xem được.
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server chạy ở http://localhost:${PORT}  |  Link LIVE Studio: http://lvh.me:${PORT}/?view=stage`);
+    // Link cho điện thoại: IP LAN IPv4 đầu tiên của máy (cùng Wi-Fi mới mở được)
+    for (const infos of Object.values(os.networkInterfaces())) {
+      const lan = infos?.find((i) => i.family === 'IPv4' && !i.internal);
+      if (lan) {
+        console.log(`Link cho điện thoại (cùng Wi-Fi): http://${lan.address}:${PORT}/?view=stage`);
+        break;
+      }
+    }
     // lần trước đang kết nối mà server bị tắt / bật lại: tự kết nối lại tài khoản đó
     if (wantUser && !process.env.DATA_DIR) {
       console.log(`[TikTok] Tự kết nối lại @${wantUser} (lần trước đang kết nối)`);

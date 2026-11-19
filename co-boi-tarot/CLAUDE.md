@@ -90,3 +90,24 @@
   đổi ngay sang nhân vật đúng giới, cô xác nhận bằng 1 câu nói thêm. Người còn trong hàng chờ
   gõ trước thì ghi genderPref, tới lượt bốc đúng giới.
 - Ảnh gốc ở art-raw/guests/, tách nền bằng tools/tach-nen-khach.py (flood-fill viền như bộ cô bói).
+
+## Live bằng điện thoại qua Wi-Fi (thêm 2026-11-19)
+
+- Bối cảnh: quyền LIVE Studio của kênh bị đình chỉ (xác minh thất bại 14/11, phải chờ ~15/12
+  mới đăng ký lại được) nên chủ kênh live tạm bằng app TikTok trên điện thoại, phát màn hình
+  trang stage. Server vì vậy nghe ở 0.0.0.0 và in thêm dòng "Link cho điện thoại (cùng
+  Wi-Fi): http://<IP-LAN>:3030/?view=stage" lúc khởi động. Điện thoại phải cùng Wi-Fi với máy
+  Mac; mở link đó trong trình duyệt điện thoại rồi bật phát màn hình trong app TikTok.
+- Mô hình bảo mật (server.ts): API vẫn không có đăng nhập, dựa vào 2 lớp. (1) Cổng Host/Origin:
+  chỉ nhận localhost / 127.0.0.1 / lvh.me, IP dạng số thuộc dải LAN riêng (10/8, 172.16/12,
+  192.168/16), hoặc IP của chính card mạng của máy; TÊN MIỀN công cộng vẫn bị 403 nên chống
+  DNS rebinding còn nguyên.
+  (2) Tách quyền theo nguồn: từ LAN (không phải loopback) chỉ xem được sân khấu (trang stage,
+  /assets, SSE /api/tiktok/events, /api/tts, POST /api/game/state do stage tự báo), còn các
+  lệnh điều khiển POST /api/control, /api/tiktok/connect, /api/tiktok/disconnect,
+  /api/test/emit chỉ nhận từ loopback. Hệ quả: trang điều khiển phải mở bằng localhost/lvh.me
+  trên máy Mac, mở bằng IP LAN là các nút điều khiển bị 403.
+- Vite: allowedHosts để `true` trong vite.config.ts (IP LAN thay đổi theo DHCP, không liệt kê
+  cứng được) — an toàn vì middleware hostOk của Express chạy trước Vite và là cổng thật.
+- Phạm vi tin cậy: chỉ mạng Wi-Fi nhà. Không port-forward ra internet, không dùng link này
+  trên Wi-Fi công cộng. Cách live chính chủ vẫn là LIVE Studio qua lvh.me như cũ, không đổi.
