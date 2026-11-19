@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FortuneRoom, formatPoints, DEMO_USERNAME, type ChatIn } from './fortune';
-import { DECK } from './cards78';
+import { DECK, MAJORS, isMajor } from './cards78';
 import { GAME, POSITIONS } from './config';
 import { composeReading, detectTheme, extractQuestion, THEMES, type ThemeKey } from './reading';
 import { GUEST_POOL, drawGuestChar, guestCharById, parseGenderCommand } from './guests';
@@ -428,6 +428,20 @@ assert.equal(detectTheme('dạo này em thấy mệt mỏi quá'), 'general');
   c.tick((td = c.phaseEndsAt + 1)); // rest ngắn
   c.tick((td = c.phaseEndsAt + 1)); // khách thật ngồi
   assert.equal(c.view(td).current?.nickname, 'Bạn 43', 'khách thật lên ngay sau khi lượt mẫu nhường');
+}
+
+// ---------- Ẩn Chính: đúng 22 lá major, view gắn cờ major khớp lá ----------
+{
+  assert.equal(MAJORS.length, 22, 'đúng 22 lá Ẩn Chính');
+  assert.ok(MAJORS.every((c) => isMajor(c)), 'mọi lá trong MAJORS đều là Ẩn Chính');
+  assert.equal(DECK.filter((c) => isMajor(c)).length, 22, 'cả bộ bài chỉ có 22 lá Ẩn Chính');
+  assert.ok(DECK.slice(22).every((c) => !isMajor(c)), '56 lá Ẩn Phụ không bị gắn nhầm Ẩn Chính');
+  const c = new FortuneRoom(t, rand);
+  c.newSession(t);
+  chat(c, 1, 'Cô ơi chuyện tình cảm của em thế nào?', t);
+  for (const card of c.view(t).current!.cards) {
+    assert.equal(card.major, card.img.includes('major-'), `cờ major trên sân khấu khớp lá ${card.img}`);
+  }
 }
 
 console.log('fortune.check: tất cả đều đúng');

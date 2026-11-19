@@ -159,6 +159,8 @@ export function useFortune() {
       say(lines);
       flushChatter(room, now);
       music.setDucked(voice.busy);
+      // Nhạc biến theo pha: vắng = thưa, có khách/trải/lật = đủ giai điệu + nhịp trầm, đọc bài = thưa lại
+      music.setMode(room.phase === 'reading' ? 'reading' : room.phase === 'idle' && !room.current && room.queue.length === 0 ? 'idle' : 'active');
       if (!MUTED) music.resume(); // thử mở lại tiếng sau tương tác đầu tiên trong LIVE Studio
       if (!dirty.current && now - lastSent < 1000) return;
       dirty.current = false;

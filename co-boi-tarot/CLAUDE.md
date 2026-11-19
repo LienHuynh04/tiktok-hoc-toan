@@ -35,7 +35,7 @@
 ## Kiến trúc nhanh
 
 - Engine thuần thời gian: `FortuneRoom` (src/game/fortune.ts), pha idle → welcome (khách ngồi,
-  đọc lại câu hỏi) → deal (3 lá úp hiện dần) → flip (lật từng lá, mỗi lá 1 câu đọc ngắn) →
+  đọc lại câu hỏi) → deal (3 lá úp hiện dần) → flip (lật từng lá) →
   reading (đoạn luận 6 câu: mở + 3 lá + lời khuyên + khép) → rest → khách tiếp theo.
   Đồng hồ pha bị giữ (hold) khi giọng đang đọc câu chính, giống Phòng Tarot.
 - Điểm nằm trong engine: addLikes/addGiftPoints chỉ cộng khi người đó đang ở hàng chờ/đang
@@ -111,3 +111,49 @@
   cứng được) — an toàn vì middleware hostOk của Express chạy trước Vite và là cổng thật.
 - Phạm vi tin cậy: chỉ mạng Wi-Fi nhà. Không port-forward ra internet, không dùng link này
   trên Wi-Fi công cộng. Cách live chính chủ vẫn là LIVE Studio qua lvh.me như cũ, không đổi.
+
+## 2 gói nâng cấp: nhạc kịch tính + hiệu ứng sân khấu (thêm 2026-11-19)
+
+### Gói 1 — Nhạc hộp nhạc + nhạc hiệu lật bài
+- src/live/music.ts viết lại: bản "Hộp Nhạc Đêm Trăng" TỰ SOẠN bằng Web Audio (không file
+  ngoài): giai điệu hộp nhạc (sine + hài âm ~4× tần số, tắt nhanh) chạy vòng 64 bước × 0.5s
+  trên vòng hợp âm Am–F–C–G, đệm pad như cũ. Chế độ theo pha (music.setMode, useFortune gọi
+  mỗi vòng lặp): idle = thưa (chỉ nốt ở bước chia hết cho 4, pad lùi nhẹ); active (có khách /
+  trải / lật) = đủ giai điệu + nhịp trầm rất khẽ ở đầu/giữa ô nhịp; reading = thưa lại
+  và vẫn duck xuống 0.3 khi giọng cô đang đọc (setDucked như cũ).
+- src/game/sfx.ts thêm accent theo lá, phát đúng lúc lá chạm bàn (~0.8s sau khi lật, lá 3
+  chậm thì ~1.15s): lá xuôi = arpeggio chuông sáng 3 nốt; lá ngược = chuông trầm tối A2/E3;
+  lá Ẩn Chính (isMajor trong cards78.ts, id 'major-*', đúng 22 lá) = nhạc hiệu vàng (chùm
+  chuông 5 nốt + vệt sáng cao + cồng mềm). Toast nhảy hạng có tiếng sparkle 2 nốt nhỏ.
+
+### Gói 2 — Hiệu ứng lật bài + sân khấu không chết + layout mới
+- Lá Ẩn Chính lật: vụ nổ ánh sáng vàng + vòng sáng lan tại lá (CSS fortune-major-burst/ring),
+  quầng sáng vàng toàn màn hình (fortune-screen-glow), khách bay hạt tim/sao vàng
+  (fortune-guest-fx). Lá ngược: vignette tím sâu toàn màn hình (fortune-screen-vignette) +
+  hạt tím trầm ở khách. Lá 3 lật CHẬM kiểu slow-motion 1.4s (fortune-card-slow) + tia sáng
+  từ quả cầu pha lê chiếu về phía bàn (fortune-ball-rays). Mọi hiệu ứng chạy 1 lần theo mốc
+  lật (flipFx trong FortuneStage), không lặp.
+- Lúc chưa có lá nào trên bàn (chờ khách hoặc khách vừa ngồi chưa trải): thay 3 ô trống đứt
+  nét bằng "bàn thờ bộ bài" (DeckAltar): bộ bài úp lơ lửng lên xuống, vòng rune xoay 26s,
+  hạt sáng trôi, nhãn đổi theo có khách ngồi hay chưa. Ô lời giải lúc chờ có chữ teaser đập
+  sáng nhẹ (fortune-teaser) thay cho hộp đen tĩnh.
+- Layout 1080×1920: cảnh phòng to hơn (top 368, cao 504), 2 panel thông tin thu gọn (top
+  884, cao 240), hàng lá top 1140 (3 lá, mỗi lá 264px), panel lời
+  giải top 1672 cao 166. ĐÃ BỎ dòng điểm vàng ở chân trang (trùng luật điểm ở panel phải,
+  giữ nguyên văn panel phải); chân trang chỉ còn dòng miễn trừ. POINTS_NOTE trong config.ts
+  giữ làm hằng tham chiếu, sân khấu không hiển thị nữa.
+
+### Gói 3 — ĐÃ GỠ BỎ (2026-11-19)
+- Gói 3 "cả phòng tham gia" (đoán lá cuối qua chat + thanh năng lượng phòng/lá ẩn thứ 4 + báo vị trí/thời gian chờ khi vào hàng) từng được làm cùng đợt này, nhưng chủ kênh chốt GỠ BỎ ngay trong ngày 2026-11-19: lượt xem phải nhanh cho người xem, không thêm bước chờ/đoán giữa các lá. Code, test và tài liệu của gói này đã xoá sạch; đừng tự thêm lại nếu chủ kênh chưa chốt lại.
+
+## Sân khấu trên iPad/Safari (thêm 2026-11-19)
+- index.html có meta apple-mobile-web-app-capable + mobile-web-app-capable +
+  apple-mobile-web-app-status-bar-style=black-translucent: chủ kênh "Thêm vào Màn hình
+  chính" trên iPad là mở stage như app độc lập, không thanh Safari che sân khấu.
+- Nút toàn màn hình ⛶ ở góc trên-trái sân khấu (chỉ trang stage thật, không hiện ở bản xem
+  trước của trang điều khiển): nhỏ, mờ, tự nhạt xuống 0.18 sau 3.5 giây, chạm là hiện lại;
+  bấm để requestFullscreen/exitFullscreen. iPhone Safari không hỗ trợ fullscreen theo phần
+  tử thì bấm không có tác dụng phụ (đường chính vẫn là mở từ Màn hình chính).
+- Sân khấu co giãn contain-fit theo khung 1080×1920 (StageFrame lấy min tỉ lệ ngang/dọc)
+  nên viewport lạ (tablet còn thanh trình duyệt) vẫn trọn khung, không thanh cuộn, không
+  cắt disclaimer: đã kiểm chứng ở 768×1024, 820×1050, 834×1112.

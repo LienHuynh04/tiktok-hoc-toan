@@ -522,6 +522,212 @@
   animation: fortune-twinkle 3s ease-in-out infinite;
 }
 
+/* =====================================================================
+   GÓI NÂNG CẤP 2026-11-19: hiệu ứng lật bài theo loại lá, bàn thờ bộ bài,
+   thanh năng lượng, banner đoán, phản ứng của khách.
+   ===================================================================== */
+
+/* --- Lá 3 lật chậm kiểu slow-motion (1.4s thay vì 0.95s): nới cả vòng xoay
+       3D lẫn nhịp nhấc, tia lửa chạm bàn dời theo cùng mốc --- */
+.fcard.fortune-card-slow .fcard-inner {
+  transition-duration: 1.4s;
+}
+.fcard.fortune-flip-lift.fortune-card-slow {
+  animation-duration: 1.4s;
+}
+.fortune-land-sparks-slow span {
+  animation-delay: 1.16s;
+}
+
+/* --- Ẩn Chính: quầng sáng sau lá mạnh hơn, vụ nổ sáng vàng + vòng sáng lan ra
+       đúng lúc lá chạm bàn (trễ ~0.55-0.6s theo nhịp nhấc-xoay) --- */
+.fortune-flip-glow-major {
+  background: radial-gradient(ellipse at 50% 45%, rgba(250, 204, 21, 0.8) 0%, rgba(245, 158, 11, 0.4) 45%, transparent 75%);
+}
+@keyframes fortune-major-burst {
+  0% { opacity: 0; transform: scale(0.8); }
+  25% { opacity: 0.95; }
+  100% { opacity: 0; transform: scale(1.18); }
+}
+.fortune-major-burst {
+  position: absolute;
+  inset: -46px;
+  border-radius: 40px;
+  background: radial-gradient(ellipse at 50% 45%, rgba(255, 240, 180, 0.95) 0%, rgba(250, 204, 21, 0.55) 42%, transparent 72%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: fortune-major-burst 1.25s ease-out 0.55s both;
+}
+@keyframes fortune-major-ring {
+  0% { opacity: 0.9; transform: scale(0.96); }
+  100% { opacity: 0; transform: scale(1.28); }
+}
+.fortune-major-ring {
+  position: absolute;
+  inset: -8px;
+  border-radius: 26px;
+  border: 4px solid rgba(250, 204, 21, 0.85);
+  box-shadow: 0 0 34px rgba(250, 204, 21, 0.55), inset 0 0 22px rgba(250, 204, 21, 0.4);
+  pointer-events: none;
+  animation: fortune-major-ring 1.2s ease-out 0.6s both;
+}
+
+/* --- Hiệu ứng toàn màn hình: Ẩn Chính = quầng sáng vàng ở khu vực bài,
+       lá ngược = vignette tím sâu nuốt dần từ mép vào --- */
+@keyframes fortune-screen-glow {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.fortune-screen-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  background: radial-gradient(ellipse 90% 55% at 50% 62%, rgba(250, 204, 21, 0.34) 0%, rgba(245, 158, 11, 0.14) 45%, transparent 72%);
+  animation: fortune-screen-glow 1.5s ease-out both;
+}
+@keyframes fortune-screen-vig {
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.fortune-screen-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  background: radial-gradient(ellipse 105% 105% at 50% 50%, transparent 52%, rgba(46, 8, 80, 0.55) 88%, rgba(30, 4, 54, 0.8) 100%);
+  animation: fortune-screen-vig 1.3s ease-out both;
+}
+
+/* --- Tia sáng từ quả cầu pha lê chiếu về phía bàn khi lá 3 (lá chốt) lật --- */
+@keyframes fortune-ball-rays {
+  0% { opacity: 0; transform: rotate(-4deg) scale(0.92); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(3deg) scale(1.05); }
+}
+.fortune-ball-rays {
+  position: absolute;
+  left: 196px;
+  top: 278px;
+  width: 620px;
+  height: 300px;
+  transform-origin: 10px 10px;
+  background: conic-gradient(from 12deg at 0% 0%, transparent 0deg, rgba(250, 204, 21, 0.34) 14deg, transparent 30deg, rgba(216, 180, 254, 0.28) 48deg, transparent 66deg, rgba(250, 204, 21, 0.22) 84deg, transparent 102deg);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: fortune-ball-rays 1.6s ease-out both;
+}
+
+/* --- Phản ứng của khách: hạt tim/sao bay lên (Ẩn Chính) hoặc tia tím trầm (lá ngược) --- */
+.fortune-guest-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+.fortune-guest-fx span {
+  position: absolute;
+  opacity: 0;
+  animation: fortune-fx-rise 1.7s ease-out both;
+  will-change: transform, opacity;
+}
+.fortune-guest-fx .fx-gold {
+  color: #fcd34d;
+  font-size: 34px;
+  text-shadow: 0 0 14px rgba(250, 204, 21, 0.95);
+}
+.fortune-guest-fx .fx-violet {
+  color: #c084fc;
+  font-size: 26px;
+  text-shadow: 0 0 12px rgba(147, 51, 234, 0.9);
+}
+@keyframes fortune-fx-rise {
+  0% { opacity: 0; transform: translateY(10px) scale(0.6); }
+  22% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-120px) scale(1.15); }
+}
+
+/* --- Ô lời giải lúc đang chờ: chữ teaser đập sáng nhẹ thay cho hộp đen tĩnh --- */
+@keyframes fortune-teaser-pulse {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}
+.fortune-teaser {
+  animation: fortune-teaser-pulse 2.8s ease-in-out infinite;
+}
+
+/* --- Bàn thờ bộ bài: bộ bài úp lơ lửng + vòng rune xoay chậm + nhãn dưới chân --- */
+.fortune-altar {
+  position: relative;
+  height: 470px;
+}
+@keyframes fortune-altar-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+.fortune-altar-deck {
+  position: absolute;
+  left: 50%;
+  top: 40px;
+  width: 272px;
+  height: 380px;
+  margin-left: -136px;
+  animation: fortune-altar-bob 3.8s ease-in-out infinite;
+  will-change: transform;
+}
+.fortune-altar-card {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 50% 36%, rgba(250, 204, 21, 0.28), transparent 42%),
+    repeating-radial-gradient(circle at 50% 120%, rgba(255, 255, 255, 0.06) 0 2px, transparent 2px 26px),
+    linear-gradient(160deg, #2e1065, #701a75 55%, #1e1b4b);
+  border: 3px solid rgba(250, 204, 21, 0.55);
+  box-shadow: inset 0 0 0 10px rgba(0, 0, 0, 0.25), inset 0 0 60px rgba(0, 0, 0, 0.55), 0 24px 44px rgba(0, 0, 0, 0.5);
+}
+.fortune-altar-card-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.fortune-altar-orbit {
+  position: absolute;
+  left: 50%;
+  top: 230px;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  animation: fortune-act-spin 26s linear infinite;
+  will-change: transform;
+}
+.fortune-altar-orbit span {
+  position: absolute;
+  left: -17px;
+  top: -17px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 27px;
+  color: #e9d5ff;
+  text-shadow: 0 0 12px rgba(192, 132, 252, 0.9);
+}
+.fortune-altar-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+  color: rgba(233, 213, 255, 0.75);
+}
+
 /* Tab stage bị ẩn (đổi cửa sổ): dừng mọi animation trong sân khấu */
 .fortune-paused *,
 .fortune-paused *::before,
@@ -553,7 +759,16 @@
   .fortune-act-runering,
   .fortune-meteor,
   .fortune-rune,
-  .fortune-sparkle-dot {
+  .fortune-sparkle-dot,
+  .fortune-major-burst,
+  .fortune-major-ring,
+  .fortune-screen-glow,
+  .fortune-screen-vignette,
+  .fortune-ball-rays,
+  .fortune-guest-fx span,
+  .fortune-teaser,
+  .fortune-altar-deck,
+  .fortune-altar-orbit {
     animation: none !important;
   }
   .fortune-attn {

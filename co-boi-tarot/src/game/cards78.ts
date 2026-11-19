@@ -449,3 +449,6 @@ export const PENTS: Card78[] = [
 ];
 
 export const DECK: Card78[] = [...MAJORS, ...WANDS, ...CUPS, ...SWORDS, ...PENTS];
+
+/** Lá Ẩn Chính (Major Arcana): 22 lá major-00..major-21, sân khấu + nhạc hiệu xử lý đặc biệt */
+export const isMajor = (c: Card78): boolean => c.id.startsWith('major-');

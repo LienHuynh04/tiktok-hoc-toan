@@ -4,7 +4,7 @@
  * Hàm thuần theo thời gian truyền vào (now), không tự phát tiếng: trả về các câu Say.
  * Mọi câu đọc đều bắt đầu bằng "F: " (giọng nữ cô bói, xem live/voice.ts).
  */
-import { DECK } from './cards78';
+import { DECK, isMajor } from './cards78';
 import { GAME, POSITIONS } from './config';
 import { composeReading, detectTheme, extractQuestion, type DrawnCard, type ThemeKey, THEMES } from './reading';
 import { drawGuestChar, guestCharById, parseGenderCommand, type GuestChar, type GuestGender } from './guests';
@@ -82,7 +82,7 @@ export interface FortuneView {
     demo: boolean; // khách đang ngồi là khách mẫu (sân khấu hiện nhãn "Khách mẫu / lượt xem thử")
     pose: Pose;
     guestChar: GuestChar | null;
-    cards: { img: string; name: string; en: string; keywords: string; reversed: boolean; faceUp: boolean; position: string }[];
+    cards: { img: string; name: string; en: string; keywords: string; reversed: boolean; faceUp: boolean; position: string; major: boolean }[];
   } | null;
   readingText: string;
 }
@@ -662,6 +662,7 @@ export class FortuneRoom {
               reversed: d.reversed,
               faceUp: i < cur.flipped,
               position: POSITIONS[i],
+              major: isMajor(d.card),
             })),
           }
         : null,

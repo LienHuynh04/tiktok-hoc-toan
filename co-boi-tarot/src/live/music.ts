@@ -1,12 +1,17 @@
 // Nhạc nền Cô Bói Tarot — bản nhạc GỐC soạn bằng Web Audio ngay trong trang stage:
-// "Đêm Trăng Bói Bài": vòng hợp âm Am – F – C – G ở âm vực thấp, pad mềm lên xuống
-// chậm như hơi thở, điểm xuyết chuông gió pentatonic (A C D E G) thưa và ngân dài.
-// Soạn riêng cho game này, không dùng file nhạc ngoài nên không dính bản quyền.
-// Nhạc tự nhỏ xuống (duck) khi cô đang đọc. Trình duyệt bắt buộc có 1 tương tác đầu
-// tiên mới cho phát tiếng: hook gọi resume() liên tục, không có cách lách nào khác.
+// "Hộp Nhạc Đêm Trăng": giai điệu hộp nhạc (music box) tự sáng tác trên vòng hợp âm
+// Am – F – C – G, đệm pad mềm và (khi có khách) nhịp trầm rất khẽ. Soạn riêng cho game
+// này, không dùng file nhạc ngoài nên không dính bản quyền.
+// Nhạc BIẾN THEO PHA: phòng vắng = thưa và mơ màng; có khách/trải/lật bài = đủ giai
+// điệu + nhịp trầm; đang đọc bài = thưa lại và tự nhỏ xuống (duck) dưới giọng cô.
+// Trình duyệt bắt buộc có 1 tương tác đầu tiên mới cho phát tiếng: hook gọi resume()
+// liên tục, không có cách lách nào khác.
 
-const BAR_SEC = 8; // 1 ô nhịp pad dài 8 giây, nhịp thiền
-const BELL_EVERY = 2; // chuông điểm mỗi 2 giây (lưới 4 nốt mỗi ô nhịp)
+export type MusicMode = 'idle' | 'active' | 'reading';
+
+const STEP_SEC = 0.5; // lưới giai điệu: mỗi bước 0.5 giây
+const STEPS_PER_BAR = 16; // 1 ô nhịp = 8 giây (khớp vòng pad cũ)
+const BAR_SEC = STEP_SEC * STEPS_PER_BAR;
 
 export const TRACK = {
   // Am – F – C – G: tần số pad (2 nốt thấp + 2 nốt giữa mỗi hợp âm)
@@ -16,8 +21,18 @@ export const TRACK = {
     [98.0, 146.83, 196.0, 261.63], // G2 D3 G3... giữ nhịp trầm (dùng G sớm cho mượt)
     [130.81, 196.0, 246.94, 329.63], // C3 G3 B3 E4 — C
   ] as number[][],
-  // Chuông pentatonic A: dãy cố định 16 bước (0 = nghỉ), ngân dài, thưa
-  bells: [440.0, 0, 523.25, 0, 659.25, 0, 587.33, 0, 440.0, 0, 349.23, 0, 392.0, 0, 523.25, 0] as number[],
+  // Giai điệu hộp nhạc tự sáng tác: 64 bước = 4 ô nhịp (Am F C G), 0 = nghỉ.
+  // Nốt chỉ nằm ở bước chẵn; chế độ thưa (idle/reading) bỏ thêm một nửa số nốt.
+  melody: [
+    // Am: A4 C5 E5 A5 G5 E5 C5 E5
+    440.0, 0, 523.25, 0, 659.25, 0, 880.0, 0, 783.99, 0, 659.25, 0, 523.25, 0, 659.25, 0,
+    // F: F5 A5 G5 F5 E5 F5 D5 (nghỉ)
+    698.46, 0, 880.0, 0, 783.99, 0, 698.46, 0, 659.25, 0, 698.46, 0, 587.33, 0, 0, 0,
+    // C: E5 G5 C6 G5 A5 G5 E5 (nghỉ)
+    659.25, 0, 783.99, 0, 1046.5, 0, 783.99, 0, 880.0, 0, 783.99, 0, 659.25, 0, 0, 0,
+    // G: D5 G5 A5 G5 E5 D5 B4 (nghỉ, dẫn về Am)
+    587.33, 0, 783.99, 0, 880.0, 0, 783.99, 0, 659.25, 0, 587.33, 0, 493.88, 0, 0, 0,
+  ] as number[],
 };
 
 const BASE_LEVEL = 0.3;
@@ -32,6 +47,7 @@ class MysticMusic {
   enabled = false;
   private volume = 1;
   private ducked = false;
+  private mode: MusicMode = 'idle';
 
   private ensureCtx(): AudioContext | null {
     if (typeof window === 'undefined') return null;
@@ -71,7 +87,7 @@ class MysticMusic {
       this.bus.gain.setTargetAtTime(BASE_LEVEL * this.volume, t, 1.2);
       if (!this.timer) {
         this.nextStepAt = t + 0.1;
-        this.timer = setInterval(() => this.schedule(), 400);
+        this.timer = setInterval(() => this.schedule(), 200);
         this.schedule();
       }
     } else {
@@ -96,30 +112,86 @@ class MysticMusic {
     this.duck.gain.setTargetAtTime(on ? 0.3 : 1, this.ctx.currentTime, 0.25);
   }
 
+  /** Chế độ theo pha của phòng: idle (vắng) / active (có khách, trải, lật, đoán) / reading (đang đọc bài) */
+  setMode(mode: MusicMode) {
+    this.mode = mode;
+  }
+
   private schedule() {
     const ctx = this.ctx;
     if (!ctx || !this.bus || !this.enabled) return;
-    const ahead = ctx.currentTime + 2.5;
+    const ahead = ctx.currentTime + 1.4;
     while (this.nextStepAt < ahead) {
       this.playStep(this.stepIdx, this.nextStepAt);
       this.stepIdx++;
-      this.nextStepAt += BELL_EVERY;
+      this.nextStepAt += STEP_SEC;
     }
   }
 
-  // 1 bước = 2 giây; 4 bước = 1 ô nhịp pad. Chuông theo dãy 16 bước (32 giây).
+  // 1 bước = 0.5 giây; 16 bước = 1 ô nhịp pad. Giai điệu hộp nhạc chạy vòng 64 bước (32 giây).
   private playStep(step: number, at: number) {
-    const bar = Math.floor(step / 4);
-    if (step % 4 === 0) this.pad(TRACK.chords[bar % TRACK.chords.length], at);
-    const bell = TRACK.bells[step % TRACK.bells.length];
-    if (bell > 0) this.bell(bell, at, step % 8 === 4 ? 0.05 : 0.038);
-    if (step % 16 === 12) this.bell(880.0, at, 0.016); // điểm sáng rất khẽ cuối vòng
+    const inBar = step % STEPS_PER_BAR;
+    const bar = Math.floor(step / STEPS_PER_BAR);
+    if (inBar === 0) this.pad(TRACK.chords[bar % TRACK.chords.length], at);
+    // Nhịp trầm rất khẽ: chỉ khi có khách (active), gõ nốt gốc của hợp âm ở đầu và giữa ô nhịp
+    if (this.mode === 'active' && (inBar === 0 || inBar === 8)) {
+      this.bass(TRACK.chords[bar % TRACK.chords.length][0], at);
+    }
+    const note = TRACK.melody[step % TRACK.melody.length];
+    if (note > 0) {
+      // Chế độ thưa (vắng / đang đọc): chỉ giữ nốt ở các bước chia hết cho 4, còn lại bỏ
+      const sparse = this.mode !== 'active';
+      if (!sparse || step % 4 === 0) this.musicBox(note, at);
+    }
+    if (step % 64 === 60) this.musicBox(1318.5, at, 0.35); // điểm sáng rất khẽ cuối vòng 4 ô nhịp
+  }
+
+  /** Hộp nhạc: sine nền + hài âm cao (gần 4 lần tần số) tắt nhanh, thân nốt ngân ~1.6 giây */
+  private musicBox(freq: number, at: number, volScale = 1) {
+    const ctx = this.ctx;
+    if (!ctx || !this.bus) return;
+    const vol = (this.mode === 'reading' ? 0.042 : 0.055) * volScale;
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(vol, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 1.6);
+    osc.connect(g).connect(this.bus);
+    osc.start(at);
+    osc.stop(at + 1.7);
+    const harm = ctx.createOscillator();
+    harm.type = 'sine';
+    harm.frequency.value = freq * 3.98;
+    const hg = ctx.createGain();
+    hg.gain.setValueAtTime(vol * 0.25, at);
+    hg.gain.exponentialRampToValueAtTime(0.0001, at + 0.35);
+    harm.connect(hg).connect(this.bus);
+    harm.start(at);
+    harm.stop(at + 0.4);
+  }
+
+  /** Nhịp trầm: triangle ở tần số gốc của hợp âm, lên xuống mềm trong ~1.4 giây */
+  private bass(freq: number, at: number) {
+    const ctx = this.ctx;
+    if (!ctx || !this.bus) return;
+    const osc = ctx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.05, at + 0.08);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 1.4);
+    osc.connect(g).connect(this.bus);
+    osc.start(at);
+    osc.stop(at + 1.5);
   }
 
   /** Pad: 4 nốt sine+triangle detuned nhẹ, attack nhả chậm 3 giây, ngân hết ô nhịp */
   private pad(freqs: number[], at: number) {
     const ctx = this.ctx;
     if (!ctx || !this.bus) return;
+    const level = this.mode === 'idle' ? 0.8 : 1; // phòng vắng: pad cũng lùi nhẹ cho thoáng
     for (const f of freqs) {
       for (const det of [0, 4]) {
         const osc = ctx.createOscillator();
@@ -127,39 +199,16 @@ class MysticMusic {
         osc.frequency.value = f;
         osc.detune.value = det;
         const g = ctx.createGain();
+        const peak = (det === 0 ? 0.028 : 0.01) * level;
         g.gain.setValueAtTime(0, at);
-        g.gain.linearRampToValueAtTime(det === 0 ? 0.028 : 0.01, at + 3);
-        g.gain.setValueAtTime(det === 0 ? 0.028 : 0.01, at + BAR_SEC - 2.6);
+        g.gain.linearRampToValueAtTime(peak, at + 3);
+        g.gain.setValueAtTime(peak, at + BAR_SEC - 2.6);
         g.gain.linearRampToValueAtTime(0, at + BAR_SEC + 0.4);
         osc.connect(g).connect(this.bus);
         osc.start(at);
         osc.stop(at + BAR_SEC + 0.5);
       }
     }
-  }
-
-  /** Chuông gió: sine + harmonic, decay dài 2.5 giây */
-  private bell(freq: number, at: number, vol: number) {
-    const ctx = this.ctx;
-    if (!ctx || !this.bus) return;
-    const osc = ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-    const harm = ctx.createOscillator();
-    harm.type = 'sine';
-    harm.frequency.value = freq * 2.76;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(vol, at);
-    g.gain.exponentialRampToValueAtTime(0.0001, at + 2.6);
-    const hg = ctx.createGain();
-    hg.gain.setValueAtTime(vol * 0.22, at);
-    hg.gain.exponentialRampToValueAtTime(0.0001, at + 0.5);
-    osc.connect(g).connect(this.bus);
-    harm.connect(hg).connect(this.bus);
-    osc.start(at);
-    osc.stop(at + 2.7);
-    harm.start(at);
-    harm.stop(at + 0.55);
   }
 }
 

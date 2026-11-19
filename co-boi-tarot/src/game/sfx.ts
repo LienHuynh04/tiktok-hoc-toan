@@ -85,13 +85,85 @@ class FlipSfx {
     return this.noiseBuf;
   }
 
-  /** Một lần lật: vút ngay khi lá nhấc lên, thụp đúng lúc lá chạm bàn (~0.82s, khớp animation fortune-flip-lift) */
-  flip() {
+  /** Một lần lật: vút ngay khi lá nhấc lên, thụp đúng lúc lá chạm bàn (~0.82s, khớp animation fortune-flip-lift).
+   *  Lá 3 lật chậm kiểu slow-motion (1.4s): tiếng thụp dời tới ~1.18s cho khớp hình. */
+  flip(slow = false) {
     const ctx = this.ensureCtx();
     if (!ctx) return;
     const t = ctx.currentTime + 0.02;
     this.whoosh(t);
-    this.thock(t + 0.82);
+    this.thock(t + (slow ? 1.18 : 0.82));
+  }
+
+  /** Tiếng chuông hộp nhạc đơn: sine + hài âm cao tắt nhanh, thân ngân theo decay truyền vào */
+  private chime(freq: number, at: number, vol: number, decay = 1.4) {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(vol, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + decay);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(at);
+    osc.stop(at + decay + 0.1);
+    const harm = ctx.createOscillator();
+    harm.type = 'sine';
+    harm.frequency.value = freq * 3.98;
+    const hg = ctx.createGain();
+    hg.gain.setValueAtTime(vol * 0.22, at);
+    hg.gain.exponentialRampToValueAtTime(0.0001, at + 0.3);
+    harm.connect(hg).connect(ctx.destination);
+    harm.start(at);
+    harm.stop(at + 0.35);
+  }
+
+  /** Lá xuôi thường: arpeggio chuông sáng 3 nốt đi lên, gọi ở khoảnh khắc lá chạm bàn */
+  upright() {
+    const ctx = this.ensureCtx();
+    if (!ctx) return;
+    const t = ctx.currentTime + 0.02;
+    this.chime(659.25, t, 0.11);
+    this.chime(783.99, t + 0.07, 0.11);
+    this.chime(880.0, t + 0.14, 0.12, 1.8);
+  }
+
+  /** Lá ngược: chuông trầm tối (A2 + E3) ngân dài, hơi nặng, gọi ở khoảnh khắc lá chạm bàn */
+  reversed() {
+    const ctx = this.ensureCtx();
+    if (!ctx) return;
+    const t = ctx.currentTime + 0.02;
+    this.chime(110.0, t, 0.2, 2.2);
+    this.chime(164.81, t + 0.05, 0.13, 1.9);
+    this.chime(220.0, t + 0.1, 0.06, 1.2);
+  }
+
+  /** Lá Ẩn Chính: nhạc hiệu vàng — chùm chuông 5 nốt + ngân sáng dài + tiếng cồng mềm */
+  major() {
+    const ctx = this.ensureCtx();
+    if (!ctx) return;
+    const t = ctx.currentTime + 0.02;
+    [523.25, 659.25, 783.99, 880.0, 1046.5].forEach((f, i) => this.chime(f, t + i * 0.06, 0.12, 2.0));
+    this.chime(2093.0, t + 0.3, 0.035, 1.8); // vệt sáng cao
+    const gong = ctx.createOscillator();
+    gong.type = 'sine';
+    gong.frequency.value = 196.0;
+    const gg = ctx.createGain();
+    gg.gain.setValueAtTime(0.09, t);
+    gg.gain.exponentialRampToValueAtTime(0.0001, t + 2.4);
+    gong.connect(gg).connect(ctx.destination);
+    gong.start(t);
+    gong.stop(t + 2.5);
+  }
+
+  /** Nhảy hạng trong hàng chờ: 2 tiếng chuông nhỏ lấp lánh */
+  sparkle() {
+    const ctx = this.ensureCtx();
+    if (!ctx) return;
+    const t = ctx.currentTime + 0.02;
+    this.chime(880.0, t, 0.07, 0.7);
+    this.chime(1318.5, t + 0.08, 0.07, 0.9);
   }
 }
 

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { FortuneState } from './useFortune';
 import { formatPoints, type FortuneView } from './fortune';
-import { DISCLAIMER_STAGE, GAME, POINTS_NOTE } from './config';
+import { DISCLAIMER_STAGE, GAME } from './config';
 import { sfx } from './sfx';
+import { IS_STAGE } from '../live/page';
 import './fortune.css';
 
 type CardV = NonNullable<FortuneView['current']>['cards'][number];
@@ -28,6 +29,24 @@ const HINTS = [
   'Gõ NAM / NỮ để đổi nhân vật đang ngồi',
   'Gõ câu hỏi lên chat để vào hàng chờ',
   'Điểm cao lên trước · 100 tim = 1 điểm',
+];
+
+// Hạt phản ứng của khách khi lá của mình lật: Ẩn Chính = tim/sao vàng bay lên,
+// lá ngược = tia tím trầm. Vị trí cố định quanh nhân vật khách (khung 408px).
+const GUEST_FX_MAJOR = [
+  { g: '✦', left: 30, top: 150, delay: 0 },
+  { g: '♥', left: 110, top: 112, delay: 0.12 },
+  { g: '★', left: 196, top: 92, delay: 0.05 },
+  { g: '✦', left: 280, top: 116, delay: 0.18 },
+  { g: '♥', left: 344, top: 156, delay: 0.09 },
+  { g: '✦', left: 150, top: 158, delay: 0.22 },
+  { g: '★', left: 238, top: 146, delay: 0.15 },
+];
+const GUEST_FX_REV = [
+  { g: '✦', left: 60, top: 138, delay: 0 },
+  { g: '✦', left: 160, top: 108, delay: 0.14 },
+  { g: '✦', left: 260, top: 124, delay: 0.07 },
+  { g: '✦', left: 330, top: 158, delay: 0.2 },
 ];
 
 // Hash nhỏ từ id nhân vật khách: mỗi nhân vật một nhịp thở/pha riêng (không ai giống ai)
@@ -189,8 +208,22 @@ export function FortuneStage({ game }: { game: FortuneState }) {
           : v?.phase === 'deal' || v?.phase === 'flip'
             ? 'cards'
             : 'none';
-  // Khách nảy mừng nhỏ mỗi khi 1 lá của mình được lật
+  // Khách nảy mừng nhỏ mỗi khi 1 lá của mình được lật + accent theo loại lá + hiệu ứng màn hình.
+  // flipFx: khoảnh khắc lật gần nhất (loại lá + vị trí) để sân khấu chạy quầng sáng / vignette /
+  // tia sáng quả cầu / hạt phản ứng của khách, tất cả key theo mốc lật nên chỉ chạy đúng 1 lần.
   const [guestBounce, setGuestBounce] = useState(false);
+  const [flipFx, setFlipFx] = useState<{ kind: 'major' | 'reversed' | 'normal'; index: number; at: number } | null>(null);
+  const [guestFx, setGuestFx] = useState<{ id: number; kind: 'major' | 'reversed' } | null>(null);
+  const fireFlipFx = (card: CardV | undefined, index: number) => {
+    if (!card) return;
+    const kind = card.major ? 'major' : card.reversed ? 'reversed' : 'normal';
+    setFlipFx({ kind, index, at: Date.now() });
+    if (kind !== 'normal') {
+      const id = Date.now();
+      setGuestFx({ id, kind });
+      window.setTimeout(() => setGuestFx((g) => (g && g.id === id ? null : g)), 1900);
+    }
+  };
   const prevFlip = useRef<{ user: string; flipped: number } | null>(null);
   const curUser = cur?.username ?? null;
   const curFlipped = cur?.flipped ?? 0;
@@ -199,11 +232,39 @@ export function FortuneStage({ game }: { game: FortuneState }) {
     prevFlip.current = curUser ? { user: curUser, flipped: curFlipped } : null;
     if (curUser && prev && prev.user === curUser && curFlipped > prev.flipped) {
       setGuestBounce(true);
-      sfx.flip(); // tiếng vút + thụp khớp animation lật mới (sfx tự im lặng ngoài trang stage / khi mute)
+      const idx = curFlipped - 1;
+      const card = cur?.cards[idx];
+      const slow = idx === 2; // lá 3 là lá chốt: lật chậm kiểu slow-motion
+      sfx.flip(slow); // tiếng vút + thụp khớp animation lật (sfx tự im lặng ngoài trang stage / khi mute)
+      fireFlipFx(card, idx);
+      // Accent đúng khoảnh khắc lá chạm bàn: xuôi = chuông sáng, ngược = chuông trầm, Ẩn Chính = nhạc hiệu vàng
+      const accentAt = window.setTimeout(
+        () => {
+          if (!card) return;
+          if (card.major) sfx.major();
+          else if (card.reversed) sfx.reversed();
+          else sfx.upright();
+        },
+        slow ? 1150 : 800,
+      );
       const t = window.setTimeout(() => setGuestBounce(false), 340);
-      return () => window.clearTimeout(t);
+      return () => {
+        window.clearTimeout(t);
+        window.clearTimeout(accentAt);
+      };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [curUser, curFlipped]);
+  // Nhảy hạng trong hàng chờ: tiếng chuông lấp lánh nhỏ mỗi sự kiện mới
+  const seenJumps = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    for (const j of v?.rankJumps ?? []) {
+      if (!seenJumps.current.has(j.id)) {
+        seenJumps.current.add(j.id);
+        sfx.sparkle();
+      }
+    }
+  }, [v?.rankJumps]);
   // Nhịp thở/nghiêng đầu của khách: bơm theo id nhân vật để mỗi người một nhịp
   const gSeed = cur?.guestChar ? seedOf(cur.guestChar.id) : 0;
   const guestBreatheStyle: CSSProperties = {
@@ -284,7 +345,7 @@ export function FortuneStage({ game }: { game: FortuneState }) {
           </div>
 
           {/* Cảnh phòng bói: nền phòng + cô bói + ghế khách */}
-          <div className="absolute inset-x-[40px] top-[380px] h-[452px] overflow-hidden rounded-[28px] ring-1 ring-amber-200/25" style={{ backgroundColor: '#241243' }}>
+          <div className="absolute inset-x-[40px] top-[368px] h-[504px] overflow-hidden rounded-[28px] ring-1 ring-amber-200/25" style={{ backgroundColor: '#241243' }}>
             {bgOk && <img src="/assets/room-bg.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setBgOk(false)} />}
             <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(11,6,32,0) 55%, rgba(11,6,32,0.45) 100%)' }} />
             {/* Ánh nến lập loè tại đúng vị trí 3 cụm nến trong tranh nền + bụi sáng trôi ở khung cửa sổ */}
@@ -339,6 +400,16 @@ export function FortuneStage({ game }: { game: FortuneState }) {
             {/* Ghế khách: nhân vật chibi ngồi quay lưng 3/4 về phía cô, huy hiệu avatar + tên ở chân ghế */}
             {cur && cur.guestChar ? (
               <div className="absolute bottom-[4px] right-[2px] flex w-[408px] flex-col items-center">
+                {/* Phản ứng của khách theo lá vừa lật của mình (tim/sao vàng cho Ẩn Chính, tia tím cho lá ngược) */}
+                {guestFx && (
+                  <div key={guestFx.id} className="fortune-guest-fx" aria-hidden>
+                    {(guestFx.kind === 'major' ? GUEST_FX_MAJOR : GUEST_FX_REV).map((p, i) => (
+                      <span key={i} className={guestFx.kind === 'major' ? 'fx-gold' : 'fx-violet'} style={{ left: p.left, top: p.top, animationDelay: `${p.delay}s` }}>
+                        {p.g}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {/* Lớp chuyển động của khách: nảy khi lá của mình lật -> thỉnh thoảng nghiêng đầu -> thở/lay vai (nhịp riêng theo nhân vật) */}
                 <div className={`w-full${guestBounce ? ' fortune-guest-bounce' : ''}`}>
                   <div className="fortune-guest-tilt w-full" style={guestTiltStyle}>
@@ -431,6 +502,8 @@ export function FortuneStage({ game }: { game: FortuneState }) {
                 </div>
               </>
             )}
+            {/* Lá 3 (lá chốt) đang lật: tia sáng từ quả cầu pha lê của cô chiếu về phía bàn bài */}
+            {flipFx?.index === 2 && <div key={`rays-${flipFx.at}`} className="fortune-ball-rays" aria-hidden />}
             <div className="absolute left-[26px] top-[18px] rounded-full bg-black/45 px-4 py-1 text-[23px] font-semibold text-amber-100 ring-1 ring-amber-200/30">
               {v.phase === 'idle' && 'Cô đang chờ khách'}
               {v.phase === 'welcome' && 'Cô đang nghe câu hỏi'}
@@ -485,10 +558,10 @@ export function FortuneStage({ game }: { game: FortuneState }) {
           </div>
 
           {/* Hàng panel: hàng chờ (trái) + bảng giải thích điểm (phải) */}
-          <div className="absolute inset-x-[40px] top-[848px] flex gap-4">
+          <div className="absolute inset-x-[40px] top-[884px] flex gap-4">
             {/* Hàng chờ theo điểm: top 4 + số còn lại */}
             <div
-              className="h-[272px] w-[496px] flex-none rounded-[24px] px-5 py-3.5 ring-1 ring-amber-200/35"
+              className="h-[240px] w-[496px] flex-none rounded-[24px] px-5 py-3 ring-1 ring-amber-200/35"
               style={{ background: 'linear-gradient(165deg, rgba(46,16,101,0.88), rgba(24,8,54,0.92))', boxShadow: 'inset 0 0 0 1px rgba(250,204,21,0.14), 0 12px 30px rgba(0,0,0,0.35)' }}
             >
               <div className="flex items-end justify-between">
@@ -517,11 +590,11 @@ export function FortuneStage({ game }: { game: FortuneState }) {
             </div>
             {/* Bảng giải thích: muốn lên trước thì làm sao */}
             <div
-              className="h-[272px] flex-1 rounded-[24px] px-5 py-3.5 ring-1 ring-amber-200/35"
+              className="h-[240px] flex-1 rounded-[24px] px-5 py-3 ring-1 ring-amber-200/35"
               style={{ background: 'linear-gradient(165deg, rgba(46,16,101,0.88), rgba(24,8,54,0.92))', boxShadow: 'inset 0 0 0 1px rgba(250,204,21,0.14), 0 12px 30px rgba(0,0,0,0.35)' }}
             >
               <div className="text-[29px] font-extrabold text-amber-200">Muốn lên trước?</div>
-              <div className="mt-2 space-y-1.5 leading-snug">
+              <div className="mt-1.5 space-y-1 leading-snug">
                 <div className="text-[27px] font-semibold">❤️ 100 tim = 1 điểm</div>
                 <div className="text-[27px] font-semibold">🌹 1 bông hồng = 1 điểm</div>
                 <div className="text-[24px] text-fuchsia-100/85">Tim tính từ lúc em vào hàng</div>
@@ -530,31 +603,29 @@ export function FortuneStage({ game }: { game: FortuneState }) {
             </div>
           </div>
 
-          {/* 3 lá bài trên bàn */}
-          <div className="absolute inset-x-0 top-[1136px]">
-            <div className="flex items-start justify-center gap-[30px]">
-              {cur ? (
-                cur.cards.map((c, i) => <CardSlot key={i} c={c} index={i} dealt={cur.dealt > i} />)
-              ) : (
-                [0, 1, 2].map((i) => (
-                  <div key={i} className="w-[272px]">
-                    <div className="mb-2 text-center text-[24px] font-semibold text-white/45">{['Chuyện đang là gì', 'Điều đang cần', 'Nên làm gì'][i]}</div>
-                    <div className="flex h-[380px] w-[272px] items-center justify-center rounded-[20px] border-2 border-dashed border-white/20 text-[54px] text-white/25">✦</div>
-                  </div>
-                ))
-              )}
-            </div>
+          {/* Khu vực lá bài. Chưa có lá nào trên bàn (đang chờ khách / khách vừa ngồi chưa
+              trải) thì hiện "bàn thờ bộ bài" chuyển động thay cho ô trống. */}
+          <div className="absolute inset-x-0 top-[1140px]">
+            {!cur || cur.dealt === 0 ? (
+              <DeckAltar seated={!!cur} />
+            ) : (
+              <div className="flex items-start justify-center gap-[30px]">
+                {cur.cards.map((c, i) => (
+                  <CardSlot key={i} c={c} index={i} dealt={cur.dealt > i} w={264} slow={i === 2} />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Panel lời giải */}
-          <div className="absolute inset-x-[64px] top-[1640px] h-[188px] overflow-hidden rounded-3xl bg-black/45 px-7 py-5 ring-1 ring-amber-200/25 backdrop-blur-sm">
+          <div className="absolute inset-x-[64px] top-[1672px] h-[166px] overflow-hidden rounded-3xl bg-black/45 px-7 py-5 ring-1 ring-amber-200/25 backdrop-blur-sm">
             {v.readingText ? (
               <div key={v.readingText} className={v.readingText.length > 380 ? 'fortune-reading-scroll' : ''}>
                 <p className="text-[29px] leading-[1.5] text-amber-50">{v.readingText}</p>
               </div>
             ) : (
               <div className="flex h-full items-center justify-center text-center">
-                <p className="text-[29px] leading-relaxed text-fuchsia-100/85">
+                <p className="fortune-teaser text-[29px] leading-relaxed text-fuchsia-100/85">
                   {cur
                     ? v.phase === 'flip'
                       ? 'Các lá đang mở dần, cô sắp đọc bài đây…'
@@ -565,26 +636,118 @@ export function FortuneStage({ game }: { game: FortuneState }) {
             )}
           </div>
 
-          {/* Chân trang: cách tính điểm + miễn trừ */}
+          {/* Chân trang: chỉ còn dòng miễn trừ (luật điểm đã nằm ở panel phải, bỏ dòng điểm trùng lặp ở đây) */}
           <div className="absolute inset-x-0 bottom-[16px] text-center">
-            <div className="text-[25px] font-semibold text-amber-200/90">{POINTS_NOTE}</div>
-            <div className="mt-0.5 text-[22px] text-white/50">{DISCLAIMER_STAGE}</div>
+            <div className="text-[22px] text-white/50">{DISCLAIMER_STAGE}</div>
           </div>
         </>
       )}
+      {/* Hiệu ứng toàn màn hình theo lá vừa lật: Ẩn Chính = quầng sáng vàng, lá ngược = vignette tím sâu.
+          Animation chạy 1 lần rồi dừng ở opacity 0; lần lật sau thay key là chạy lại. */}
+      {flipFx?.kind === 'major' && <div key={`glow-${flipFx.at}`} className="fortune-screen-glow" aria-hidden />}
+      {flipFx?.kind === 'reversed' && <div key={`vig-${flipFx.at}`} className="fortune-screen-vignette" aria-hidden />}
+      {/* Nút toàn màn hình: chỉ ở trang stage thật, không hiện trên bản xem trước của trang điều khiển */}
+      {IS_STAGE && <FullscreenButton />}
     </div>
   );
 }
 
-function CardSlot({ c, index, dealt }: { c: CardV; index: number; dealt: boolean }) {
+/**
+ * Nút toàn màn hình ở góc trên-trái sân khấu: nhỏ, mờ, tự nhạt đi sau vài giây, chạm vào
+ * là hiện lại. Dành cho iPad mở sân khấu qua Safari rồi phát màn hình: bấm 1 cái là mất
+ * thanh trình duyệt. Trình duyệt không hỗ trợ fullscreen theo phần tử (iPhone Safari) thì
+ * bấm không sao, đường chính vẫn là "Thêm vào Màn hình chính" (meta standalone ở index.html).
+ */
+function FullscreenButton() {
+  const [awake, setAwake] = useState(true);
+  const [fs, setFs] = useState(false);
+  const timer = useRef(0);
+  const wake = () => {
+    setAwake(true);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setAwake(false), 3500);
+  };
+  useEffect(() => {
+    wake();
+    const on = () => setFs(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', on);
+    return () => {
+      document.removeEventListener('fullscreenchange', on);
+      window.clearTimeout(timer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const toggle = () => {
+    wake();
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    else void document.documentElement.requestFullscreen().catch(() => {});
+  };
   return (
-    <div className="w-[272px]">
-      <div className={`mb-2 text-center text-[24px] font-bold ${c.faceUp ? 'text-amber-300' : 'text-fuchsia-100/75'}`}>{c.position}</div>
-      <div className={`relative h-[380px] w-[272px] ${dealt ? 'fortune-dealt' : 'opacity-0'}`} style={{ animationDelay: `${index * 0.12}s` }}>
-        {/* Hiệu ứng lúc lá lật: quầng sáng vệt sau lá, tia lửa khi chạm bàn, lá ngược chớp đỏ */}
-        {c.faceUp && <div className="fortune-flip-glow" aria-hidden />}
+    <button
+      type="button"
+      onClick={toggle}
+      onPointerDown={wake}
+      aria-label={fs ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
+      title={fs ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
+      className="absolute left-[14px] top-[14px] z-50 flex h-[56px] w-[56px] items-center justify-center rounded-full bg-black/40 text-[30px] leading-none text-white ring-1 ring-white/30 backdrop-blur-sm transition-opacity duration-700"
+      style={{ opacity: awake ? 0.9 : 0.18 }}
+    >
+      {fs ? '✕' : '⛶'}
+    </button>
+  );
+}
+
+/**
+ * Bàn thờ bộ bài: hiện ở khu vực lá bài khi chưa có lá nào trên bàn (phòng đang chờ khách
+ * hoặc khách vừa ngồi, cô chưa trải). Bộ bài úp lơ lửng lên xuống, vòng rune xoay quanh,
+ * hạt sáng trôi: sân khấu không bao giờ là khung trống đứng yên.
+ */
+function DeckAltar({ seated = false }: { seated?: boolean }) {
+  const runes = useRunes();
+  return (
+    <div className="fortune-altar" aria-hidden>
+      <div className="fortune-altar-orbit">
+        {['☉', '☽', '♀', '♂', '♃', '♄', '☿', '✦'].map((g, i, arr) => (
+          <span key={g} style={{ transform: `rotate(${(360 / arr.length) * i}deg) translateY(-196px)` }}>
+            {g}
+          </span>
+        ))}
+      </div>
+      <div className="fortune-altar-deck">
+        <div className="fortune-altar-card" style={{ transform: 'translate(-13px, 9px) rotate(-5deg)' }} />
+        <div className="fortune-altar-card" style={{ transform: 'translate(13px, 9px) rotate(5deg)' }} />
+        <div className="fortune-altar-card fortune-altar-card-top">
+          <div className="text-[88px] leading-none">🌙</div>
+          <div className="mt-2 text-[34px] text-amber-200">✦ ✦ ✦</div>
+        </div>
+      </div>
+      {runes.slice(0, 4).map((r) => (
+        <div
+          key={r.key}
+          className="fortune-sparkle-dot"
+          style={{ left: `${18 + r.key * 21}%`, top: `${22 + (r.key % 3) * 22}%`, width: 13, height: 13, animationDuration: `${2.6 + r.key * 0.7}s`, animationDelay: `${-r.key * 0.9}s` }}
+        />
+      ))}
+      <div className="fortune-altar-label">{seated ? 'Cô sắp trải bài cho bạn đây…' : 'Bộ bài đang chờ vị khách tiếp theo'}</div>
+    </div>
+  );
+}
+
+function CardSlot({ c, index, dealt, w = 272, slow = false }: { c: CardV; index: number; dealt: boolean; w?: number; slow?: boolean }) {
+  const h = Math.round((w * 380) / 272);
+  return (
+    <div style={{ width: w }}>
+      <div className={`mb-2 text-center text-[24px] font-bold ${c.faceUp ? 'text-amber-300' : 'text-fuchsia-100/75'}`}>
+        {c.position}
+      </div>
+      <div className={`relative ${dealt ? 'fortune-dealt' : 'opacity-0'}`} style={{ height: h, width: w, animationDelay: `${index * 0.12}s` }}>
+        {/* Hiệu ứng lúc lá lật: quầng sáng vệt sau lá, tia lửa khi chạm bàn, lá ngược chớp đỏ.
+            Ẩn Chính thêm vụ nổ ánh sáng vàng + vòng sáng lan ra. Lá 3 lật chậm: tia lửa dời nhịp theo. */}
+        {c.faceUp && <div className={`fortune-flip-glow${c.major ? ' fortune-flip-glow-major' : ''}`} aria-hidden />}
+        {c.faceUp && c.major && <div className="fortune-major-burst" aria-hidden />}
+        {c.faceUp && c.major && <div className="fortune-major-ring" aria-hidden />}
         {c.faceUp && (
-          <div className="fortune-land-sparks" aria-hidden>
+          <div className={`fortune-land-sparks${slow ? ' fortune-land-sparks-slow' : ''}`} aria-hidden>
             {[
               { dx: '-78px', dy: '-52px' },
               { dx: '72px', dy: '-58px' },
@@ -598,7 +761,7 @@ function CardSlot({ c, index, dealt }: { c: CardV; index: number; dealt: boolean
           </div>
         )}
         {c.faceUp && c.reversed && <div className="fortune-flip-flash" aria-hidden />}
-        <div className={`fcard h-full w-full ${c.faceUp ? 'flipped fortune-flip-lift' : ''}`}>
+        <div className={`fcard h-full w-full ${slow ? 'fortune-card-slow' : ''} ${c.faceUp ? 'flipped fortune-flip-lift' : ''}`}>
           <div className="fcard-inner">
             {/* Mặt úp: hoạ tiết trăng sao tím vàng (bản gốc của phòng) */}
             <div className="fcard-face fcard-back flex flex-col items-center justify-center">
